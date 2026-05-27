@@ -6,26 +6,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DiplomaNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
+    address public kahootGame;
     
     // Almacenamos la address del KahootManager
     address public kahootManager;
 
-    // Modificador para restringir el minteo solo al contrato Manager
-    modifier onlyManager() {
-        require(msg.sender == kahootManager, "Solo el Manager puede mintear");
+    modifier onlyGame() {
+        require(msg.sender == kahootGame, "Solo la partida puede mintear");
         _;
     }
 
-    constructor(address initialOwner) ERC721("Kahoot Web3 Diploma", "KWD") Ownable(initialOwner) {}
-
-    // Función que llamaremos desde el owner (tu wallet) después de desplegar ambos contratos
-    function setKahootManager(address _manager) external onlyOwner {
-        require(_manager != address(0), "Address invalida");
-        kahootManager = _manager;
+    constructor(address initialOwner) ERC721("Kahoot Web3 Diploma", "KWD") Ownable(initialOwner) {
+        // Quien despliega este contrato es el KahootGame, así que lo guardamos
+        kahootGame = msg.sender; 
     }
 
-    // Función de minteo restringida
-    function mintDiploma(address to, string memory tokenURI) external onlyManager {
+    function mintDiploma(address to, string memory tokenURI) external onlyGame {
         uint256 tokenId = _nextTokenId++;
         _mint(to, tokenId);
         _setTokenURI(tokenId, tokenURI);
