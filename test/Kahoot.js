@@ -36,25 +36,19 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     });
     viem = networkContext.viem;
 
+    // CORRECCIÓN: Desestructurar correctamente el array de clientes
     const walletClients = await viem.getWalletClients();
-    owner = walletClients;
-    profesor = walletClients;
-    alumnoHonesto = walletClients;
-    alumnoTramposo = walletClients;
+    [owner, profesor, alumnoHonesto, alumnoTramposo] = walletClients;
 
     factory = await viem.deployContract("KahootFactory");
 
-    // CORRECCIÓN: Argumentos posicionales (sueltos) en lugar de array
+    // CORRECCIÓN: Agregar el 5to parámetro (correctAnswers)
     await factory.write.createGame(
-      1n, 
-      1n, 
-      metadataURI, 
-      diplomaURI, 
+      [1n, 1n, metadataURI, diplomaURI, [1]],
       { account: profesor.account }
     );
 
-    // CORRECCIÓN: Argumento suelto
-    const gameAddress = await factory.read.games(0n);
+    const gameAddress = await factory.read.games([0n]);
     game = await viem.getContractAt("KahootGame", gameAddress);
 
     const diplomaAddress = await game.read.diplomaContract();
@@ -65,19 +59,17 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     await game.write.startNextQuestion({ account: profesor.account });
 
     const hashHonesto = generateHash(1, "secreto", alumnoHonesto.account.address);
-    // CORRECCIÓN: Argumento suelto
-    await game.write.commitAnswer(hashHonesto, { account: alumnoHonesto.account });
-
-    await game.write.commitAnswer(hashHonesto, { account: alumnoTramposo.account });
+    
+    await game.write.commitAnswer([hashHonesto], { account: alumnoHonesto.account });
+    await game.write.commitAnswer([hashHonesto], { account: alumnoTramposo.account });
 
     await game.write.closeQuestionAndStartReveal({ account: profesor.account });
 
-    // CORRECCIÓN: Argumentos sueltos
-    await game.write.revealAnswer(0n, 1, "secreto", { account: alumnoHonesto.account });
-    expect(await game.read.scores(alumnoHonesto.account.address)).to.equal(1n);
+    await game.write.revealAnswer([0n, 1, "secreto"], { account: alumnoHonesto.account });
+    expect(await game.read.scores([alumnoHonesto.account.address])).to.equal(1n);
 
     await expectRevert(
-      game.write.revealAnswer(0n, 1, "secreto", { account: alumnoTramposo.account }),
+      game.write.revealAnswer([0n, 1, "secreto"], { account: alumnoTramposo.account }),
       "El hash no coincide"
     );
   });
@@ -86,15 +78,15 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const hash = generateHash(1, "salt", alumnoHonesto.account.address);
 
     await expectRevert(
-      game.write.commitAnswer(hash, { account: alumnoHonesto.account }),
+      game.write.commitAnswer([hash], { account: alumnoHonesto.account }),
       "Fase de commit cerrada"
     );
 
     await game.write.startNextQuestion({ account: profesor.account });
-    await game.write.commitAnswer(hash, { account: alumnoHonesto.account });
+    await game.write.commitAnswer([hash], { account: alumnoHonesto.account });
 
     await expectRevert(
-      game.write.revealAnswer(0n, 1, "salt", { account: alumnoHonesto.account }),
+      game.write.revealAnswer([0n, 1, "salt"], { account: alumnoHonesto.account }),
       "Fase de reveal cerrada"
     );
 
@@ -102,16 +94,16 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
 
     const hash2 = generateHash(2, "salt2", alumnoTramposo.account.address);
     await expectRevert(
-      game.write.commitAnswer(hash2, { account: alumnoTramposo.account }),
+      game.write.commitAnswer([hash2], { account: alumnoTramposo.account }),
       "Fase de commit cerrada"
     );
   });
 
   it("TEST 3: Proteccion de Doble Claim", async function () {
     await game.write.startNextQuestion({ account: profesor.account });
-    await game.write.commitAnswer(generateHash(1, "s1", alumnoHonesto.account.address), { account: alumnoHonesto.account });
+    await game.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
     await game.write.closeQuestionAndStartReveal({ account: profesor.account });
-    await game.write.revealAnswer(0n, 1, "s1", { account: alumnoHonesto.account });
+    await game.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account });
     await game.write.advanceToNextQuestion({ account: profesor.account });
 
     await game.write.claimDiploma({ account: alumnoHonesto.account });
@@ -135,36 +127,33 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
   });
 
   it("TEST 5: Partida completa de 3 preguntas (Loop completo)", async function () {
-    // CORRECCIÓN: Argumentos sueltos
+    // CORRECCIÓN: Agregar el 5to parámetro para las 3 preguntas
     await factory.write.createGame(
-      2n, 
-      3n, 
-      metadataURI, 
-      diplomaURI, 
+      [2n, 3n, metadataURI, diplomaURI, [1, 2, 2]],
       { account: profesor.account }
     );
-    const game3Address = await factory.read.games(1n);
+    const game3Address = await factory.read.games([1n]);
     const game3 = await viem.getContractAt("KahootGame", game3Address);
 
     await game3.write.startNextQuestion({ account: profesor.account });
-    await game3.write.commitAnswer(generateHash(1, "s1", alumnoHonesto.account.address), { account: alumnoHonesto.account });
+    await game3.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
     await game3.write.closeQuestionAndStartReveal({ account: profesor.account });
-    await game3.write.revealAnswer(0n, 1, "s1", { account: alumnoHonesto.account });
+    await game3.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
     await game3.write.startNextQuestion({ account: profesor.account });
-    await game3.write.commitAnswer(generateHash(2, "s2", alumnoHonesto.account.address), { account: alumnoHonesto.account });
+    await game3.write.commitAnswer([generateHash(2, "s2", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
     await game3.write.closeQuestionAndStartReveal({ account: profesor.account });
-    await game3.write.revealAnswer(1n, 2, "s2", { account: alumnoHonesto.account });
+    await game3.write.revealAnswer([1n, 2, "s2"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
     await game3.write.startNextQuestion({ account: profesor.account });
-    await game3.write.commitAnswer(generateHash(1, "s3", alumnoHonesto.account.address), { account: alumnoHonesto.account });
+    await game3.write.commitAnswer([generateHash(1, "s3", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
     await game3.write.closeQuestionAndStartReveal({ account: profesor.account });
-    await game3.write.revealAnswer(2n, 1, "s3", { account: alumnoHonesto.account });
+    await game3.write.revealAnswer([2n, 1, "s3"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
-    expect(await game3.read.scores(alumnoHonesto.account.address)).to.equal(2n);
+    expect(await game3.read.scores([alumnoHonesto.account.address])).to.equal(2n);
     expect(await game3.read.isFinished()).to.be.true;
 
     await game3.write.claimDiploma({ account: alumnoHonesto.account });
