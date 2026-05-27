@@ -75,6 +75,7 @@ contract KahootGame {
     function commitAnswer(bytes32 _commitHash) external {
         uint256 currentQ = currentQuestionId;
         require(questions[currentQ].commitPhaseOpen, "Fase de commit cerrada");
+        require(_commitHash != bytes32(0), "Hash nulo");
         require(commits[currentQ][msg.sender] == bytes32(0), "Ya respondiste");
 
         commits[currentQ][msg.sender] = _commitHash;
