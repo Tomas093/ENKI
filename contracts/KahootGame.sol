@@ -4,6 +4,10 @@ pragma solidity ^0.8.20;
 import "./DiplomaNFT.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+interface IKahootFactory {
+    function recordDiplomaWin(address student) external;
+}
+
 /**
  * @title KahootGame
  * @notice Contrato de juego Kahoot on-chain con diploma NFT y pozo de premios (Prize Pool).
@@ -33,6 +37,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  */
 contract KahootGame is ReentrancyGuard {
     // ─── Datos del juego ───────────────────────────────────────────────────────
+    address public factory;
     address public professor;
     DiplomaNFT public diplomaContract;
 
@@ -90,6 +95,7 @@ contract KahootGame is ReentrancyGuard {
 
     // ─── Constructor ───────────────────────────────────────────────────────────
     constructor(
+        address _factory,
         address _professor,
         uint256 _passingScore,
         uint256 _totalQuestions,
@@ -103,6 +109,7 @@ contract KahootGame is ReentrancyGuard {
         require(_passingScore <= _totalQuestions, "Puntaje mayor al total");
         require(_correctAnswerCommits.length == _totalQuestions, "Respuestas no coinciden");
 
+        factory = _factory;
         professor = _professor;
         passingScore = _passingScore;
         totalQuestions = _totalQuestions;
@@ -328,6 +335,7 @@ contract KahootGame is ReentrancyGuard {
 
         hasClaimed[msg.sender] = true;
         diplomaContract.mintDiploma(msg.sender, diplomaTokenURI);
+        IKahootFactory(factory).recordDiplomaWin(msg.sender);
 
         emit DiplomaClaimed(msg.sender);
     }

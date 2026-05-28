@@ -46,7 +46,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const hashRespuesta1 = generateHash(1, profeSalt, profesor.account.address);
 
     await factory.write.createGame(
-      [1n, 1n, metadataURI, diplomaURI, [hashRespuesta1]],
+      [1n, 1n, metadataURI, diplomaURI, [hashRespuesta1], 0n],
       { account: profesor.account }
     );
 
@@ -55,6 +55,10 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
 
     const diplomaAddress = await game.read.diplomaContract();
     diplomaNFT = await viem.getContractAt("DiplomaNFT", diplomaAddress);
+
+    // Los jugadores se unen al juego (entryFee = 0)
+    await game.write.joinGame({ account: alumnoHonesto.account });
+    await game.write.joinGame({ account: alumnoTramposo.account });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -144,11 +148,12 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p3 = generateHash(2, profeSalt, profesor.account.address);
 
     await factory.write.createGame(
-      [2n, 3n, metadataURI, diplomaURI, [p1, p2, p3]], // CAMBIO
+      [2n, 3n, metadataURI, diplomaURI, [p1, p2, p3], 0n], // CAMBIO
       { account: profesor.account }
     );
     const game3Address = await factory.read.games([1n]);
     const game3 = await viem.getContractAt("KahootGame", game3Address);
+    await game3.write.joinGame({ account: alumnoHonesto.account });
 
     // Q1
     await game3.write.startNextQuestion({ account: profesor.account });
@@ -186,7 +191,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
   it("TEST 6: Factory revert si _totalQuestions == 0", async function () {
     await expectRevert(
       factory.write.createGame(
-        [1n, 0n, metadataURI, diplomaURI, []],
+        [1n, 0n, metadataURI, diplomaURI, [], 0n],
         { account: profesor.account }
       ),
       "Debe tener preguntas"
@@ -197,7 +202,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [0n, 1n, metadataURI, diplomaURI, [p1]], // CAMBIO
+        [0n, 1n, metadataURI, diplomaURI, [p1], 0n], // CAMBIO
         { account: profesor.account }
       ),
       "Puntaje invalido"
@@ -209,7 +214,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p2 = generateHash(2, profeSalt, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [5n, 2n, metadataURI, diplomaURI, [p1, p2]], // CAMBIO
+        [5n, 2n, metadataURI, diplomaURI, [p1, p2], 0n], // CAMBIO
         { account: profesor.account }
       ),
       "Puntaje mayor al total"
@@ -221,7 +226,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p2 = generateHash(2, profeSalt, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [2n, 3n, metadataURI, diplomaURI, [p1, p2]], // CAMBIO
+        [2n, 3n, metadataURI, diplomaURI, [p1, p2], 0n], // CAMBIO
         { account: profesor.account }
       ),
       "Respuestas no coinciden"
@@ -232,7 +237,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [1n, 1n, metadataURI, diplomaURI, [p1, p1, p1]], // CAMBIO
+        [1n, 1n, metadataURI, diplomaURI, [p1, p1, p1], 0n], // CAMBIO
         { account: profesor.account }
       ),
       "Respuestas no coinciden"
@@ -248,11 +253,12 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p2 = generateHash(2, profeSalt, profesor.account.address);
 
     await factory.write.createGame(
-      [2n, 2n, metadataURI, diplomaURI, [p1, p2]], // CAMBIO
+      [2n, 2n, metadataURI, diplomaURI, [p1, p2], 0n], // CAMBIO
       { account: profesor.account }
     );
     const gameAddr = await factory.read.games([1n]);
     const gameDesa = await viem.getContractAt("KahootGame", gameAddr);
+    await gameDesa.write.joinGame({ account: alumnoHonesto.account });
 
     // Q1
     await gameDesa.write.startNextQuestion({ account: profesor.account });
@@ -311,7 +317,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
   it("TEST 14: Profesor no puede abrir pregunta 2 si la pregunta 1 está en commit", async function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address);
     const p2 = generateHash(2, profeSalt, profesor.account.address);
-    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2]], { account: profesor.account });
+    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2], 0n], { account: profesor.account });
     const gameAddr = await factory.read.games([1n]);
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
 
@@ -319,16 +325,17 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
 
     await expectRevert(
       game2.write.advanceToNextQuestion({ account: profesor.account }),
-      "Primero abrir reveals"
+      "abrir los reveals"
     );
   });
 
   it("TEST 15: Profesor no puede abrir pregunta 2 si la pregunta 1 está en reveal", async function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address);
     const p2 = generateHash(2, profeSalt, profesor.account.address);
-    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2]], { account: profesor.account });
+    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2], 0n], { account: profesor.account });
     const gameAddr = await factory.read.games([1n]);
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
+    await game2.write.joinGame({ account: alumnoHonesto.account });
 
     await game2.write.startNextQuestion({ account: profesor.account });
     await game2.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
@@ -337,14 +344,14 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
 
     await expectRevert(
       game2.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account }), // CAMBIO
-      "No esta en commit"
+      "fase de commit"
     );
   });
 
   it("TEST 16: advanceToNextQuestion falla si la fase actual es commit (no reveal)", async function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address);
     const p2 = generateHash(2, profeSalt, profesor.account.address);
-    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2]], { account: profesor.account });
+    await factory.write.createGame([1n, 2n, metadataURI, diplomaURI, [p1, p2], 0n], { account: profesor.account });
     const gameAddr = await factory.read.games([1n]);
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
 
@@ -352,7 +359,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
 
     await expectRevert(
       game2.write.advanceToNextQuestion({ account: profesor.account }),
-      "Primero abrir reveals"
+      "abrir los reveals"
     );
   });
 
@@ -495,7 +502,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
   it("TEST 28: closeQuestionAndStartReveal falla si no hay commit phase abierta", async function () {
     await expectRevert(
       game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account }), // CAMBIO
-      "No esta en commit"
+      "fase de commit"
     );
   });
 
@@ -522,7 +529,7 @@ describe("Kahoot Web3 - Patrón Factory y Commit/Reveal Seguro", function () {
     const p1 = generateHash(1, profeSalt, profesor.account.address); // CAMBIO
     
     await factory.write.createGame(
-      [1n, 1n, metadataURI, diplomaURI, [p1]], // CAMBIO
+      [1n, 1n, metadataURI, diplomaURI, [p1], 0n], // CAMBIO
       { account: profesor.account }
     );
     
