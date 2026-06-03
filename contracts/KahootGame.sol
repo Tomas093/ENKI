@@ -111,7 +111,7 @@ contract KahootGame is ReentrancyGuard {
     }
 
     // ─── Unirse al juego ───────────────────────────────────────────────────────
-    function joinGame() external payable {
+function joinGame() external payable notCancelled {
         require(currentQuestionId == 0 && !listaDeRondas[0].commitPhaseOpen, "El juego ya comenzo o ya termino");
         require(!hasJoined[msg.sender], "Ya te uniste al juego");
         require(msg.value == entryFee, "Debes enviar exactamente el entryFee");
