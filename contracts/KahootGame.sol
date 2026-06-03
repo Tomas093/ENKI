@@ -248,43 +248,46 @@ contract KahootGame is ReentrancyGuard {
 
         prizesCalculated = true;
 
-        // Encontrar los 3 puntajes más altos distintos con jugadores (O(totalQuestions))
-        uint8 ranksFound = 0;
-        for (uint256 i = totalQuestions; ranksFound < 3; ) {
-            if (scoreFrequency[i] > 0) {
-                topScoreValues[ranksFound] = i;
-                topScoreCounts[ranksFound] = scoreFrequency[i];
-                ranksFound++;
-            }
-            if (i == 0) break;
-            i--;
-        }
-
         // Montos brutos por rango (con división entera)
         uint256 rank1Total = (prizePool * 60) / 100;
         uint256 rank2Total = (prizePool * 20) / 100;
         uint256 rank3Total = (prizePool * 10) / 100;
 
-        // El profesor empieza con 10% y acumula puestos vacantes + sobrantes de redondeo
+        uint256 slotsUsed      = 0;  // slots del top-3 ya consumidos por grupos anteriores
+        uint8   ranksFound     = 0;  // grupos con derecho a premio encontrados (máx 3)
         uint256 totalToPlayers = 0;
 
-        if (ranksFound >= 1) {
-            prizePerPlayerAtRank[0] = rank1Total / topScoreCounts[0];
-            totalToPlayers += prizePerPlayerAtRank[0] * topScoreCounts[0];
-        }
-        // Si ranksFound < 1, rank1Total queda sin asignar → va al profesor vía el cálculo final
+        // Recorre puntajes de mayor a menor hasta agotar los 3 slots premiados
+        for (uint256 s = totalQuestions; slotsUsed < 3; ) {
+            uint256 freq = scoreFrequency[s];
 
-        if (ranksFound >= 2) {
-            prizePerPlayerAtRank[1] = rank2Total / topScoreCounts[1];
-            totalToPlayers += prizePerPlayerAtRank[1] * topScoreCounts[1];
+            if (freq > 0) {
+                // Este grupo ocupa los slots [slotStart .. slotEnd]
+                uint256 slotStart = slotsUsed + 1;
+                uint256 slotEnd   = slotsUsed + freq;
+
+                // Acumular los % de los slots premiados que caen en [slotStart, slotEnd]
+                uint256 poolAcumulado = 0;
+                if (slotStart <= 1 && slotEnd >= 1) poolAcumulado += rank1Total;
+                if (slotStart <= 2 && slotEnd >= 2) poolAcumulado += rank2Total;
+                if (slotStart <= 3 && slotEnd >= 3) poolAcumulado += rank3Total;
+
+                if (poolAcumulado > 0) {
+                    topScoreValues[ranksFound]       = s;
+                    topScoreCounts[ranksFound]       = freq;
+                    prizePerPlayerAtRank[ranksFound] = poolAcumulado / freq;
+                    totalToPlayers += prizePerPlayerAtRank[ranksFound] * freq;
+                    ranksFound++;
+                }
+
+                slotsUsed += freq;
+            }
+
+            if (s == 0) break;
+            s--;
         }
 
-        if (ranksFound >= 3) {
-            prizePerPlayerAtRank[2] = rank3Total / topScoreCounts[2];
-            totalToPlayers += prizePerPlayerAtRank[2] * topScoreCounts[2];
-        }
-
-        // El profesor recibe todo lo restante: su 10% base + puestos vacantes + wei de redondeo
+        // El profesor recibe: 10 % base + slots vacantes + dust de divisiones enteras
         professorPrize = prizePool - totalToPlayers;
 
         emit PrizesCalculated(
