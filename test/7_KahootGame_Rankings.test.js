@@ -273,7 +273,7 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     expect(despues > antes).to.be.true;
   });
 
-  // ─── Nuevos tests: escenarios olímpicos ──────────────────────────────────────
+  // ─── Escenarios olímpicos ──────────────────────────────────────
 
   it("Empate en 2° puesto: 1 ganador limpio en 1°, 2 empatados acumulan rank2+rank3", async function () {
     // 3 jugadores, 2 preguntas:
