@@ -1,0 +1,232 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useNavigate } from "react-router";
+import { Loader2 } from "lucide-react";
+
+const QUESTION = {
+  number: 1,
+  total: 10,
+  text: "What is a Smart Contract?",
+  options: [
+    {
+      label: "A",
+      text: "A piece of code",
+      gradient: "linear-gradient(135deg, #FF3B5C 0%, #E21B3C 100%)",
+      border: "#9b0026",
+      glow: "rgba(226,27,60,0.45)",
+    },
+    {
+      label: "B",
+      text: "A legal document",
+      gradient: "linear-gradient(135deg, #3B82F6 0%, #1368CE 100%)",
+      border: "#0a4a99",
+      glow: "rgba(19,104,206,0.45)",
+    },
+    {
+      label: "C",
+      text: "A cryptocurrency",
+      gradient: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)",
+      border: "#9a5300",
+      glow: "rgba(217,119,6,0.45)",
+    },
+    {
+      label: "D",
+      text: "A hardware wallet",
+      gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)",
+      border: "#065f46",
+      glow: "rgba(5,150,105,0.45)",
+    },
+  ],
+};
+
+const TOTAL_TIME = 15;
+
+export const ActiveGameplay = () => {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (selected !== null || timeLeft <= 0) return;
+    const t = setInterval(() => setTimeLeft((n) => Math.max(0, n - 1)), 1000);
+    return () => clearInterval(t);
+  }, [selected, timeLeft]);
+
+  const handlePick = (idx: number) => {
+    if (selected !== null) return;
+    setSelected(idx);
+    setTimeout(() => navigate("/waiting"), 3000);
+  };
+
+  const timerUrgent = timeLeft <= 5;
+  const timerPct = (timeLeft / TOTAL_TIME) * 100;
+  const timerColor = timerUrgent ? "#EF4444" : "#7C3AED";
+  const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const ss = String(timeLeft % 60).padStart(2, "0");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex flex-col w-full gap-4"
+      style={{ height: "calc(100vh - 88px)" }}
+    >
+
+      {/* ── 1. Header: Timer + Question pill ─────────────────────────── */}
+      <div className="flex items-center justify-center gap-4 pt-2">
+
+        {/* Circular timer */}
+        <div className="relative flex items-center justify-center">
+          <svg width="72" height="72" className="-rotate-90">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(124,58,237,0.12)" strokeWidth="6" />
+            <motion.circle
+              cx="36" cy="36" r="30"
+              fill="none"
+              stroke={timerColor}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 30}
+              strokeDashoffset={2 * Math.PI * 30 * (1 - timerPct / 100)}
+              style={{ filter: `drop-shadow(0 0 6px ${timerColor})`, transition: "stroke 0.4s" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className="font-black tabular-nums"
+              style={{ fontSize: 16, color: timerColor, fontFamily: "'Nunito', sans-serif" }}
+            >
+              {mm}:{ss}
+            </span>
+          </div>
+        </div>
+
+        {/* Question pill */}
+        <div className="px-5 py-2 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
+          <span className="font-black text-slate-600 text-sm">
+            Question {QUESTION.number}/{QUESTION.total}
+          </span>
+        </div>
+      </div>
+
+      {/* ── 2. Question card ──────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="bg-white rounded-[28px] border-[3px] border-slate-200 shadow-md flex items-center justify-center px-8 py-6"
+        style={{ minHeight: 120 }}
+      >
+        <p
+          className="font-black text-slate-800 text-center leading-snug"
+          style={{ fontSize: "clamp(20px, 3vw, 32px)", fontFamily: "'Nunito', sans-serif" }}
+        >
+          {QUESTION.text}
+        </p>
+      </motion.div>
+
+      {/* ── 3 & 4. 2×2 answer grid ───────────────────────────────────── */}
+      <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
+        {QUESTION.options.map((opt, idx) => {
+          const isSelected = selected === idx;
+          const isDimmed = selected !== null && !isSelected;
+          return (
+            <motion.button
+              key={idx}
+              onClick={() => handlePick(idx)}
+              disabled={selected !== null}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: isDimmed ? 0.5 : 1, scale: isSelected ? 0.97 : 1 }}
+              transition={{ delay: 0.12 + idx * 0.06, type: "spring", stiffness: 300, damping: 22 }}
+              className="flex flex-col items-center justify-center gap-3 relative overflow-hidden"
+              style={{
+                background: opt.gradient,
+                borderRadius: 24,
+                borderBottom: `6px solid ${opt.border}`,
+                cursor: selected !== null ? "default" : "pointer",
+                boxShadow: isSelected ? `0 0 32px ${opt.glow}` : `0 4px 20px ${opt.glow}`,
+              }}
+            >
+              {/* Glassy shimmer overlay */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%)",
+                  borderRadius: 24,
+                }}
+              />
+
+              {/* Label badge */}
+              <div
+                className="flex items-center justify-center font-black relative z-10"
+                style={{
+                  width: 48, height: 48,
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.25)",
+                  backdropFilter: "blur(4px)",
+                  color: "white",
+                  fontSize: 22,
+                  fontFamily: "'Nunito', sans-serif",
+                }}
+              >
+                {opt.label}
+              </div>
+
+              {/* Answer text */}
+              <span
+                className="text-white font-black text-center leading-snug px-4 relative z-10"
+                style={{
+                  fontSize: "clamp(14px, 2vw, 22px)",
+                  fontFamily: "'Nunito', sans-serif",
+                  textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                  maxWidth: "90%",
+                }}
+              >
+                {opt.text}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* ── 5. Footer ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-center pb-1">
+        <span className="text-slate-400 font-bold text-xs">Player: 0xAbc...def</span>
+      </div>
+
+      {/* ── Web3 signing overlay ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {selected !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white p-8 rounded-[32px] max-w-md w-full text-center shadow-2xl border-4 border-slate-200 flex flex-col items-center"
+            >
+              <div className="w-20 h-20 bg-purple-100 rounded-[20px] flex items-center justify-center mb-5 border-4 border-purple-200">
+                <Loader2 size={40} className="text-purple-600 animate-spin" strokeWidth={3} />
+              </div>
+              <h2 className="font-black text-slate-800 mb-2" style={{ fontSize: 26, fontFamily: "'Nunito', sans-serif" }}>
+                Locking answer on-chain...
+              </h2>
+              <p className="text-slate-500 font-bold mb-5" style={{ fontSize: 17 }}>
+                Please sign in your wallet.
+              </p>
+              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 3, ease: "linear" }}
+                  className="h-full bg-purple-500 rounded-full"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
