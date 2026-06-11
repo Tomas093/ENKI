@@ -1,23 +1,66 @@
 "use client";
 import { motion } from "motion/react";
-import { Hexagon, Triangle, Circle, Square, Star, Shield, Zap, Diamond, Cloud, Heart } from "lucide-react";
-
-// Mock data
-const RANKINGS = [
-  { rank: 1, address: "0x71C...B29", certs: 42, color: "bg-amber-400", icon: Star },
-  { rank: 2, address: "0x4A2...1F8", certs: 38, color: "bg-slate-400", icon: Hexagon },
-  { rank: 3, address: "0x9B1...C44", certs: 35, color: "bg-orange-400", icon: Triangle },
-  { rank: 4, address: "0x8F5...E21", certs: 29, color: "bg-emerald-400", icon: Circle },
-  { rank: 5, address: "0x3D8...A99", certs: 24, color: "bg-blue-400", icon: Square },
-  { rank: 6, address: "0x2C4...D77", certs: 21, color: "bg-pink-400", icon: Heart },
-  { rank: 7, address: "0x5E9...F11", certs: 18, color: "bg-indigo-400", icon: Shield },
-  { rank: 8, address: "0x1A7...B33", certs: 15, color: "bg-violet-400", icon: Zap },
-  { rank: 9, address: "0x6B2...C88", certs: 12, color: "bg-rose-400", icon: Diamond },
-  { rank: 10, address: "0x9D3...E55", certs: 10, color: "bg-cyan-400", icon: Cloud },
-];
+import { Hexagon, Triangle, Circle, Square, Star, Shield, Zap, Diamond, Cloud, Heart, Loader2 } from "lucide-react";
+import { useReadContracts } from "wagmi";
+import KahootFactoryABI from "../../abi/KahootFactory.json";
 
 export default function GlobalRanking() {
-  const top3 = [RANKINGS[1], RANKINGS[0], RANKINGS[2]]; // Ordered for Podium: 2nd, 1st, 3rd
+  const factoryContract = {
+    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+    abi: KahootFactoryABI.abi,
+  };
+
+  const calls = [];
+  for (let i = 0; i < 10; i++) {
+    calls.push({ ...factoryContract, functionName: 'topJugadores', args: [i] });
+  }
+  for (let i = 0; i < 10; i++) {
+    calls.push({ ...factoryContract, functionName: 'topBalances', args: [i] });
+  }
+
+  const { data, isLoading } = useReadContracts({
+    contracts: calls as any,
+  });
+
+  const RANKINGS: any[] = [];
+  const COLORS = ["bg-amber-400", "bg-slate-400", "bg-orange-400", "bg-emerald-400", "bg-blue-400", "bg-pink-400", "bg-indigo-400", "bg-violet-400", "bg-rose-400", "bg-cyan-400"];
+  const ICONS = [Star, Hexagon, Triangle, Circle, Square, Heart, Shield, Zap, Diamond, Cloud];
+
+  if (data && data.length === 20) {
+    for (let i = 0; i < 10; i++) {
+      const address = data[i].result as `0x${string}` | undefined;
+      const certs = data[i + 10].result as bigint | undefined;
+      
+      if (address && address !== "0x0000000000000000000000000000000000000000" && certs && certs > BigInt(0)) {
+        RANKINGS.push({
+          rank: RANKINGS.length + 1,
+          address: `${address.slice(0,6)}...${address.slice(-4)}`,
+          certs: Number(certs),
+          color: COLORS[RANKINGS.length % COLORS.length],
+          icon: ICONS[RANKINGS.length % ICONS.length]
+        });
+      }
+    }
+  }
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-purple-600" size={48} /></div>;
+  }
+
+  if (RANKINGS.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h1 className="text-4xl font-black text-slate-300">No Diplomas Yet!</h1>
+        <p className="text-slate-400 mt-2 font-bold">Be the first one to earn a certificate.</p>
+      </div>
+    );
+  }
+
+  const podiumMid = RANKINGS.length > 0 ? RANKINGS[0] : null;
+  const podiumTop = RANKINGS.length > 1 ? RANKINGS[1] : null;
+  const podiumBot = RANKINGS.length > 2 ? RANKINGS[2] : null;
+
+  const top3 = [podiumTop, podiumMid, podiumBot].filter(Boolean);
   const list = RANKINGS.slice(3);
 
   return (

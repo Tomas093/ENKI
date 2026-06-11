@@ -1,30 +1,105 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Hourglass, CheckCircle2, XCircle } from "lucide-react";
+import { Hourglass, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useWatchContractEvent, useWriteContract, usePublicClient } from "wagmi";
+import KahootGameABI from "../../abi/KahootGame.json";
 
 export default function WaitingRoom() {
   const [revealed, setRevealed] = useState(false);
-  const [isCorrect] = useState(true);
+  const [isCorrect, setIsCorrect] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const gameAddress = searchParams.get("game");
+
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   useEffect(() => {
-    // Show emergency banner after 3 seconds (demo)
-    const bannerTimer = setTimeout(() => setShowBanner(true), 3000);
+    const bannerTimer = setTimeout(() => setShowBanner(true), 15000);
+    return () => clearTimeout(bannerTimer);
+  }, []);
 
-    // Simulate professor revealing answer after 8 seconds
-    const revealTimer = setTimeout(() => {
-      setRevealed(true);
-      setTimeout(() => router.push("/leaderboard"), 4000);
-    }, 8000);
+  useWatchContractEvent({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    eventName: 'RevealPhaseStarted',
+    async onLogs(logs) {
+      if (logs.length > 0 && !isRevealing && !revealed) {
+        setIsRevealing(true);
+        const log = logs[0] as any;
+        const qId = Number(log.args.questionId);
 
-    return () => {
-      clearTimeout(bannerTimer);
-      clearTimeout(revealTimer);
-    };
-  }, [router]);
+        const myIdx = Number(sessionStorage.getItem("my_answer_idx"));
+        const mySalt = sessionStorage.getItem("my_answer_salt");
+
+        if (isNaN(myIdx) || !mySalt) return;
+
+        try {
+          await writeContractAsync({
+            address: gameAddress as `0x${string}`,
+            abi: KahootGameABI.abi,
+            functionName: 'revealAnswer',
+            args: [qId, myIdx, mySalt],
+          });
+          
+          if (publicClient) {
+            const correctAns = await publicClient.readContract({
+              address: gameAddress as `0x${string}`,
+              abi: KahootGameABI.abi,
+              functionName: 'revealedAnswers',
+              args: [BigInt(qId)]
+            });
+            setIsCorrect(Number(correctAns) === myIdx);
+          } else {
+            setIsCorrect(true);
+          }
+
+          setRevealed(true);
+        } catch (e) {
+          console.error("Auto-reveal failed", e);
+          setIsCorrect(false);
+          setRevealed(true);
+        }
+      }
+    },
+  });
+
+  // Listen for Next Question
+  useWatchContractEvent({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    eventName: 'QuestionRevealed',
+    onLogs(logs) {
+      if (logs.length > 0 && revealed) {
+        const log = logs[0] as any;
+        const args = log.args;
+        const questionData = {
+          id: Number(args.questionId),
+          question: args.enunciado,
+          options: args.opciones,
+        };
+        sessionStorage.setItem("current_question", JSON.stringify(questionData));
+        router.push(`/gameplay?game=${gameAddress}`);
+      }
+    },
+  });
+
+  // Listen for Game End
+  useWatchContractEvent({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    eventName: 'PrizesCalculated',
+    onLogs() {
+      if (revealed) {
+        router.push(`/leaderboard?game=${gameAddress}`);
+      }
+    },
+  });
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center w-full z-10 relative">
@@ -121,13 +196,15 @@ export default function WaitingRoom() {
               className="font-extrabold text-slate-800 mb-3 tracking-tight"
               style={{ fontSize: "clamp(22px, 4vw, 38px)", fontFamily: "'Nunito', sans-serif" }}
             >
-              Answer Locked Securely!
+              {isRevealing ? "Revealing on-chain..." : "Answer Locked Securely!"}
             </h1>
             <p
               className="text-slate-500 font-bold leading-relaxed"
               style={{ fontSize: "clamp(15px, 2vw, 20px)", fontFamily: "'Nunito', sans-serif", maxWidth: 380 }}
             >
-              Waiting for the Professor to reveal the correct answer on-chain...
+              {isRevealing 
+                ? "Submitting your decryption key to the Smart Contract..."
+                : "Waiting for the Professor to close the question on-chain..."}
             </p>
 
             {/* Pulsing dots */}
@@ -181,10 +258,13 @@ export default function WaitingRoom() {
               className="bg-black/20 px-8 py-4 rounded-[24px] backdrop-blur-sm"
             >
               <p
-                className="font-extrabold text-white"
+                className="font-extrabold text-white mb-2"
                 style={{ fontSize: 28, fontFamily: "'Nunito', sans-serif" }}
               >
-                {isCorrect ? "+850 Points" : "+0 Points"}
+                {isCorrect ? "+1 Point" : "+0 Points"}
+              </p>
+              <p className="font-bold text-white/80 text-sm tracking-wide">
+                Waiting for Professor to continue...
               </p>
             </motion.div>
           </motion.div>

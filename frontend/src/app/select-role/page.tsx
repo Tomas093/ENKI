@@ -131,9 +131,9 @@ const DESTINATIONS = [
   {
     id: "student",
     emoji: "🎓",
-    label: "Join Game",
-    subtitle: "Enter a PIN to play and win ETH.",
-    path: "/staking",
+    label: "Student Portal",
+    subtitle: "Join games, view profile & rankings.",
+    path: "/student",
     accent: "#3B82F6",
     bg: "bg-blue-50",
     border: "border-blue-200",
@@ -145,9 +145,9 @@ const DESTINATIONS = [
   {
     id: "teacher",
     emoji: "👨‍🏫",
-    label: "Host Dashboard",
-    subtitle: "Create and manage live trivia sessions.",
-    path: "/host/dashboard",
+    label: "Teacher Portal",
+    subtitle: "Host games & view rankings.",
+    path: "/teacher",
     accent: "#7C3AED",
     bg: "bg-purple-50",
     border: "border-purple-200",
@@ -155,21 +155,7 @@ const DESTINATIONS = [
     hoverBg: "hover:bg-purple-100",
     iconBg: "bg-purple-600",
     badgeText: "text-purple-600",
-  },
-  {
-    id: "ranking",
-    emoji: "🏆",
-    label: "Global Ranking",
-    subtitle: "View the top NFT certificate holders.",
-    path: "/global-ranking",
-    accent: "#F59E0B",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    hoverBorder: "hover:border-amber-400",
-    hoverBg: "hover:bg-amber-100",
-    iconBg: "bg-amber-500",
-    badgeText: "text-amber-600",
-  },
+  }
 ];
 
 const MOCK_ADDRESS = "0x7a3B...1234";

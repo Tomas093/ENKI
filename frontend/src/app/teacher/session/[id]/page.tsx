@@ -1,46 +1,13 @@
 "use client";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Download, CheckCircle, XCircle, Trophy } from "lucide-react";
+import { Download, CheckCircle, XCircle, Trophy, Wallet, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { useWriteContract, usePublicClient, useReadContract } from "wagmi";
+import KahootGameABI from "../../../../abi/KahootGame.json";
 
-const SESSION_DATA: Record<string, { topic: string; players: number; started: string }> = {
-  "ENK-4821": { topic: "Blockchain Basics", players: 14, started: "2 min ago" },
-  "ENK-3310": { topic: "DeFi Fundamentals", players: 22, started: "Yesterday" },
-  "ENK-7754": { topic: "NFT & Digital Ownership", players: 9, started: "3 days ago" },
-};
-
-const MOCK_PARTICIPANTS = [
-  { wallet: "0x3fA9...B21C", score: 10, claimed: true },
-  { wallet: "0x8cD1...44Ee", score: 9, claimed: true },
-  { wallet: "0x1b2F...9901", score: 9, claimed: false },
-  { wallet: "0xAe77...CC34", score: 8, claimed: true },
-  { wallet: "0x55D2...1F0A", score: 7, claimed: true },
-  { wallet: "0x9012...B3D5", score: 7, claimed: false },
-  { wallet: "0x24aC...7E56", score: 6, claimed: true },
-  { wallet: "0xF301...2AB9", score: 5, claimed: false },
-  { wallet: "0x6e89...DD12", score: 5, claimed: false },
-  { wallet: "0x7714...C005", score: 4, claimed: false },
-  { wallet: "0xBB21...9F3E", score: 3, claimed: false },
-  { wallet: "0x0045...1122", score: 2, claimed: false },
-];
-
-const PASS_THRESHOLD = 6;
-
-const PIE_DATA = [
-  { name: "Passed", value: MOCK_PARTICIPANTS.filter(p => p.score >= PASS_THRESHOLD).length },
-  { name: "Failed", value: MOCK_PARTICIPANTS.filter(p => p.score < PASS_THRESHOLD).length },
-];
 const PIE_COLORS = ["#7c3aed", "#e2e8f0"];
-
-const scoreCount: Record<number, number> = {};
-MOCK_PARTICIPANTS.forEach(p => {
-  scoreCount[p.score] = (scoreCount[p.score] || 0) + 1;
-});
-const BAR_DATA = Array.from({ length: 11 }, (_, i) => ({ score: i, students: scoreCount[i] || 0 }));
-
-const PODIUM = MOCK_PARTICIPANTS.slice(0, 3);
-
 const medalColors = ["#F59E0B", "#94A3B8", "#D97706"];
 const medalLabels = ["🥇", "🥈", "🥉"];
 const podiumOrder = [1, 0, 2]; // silver, gold, bronze visual order
@@ -48,7 +15,102 @@ const podiumOrder = [1, 0, 2]; // silver, gold, bronze visual order
 export default function SessionDetails() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const session = SESSION_DATA[id ?? ""] ?? { topic: "Unknown Session", players: 12, started: "N/A" };
+  const { writeContractAsync, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
+
+  const { data: nameData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'gameName' });
+  const { data: playersData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalPlayers' });
+  const { data: passingScoreData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'passingScore' });
+  const { data: totalQuestionsData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' });
+
+  const PASS_THRESHOLD = Number(passingScoreData) || 1;
+  const TOTAL_QUESTIONS = Number(totalQuestionsData) || 1;
+
+  const session = { 
+    topic: nameData as string || "Loading...", 
+    players: Number(playersData) || 0, 
+    started: "Ended" 
+  };
+
+  const [participants, setParticipants] = useState<{wallet: string, score: number, claimed: boolean}[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    if (!publicClient || !id) return;
+    const fetchStats = async () => {
+      try {
+        const logs = await publicClient.getContractEvents({
+          address: id as `0x${string}`,
+          abi: KahootGameABI.abi,
+          eventName: 'PlayerJoined',
+          fromBlock: 0n,
+          toBlock: 'latest'
+        });
+        
+        const wallets = Array.from(new Set(logs.map(l => (l.args as any).player as `0x${string}`)));
+        
+        const scorePromises = wallets.map(wallet => 
+          publicClient.readContract({
+            address: id as `0x${string}`,
+            abi: KahootGameABI.abi,
+            functionName: 'scores',
+            args: [wallet]
+          })
+        );
+        const claimPromises = wallets.map(wallet => 
+          publicClient.readContract({
+            address: id as `0x${string}`,
+            abi: KahootGameABI.abi,
+            functionName: 'hasPrizeClaimed',
+            args: [wallet]
+          })
+        );
+
+        const scores = await Promise.all(scorePromises);
+        const claims = await Promise.all(claimPromises);
+
+        const p = wallets.map((w, i) => ({
+          wallet: `${w.slice(0,6)}...${w.slice(-4)}`,
+          score: Number(scores[i]),
+          claimed: Boolean(claims[i])
+        })).sort((a, b) => b.score - a.score);
+
+        setParticipants(p);
+      } catch (e) {
+        console.error("Failed to fetch stats", e);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, [publicClient, id]);
+
+  const PIE_DATA = [
+    { name: "Passed", value: participants.filter(p => p.score >= PASS_THRESHOLD).length },
+    { name: "Failed", value: participants.filter(p => p.score < PASS_THRESHOLD).length },
+  ];
+
+  const scoreCount: Record<number, number> = {};
+  participants.forEach(p => {
+    scoreCount[p.score] = (scoreCount[p.score] || 0) + 1;
+  });
+  const BAR_DATA = Array.from({ length: TOTAL_QUESTIONS + 1 }, (_, i) => ({ score: i, students: scoreCount[i] || 0 }));
+
+  const PODIUM = participants.slice(0, 3);
+
+  const handleClaimEarnings = async () => {
+    try {
+      await writeContractAsync({
+        address: id as `0x${string}`,
+        abi: KahootGameABI.abi,
+        functionName: 'claimPrize'
+      });
+      alert("Earnings claimed successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to claim earnings. They might already be claimed.");
+    }
+  };
 
   return (
     <div className="flex flex-col w-full max-w-5xl mx-auto pt-8 pb-20 gap-8 relative z-10">
@@ -59,10 +121,20 @@ export default function SessionDetails() {
           <h1 className="font-black text-slate-800 text-4xl tracking-tight">Session Results</h1>
           <p className="text-slate-400 font-semibold mt-1">{session.topic} · {id} · {session.players} players</p>
         </div>
-        <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-[16px] shadow-lg shadow-purple-200 transition-all hover:-translate-y-0.5">
-          <Download size={18} />
-          Export Data
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={handleClaimEarnings}
+            disabled={isPending}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black px-6 py-3 rounded-[16px] shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="animate-spin" size={18} /> : <Wallet size={18} />}
+            Claim Earnings
+          </button>
+          <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-[16px] shadow-lg shadow-purple-200 transition-all hover:-translate-y-0.5">
+            <Download size={18} />
+            Export Data
+          </button>
+        </div>
       </motion.div>
 
       {/* 2. Podium */}
@@ -78,6 +150,8 @@ export default function SessionDetails() {
         <div className="flex items-end justify-center gap-4 md:gap-8">
           {podiumOrder.map((rank) => {
             const player = PODIUM[rank];
+            if (!player) return <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]"></div>;
+
             const heights = ["h-28", "h-36", "h-24"];
             const bgColors = [
               "bg-gradient-to-b from-amber-50 to-amber-100 border-amber-300",
@@ -88,7 +162,7 @@ export default function SessionDetails() {
               <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]">
                 <div className="text-4xl">{medalLabels[rank]}</div>
                 <div className="font-black text-slate-800 text-sm text-center">{player.wallet}</div>
-                <div className="font-black text-2xl" style={{ color: medalColors[rank] }}>{player.score}/10</div>
+                <div className="font-black text-2xl" style={{ color: medalColors[rank] }}>{player.score}/{TOTAL_QUESTIONS}</div>
                 <div
                   className={`w-full rounded-t-[16px] border-[3px] flex items-end justify-center pb-3 ${heights[rank]} ${bgColors[rank]}`}
                 >
@@ -110,7 +184,7 @@ export default function SessionDetails() {
         {/* Card A — Pass Rate Donut */}
         <div className="bg-white rounded-[24px] border-[3px] border-slate-100 shadow-sm p-6">
           <h3 className="font-black text-slate-800 text-lg mb-1">Pass Rate</h3>
-          <p className="text-slate-400 font-semibold text-sm mb-4">Pass threshold: {PASS_THRESHOLD}/10</p>
+          <p className="text-slate-400 font-semibold text-sm mb-4">Pass threshold: {PASS_THRESHOLD}/{TOTAL_QUESTIONS}</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
@@ -130,7 +204,8 @@ export default function SessionDetails() {
               <Legend
                 formatter={(value, entry) => {
                   const item = PIE_DATA.find(d => d.name === value);
-                  const pct = item ? Math.round((item.value / MOCK_PARTICIPANTS.length) * 100) : 0;
+                  const total = participants.length || 1;
+                  const pct = item ? Math.round((item.value / total) * 100) : 0;
                   return <span className="font-bold text-slate-600">{value} — {pct}%</span>;
                 }}
               />
@@ -163,7 +238,7 @@ export default function SessionDetails() {
       >
         <div className="px-6 py-5 border-b-2 border-slate-100 flex items-center justify-between">
           <h2 className="font-black text-slate-800 text-xl">Full Leaderboard</h2>
-          <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1 rounded-full">{MOCK_PARTICIPANTS.length} participants</span>
+          <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1 rounded-full">{participants.length} participants</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -177,7 +252,7 @@ export default function SessionDetails() {
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-slate-50">
-              {MOCK_PARTICIPANTS.map((p, i) => (
+              {participants.map((p, i) => (
                 <tr key={i} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-black text-slate-400 text-sm">{i + 1}</td>
                   <td className="px-6 py-4 font-bold text-slate-700 font-mono text-sm">{p.wallet}</td>

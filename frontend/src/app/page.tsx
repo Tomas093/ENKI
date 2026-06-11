@@ -58,12 +58,23 @@ const WALLETS = [
   { id: "coinbase",      label: "Coinbase Wallet", Icon: CoinbaseIcon },
 ];
 
+import { useConnect, useAccount } from 'wagmi';
+import { useEffect } from 'react';
+
 const WalletScreen = ({ onConnect }: { onConnect: () => void }) => {
-  const [loading, setLoading] = useState<string | null>(null);
+  const { connectors, connect, isPending } = useConnect();
+  const { isConnected } = useAccount();
+
+  useEffect(() => {
+    if (isConnected) {
+      onConnect();
+    }
+  }, [isConnected, onConnect]);
 
   const handleConnect = (id: string) => {
-    setLoading(id);
-    setTimeout(onConnect, 1800);
+    if (connectors.length > 0) {
+      connect({ connector: connectors[0] });
+    }
   };
 
   return (
@@ -91,23 +102,22 @@ const WalletScreen = ({ onConnect }: { onConnect: () => void }) => {
           {/* Wallet rows */}
           <div className="flex flex-col gap-3">
             {WALLETS.map(({ id, label, Icon }) => {
-              const isLoading = loading === id;
               return (
                 <button
                   key={id}
-                  onClick={() => !loading && handleConnect(id)}
-                  disabled={!!loading}
+                  onClick={() => handleConnect(id)}
+                  disabled={isPending}
                   className="flex items-center gap-4 w-full px-4 py-3.5 rounded-[12px] border-2 border-[#E2E8F0] bg-white hover:border-purple-300 hover:bg-purple-50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 group cursor-pointer"
                 >
                   <div className="shrink-0">
-                    {isLoading ? (
+                    {isPending ? (
                       <div className="w-7 h-7 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
                     ) : (
                       <Icon />
                     )}
                   </div>
                   <span className="flex-1 text-left font-bold text-slate-700 text-base">
-                    {isLoading ? "Connecting…" : label}
+                    {isPending ? "Connecting…" : label}
                   </span>
                   <ChevronRight size={18} className="text-slate-300 group-hover:text-purple-400 transition-colors" />
                 </button>

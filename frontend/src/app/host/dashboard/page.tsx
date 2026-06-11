@@ -4,22 +4,69 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Plus, RotateCcw, Users, Copy, Trash2 } from "lucide-react";
 
-const MOCK_SESSIONS = [
-  { id: "ENK-4821", topic: "Blockchain Basics", players: 14, status: "live", started: "2 min ago" },
-  { id: "ENK-3310", topic: "DeFi Fundamentals", players: 22, status: "ended", started: "Yesterday" },
-  { id: "ENK-7754", topic: "NFT & Digital Ownership", players: 9, status: "ended", started: "3 days ago" },
-];
+import { useAccount, useReadContract } from "wagmi";
+import KahootFactoryABI from "../../../abi/KahootFactory.json";
+import KahootGameABI from "../../../abi/KahootGame.json";
 
+function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
+  const router = useRouter();
+  const [copied, setCopied] = useState<boolean>(false);
+
+  const { data: nameData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'gameName' });
+  const { data: playersData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'totalPlayers' });
+  const { data: finishedData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'isFinished' });
+
+  const name = nameData as string || "Loading...";
+  const players = Number(playersData) || 0;
+  const isFinished = finishedData as boolean;
+
+  const handleCopy = (e: any) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(gameAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      onClick={() => router.push(`/teacher/session/${gameAddress}`)}
+      className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-3 h-3 rounded-full shrink-0 ${!isFinished ? "bg-emerald-400 shadow-md shadow-emerald-200 animate-pulse" : "bg-slate-300"}`} />
+        <div>
+          <div className="font-black text-slate-800 text-base">{name}</div>
+          <div className="text-slate-400 font-semibold text-sm flex items-center gap-2 mt-0.5">
+            <Users size={13} />
+            {players} players · {isFinished ? "Ended" : "Live"}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+        <button onClick={handleCopy} className="flex items-center gap-1.5 bg-slate-100 hover:bg-purple-100 text-slate-600 hover:text-purple-700 font-black text-sm px-3 py-1.5 rounded-[10px] transition-colors cursor-pointer">
+          <Copy size={13} />
+          {copied ? "Copied!" : `${gameAddress.slice(0, 6)}...${gameAddress.slice(-4)}`}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function TeacherDashboard() {
   const router = useRouter();
-  const [copied, setCopied] = useState<string | null>(null);
+  const { address } = useAccount();
 
-  const handleCopy = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopied(id);
-    setTimeout(() => setCopied(null), 1800);
-  };
+  const { data: kahoots } = useReadContract({
+    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+    abi: KahootFactoryABI.abi,
+    functionName: 'getKahootsDeProfesor',
+    args: address ? [address] : undefined,
+  });
+
+  const gameAddresses = (kahoots as `0x${string}`[]) || [];
+
 
   return (
     <div className="flex flex-col w-full max-w-5xl mx-auto pt-8 pb-20 gap-8 relative z-10">
@@ -48,54 +95,17 @@ export default function TeacherDashboard() {
       >
         <div className="px-6 py-5 border-b-2 border-slate-100 flex items-center justify-between">
           <h2 className="font-black text-slate-800 text-xl">Your Sessions</h2>
-          <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1 rounded-full">{MOCK_SESSIONS.length} total</span>
+          <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1 rounded-full">{gameAddresses.length} total</span>
         </div>
 
         <div className="divide-y-2 divide-slate-50">
-          {MOCK_SESSIONS.map((session, i) => (
-            <motion.div
-              key={session.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 + i * 0.07 }}
-              onClick={() => router.push(`/teacher/session/${session.id}`)}
-              className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-4">
-                {/* Status dot */}
-                <div className={`w-3 h-3 rounded-full shrink-0 ${session.status === "live" ? "bg-emerald-400 shadow-md shadow-emerald-200 animate-pulse" : "bg-slate-300"}`} />
-
-                <div>
-                  <div className="font-black text-slate-800 text-base">{session.topic}</div>
-                  <div className="text-slate-400 font-semibold text-sm flex items-center gap-2 mt-0.5">
-                    <Users size={13} />
-                    {session.players} players · {session.started}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                {/* PIN badge */}
-                <button
-                  onClick={() => handleCopy(session.id)}
-                  className="flex items-center gap-1.5 bg-slate-100 hover:bg-purple-100 text-slate-600 hover:text-purple-700 font-black text-sm px-3 py-1.5 rounded-[10px] transition-colors cursor-pointer"
-                >
-                  <Copy size={13} />
-                  {copied === session.id ? "Copied!" : session.id}
-                </button>
-
-                <button className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 font-black text-sm px-4 py-1.5 rounded-[10px] transition-colors cursor-pointer shadow-sm">
-                  <RotateCcw size={13} />
-                  Repetir
-                </button>
-                {session.status !== "live" && (
-                  <button className="flex items-center gap-1.5 bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-500 font-bold text-sm px-3 py-1.5 rounded-[10px] transition-colors cursor-pointer">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+          {gameAddresses.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 font-bold">No sessions yet. Create one!</div>
+          ) : (
+            gameAddresses.slice().reverse().map((addr, i) => (
+              <SessionRow key={addr} gameAddress={addr} />
+            ))
+          )}
         </div>
       </motion.div>
 

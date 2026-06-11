@@ -1,8 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { useWriteContract, useAccount, useWaitForTransactionReceipt } from "wagmi";
+import { encodePacked, keccak256, parseEther } from "viem";
+import KahootFactoryABI from "../../../abi/KahootFactory.json";
 
 type Answer = { text: string; correct: boolean };
 type Question = { id: number; question: string; answers: Answer[]; timeLimit: number };
@@ -28,11 +31,77 @@ const ANSWER_COLORS = [
 
 export default function CreateSession() {
   const router = useRouter();
+  const { address } = useAccount();
+  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+
   const [title, setTitle] = useState("");
   const [stakeAmount, setStakeAmount] = useState("0.01");
+  const [passingScore, setPassingScore] = useState("1");
   const [questions, setQuestions] = useState<Question[]>([makeQuestion(1)]);
   const [expanded, setExpanded] = useState<number>(1);
   const [nextId, setNextId] = useState(2);
+
+  useEffect(() => {
+    if (isConfirmed) {
+      router.push(`/teacher/lobby?title=${encodeURIComponent(title)}`);
+    }
+  }, [isConfirmed, router, title]);
+
+  const handleLaunch = () => {
+    if (!address) return alert("Connect wallet first!");
+
+    const rondas = questions.map((q) => {
+      const saltProfesor = "secretSalt123" + q.id; 
+      const correctOptionIndex = q.answers.findIndex((a) => a.correct);
+
+      const hashVerificacionPregunta = keccak256(
+        encodePacked(
+          ['string', 'string', 'string', 'string', 'string', 'string'],
+          [q.question, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltProfesor]
+        )
+      );
+
+      const hashRespuestaCorrecta = keccak256(
+        encodePacked(
+          ['uint8', 'string', 'address'],
+          [correctOptionIndex, saltProfesor, address]
+        )
+      );
+
+      return {
+        hashVerificacionPregunta,
+        hashRespuestaCorrecta,
+        commitPhaseOpen: false,
+        revealPhaseOpen: false,
+      };
+    });
+
+    const gameData = {
+      title,
+      stakeAmount,
+      questions: questions.map(q => ({
+        ...q,
+        saltProfesor: "secretSalt123" + q.id
+      }))
+    };
+    localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
+
+    writeContract({
+      address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+      abi: KahootFactoryABI.abi,
+      functionName: 'createGame',
+      args: [
+        title,
+        Number(passingScore) || 1,
+        questions.length,
+        "ipfs://dummy",
+        rondas,
+        parseEther(stakeAmount)
+      ],
+      value: BigInt(0)
+    });
+  };
 
   const addQuestion = () => {
     const q = makeQuestion(nextId);
@@ -57,7 +126,7 @@ export default function CreateSession() {
         if (q.id !== qId) return q;
         const answers = q.answers.map((a, i) => {
           if (field === "correct") return { ...a, correct: i === idx };
-          return i === idx ? { ...a, [field]: value } : a;
+          return i === idx ? { ...a, [field]: value as string } : a;
         });
         return { ...q, answers };
       })
@@ -97,16 +166,29 @@ export default function CreateSession() {
             className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 placeholder:text-slate-300 outline-none transition-colors"
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="font-black text-slate-600 text-sm">Stake per player (ETH)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.001"
-            value={stakeAmount}
-            onChange={(e) => setStakeAmount(e.target.value)}
-            className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
-          />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label className="font-black text-slate-600 text-sm">Stake per player (ETH)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.001"
+              value={stakeAmount}
+              onChange={(e) => setStakeAmount(e.target.value)}
+              className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label className="font-black text-slate-600 text-sm">Correct answers to earn Diploma</label>
+            <input
+              type="number"
+              min="1"
+              max={questions.length}
+              value={passingScore}
+              onChange={(e) => setPassingScore(e.target.value)}
+              className="w-full bg-slate-50 border-2 border-slate-200 focus:border-emerald-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
+            />
+          </div>
         </div>
       </motion.div>
 
@@ -246,11 +328,11 @@ export default function CreateSession() {
         className="flex justify-end"
       >
         <button
-          disabled={!title.trim() || questions.some((q) => !q.question.trim())}
-          onClick={() => router.push(`/teacher/lobby?title=${encodeURIComponent(title)}`)}
+          disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
+          onClick={handleLaunch}
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-8 py-3.5 rounded-[16px] shadow-lg shadow-purple-200 disabled:shadow-none transition-all hover:-translate-y-0.5 disabled:hover:translate-y-0 cursor-pointer disabled:cursor-not-allowed"
         >
-          Launch Session
+          {isPending ? "Creating on Blockchain..." : "Launch Session"}
         </button>
       </motion.div>
 

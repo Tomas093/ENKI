@@ -1,15 +1,24 @@
 "use client";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { useWaitForTransactionReceipt } from "wagmi";
 
 export default function TransactionMining() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hash = searchParams.get("hash");
+  const game = searchParams.get("game");
+
+  const { isSuccess } = useWaitForTransactionReceipt({
+    hash: hash as `0x${string}`,
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => router.push("/join-waiting"), 4000);
-    return () => clearTimeout(timer);
-  }, [router]);
+    if (isSuccess && game) {
+      router.push(`/join-waiting?game=${game}`);
+    }
+  }, [isSuccess, router, game]);
 
   return (
     <motion.div

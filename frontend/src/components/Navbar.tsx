@@ -1,11 +1,14 @@
 "use client";
-import { Bell, Wallet, ArrowLeft } from "lucide-react";
+import { Bell, Wallet, ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useAccount, useDisconnect } from "wagmi";
 
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { address } = useAccount();
+  const { disconnect } = useDisconnect();
 
   if (pathname === "/") return null;
 
@@ -33,8 +36,19 @@ export const Navbar = () => {
         </button>
         <div className="h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center px-4 gap-3 shadow-sm font-bold text-slate-700">
           <Wallet size={20} className="text-purple-500" />
-          <span>0x7a...1234</span>
+          <span>{address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}</span>
         </div>
+        {address && (
+          <button 
+            onClick={() => {
+              disconnect();
+              router.push('/');
+            }}
+            className="w-12 h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
+          >
+            <LogOut strokeWidth={2.5} size={24} />
+          </button>
+        )}
       </div>
     </header>
   );

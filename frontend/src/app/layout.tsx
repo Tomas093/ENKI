@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "../components/Navbar";
+import { Providers } from "./providers";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -29,8 +30,10 @@ export default function RootLayout({
       className={`${dmSans.variable} ${nunito.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        {children}
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

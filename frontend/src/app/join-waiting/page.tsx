@@ -2,15 +2,57 @@
 import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Users, Coins } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useWatchContractEvent, useReadContracts } from "wagmi";
+import { formatEther } from "viem";
+import KahootGameABI from "../../abi/KahootGame.json";
 
 export default function JoinWaitingRoom() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const gameAddress = searchParams.get("game");
 
-  useEffect(() => {
-    const t = setTimeout(() => router.push("/gameplay"), 8000);
-    return () => clearTimeout(t);
-  }, [router]);
+  // Read Live Stats
+  const { data: stats } = useReadContracts({
+    contracts: gameAddress ? [
+      { address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalPlayers' },
+      { address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePool' },
+    ] : [],
+    query: { refetchInterval: 2000 }
+  });
+
+  const totalPlayers = stats?.[0]?.result?.toString() || "0";
+  const prizePool = stats?.[1]?.result ? formatEther(stats[1].result as bigint) : "0.0";
+
+  // Watch for Question
+  useWatchContractEvent({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    eventName: 'QuestionRevealed',
+    onLogs(logs) {
+      if (logs.length > 0) {
+        const log = logs[0] as any;
+        const args = log.args;
+        const questionData = {
+          id: Number(args.questionId),
+          question: args.enunciado,
+          options: args.opciones,
+        };
+        sessionStorage.setItem("current_question", JSON.stringify(questionData));
+        router.push(`/gameplay?game=${gameAddress}`);
+      }
+    },
+  });
+
+  // Watch for Game Over
+  useWatchContractEvent({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    eventName: 'PrizesCalculated',
+    onLogs() {
+      router.push(`/leaderboard?game=${gameAddress}`);
+    },
+  });
 
   return (
     <motion.div
@@ -51,11 +93,11 @@ export default function JoinWaitingRoom() {
           transition={{ delay: 0.3 }}
         >
           <h1 className="font-black text-slate-800 text-5xl md:text-6xl tracking-tight mb-3">
-            You are in!
+            Stand by!
           </h1>
           <p className="text-slate-400 font-semibold text-lg max-w-sm">
             Look at the host screen.
-            <br />The game will start soon...
+            <br />Waiting for the Professor...
           </p>
         </motion.div>
       </div>
@@ -89,7 +131,7 @@ export default function JoinWaitingRoom() {
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               className="font-black text-2xl text-blue-600"
             >
-              15
+              {totalPlayers}
             </motion.span>
           </div>
 
@@ -107,7 +149,7 @@ export default function JoinWaitingRoom() {
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               className="font-black text-2xl text-purple-600"
             >
-              0.15 ETH
+              {prizePool} ETH
             </motion.span>
           </div>
         </div>

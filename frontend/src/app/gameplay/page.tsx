@@ -1,62 +1,72 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useWriteContract, useAccount } from "wagmi";
+import { keccak256, encodePacked } from "viem";
+import KahootGameABI from "../../abi/KahootGame.json";
 
-const QUESTION = {
-  number: 1,
-  total: 10,
-  text: "What is a Smart Contract?",
-  options: [
-    {
-      label: "A",
-      text: "A piece of code",
-      gradient: "linear-gradient(135deg, #FF3B5C 0%, #E21B3C 100%)",
-      border: "#9b0026",
-      glow: "rgba(226,27,60,0.45)",
-    },
-    {
-      label: "B",
-      text: "A legal document",
-      gradient: "linear-gradient(135deg, #3B82F6 0%, #1368CE 100%)",
-      border: "#0a4a99",
-      glow: "rgba(19,104,206,0.45)",
-    },
-    {
-      label: "C",
-      text: "A cryptocurrency",
-      gradient: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)",
-      border: "#9a5300",
-      glow: "rgba(217,119,6,0.45)",
-    },
-    {
-      label: "D",
-      text: "A hardware wallet",
-      gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)",
-      border: "#065f46",
-      glow: "rgba(5,150,105,0.45)",
-    },
-  ],
-};
+const OPTION_STYLES = [
+  { gradient: "linear-gradient(135deg, #FF3B5C 0%, #E21B3C 100%)", border: "#9b0026", glow: "rgba(226,27,60,0.45)" },
+  { gradient: "linear-gradient(135deg, #3B82F6 0%, #1368CE 100%)", border: "#0a4a99", glow: "rgba(19,104,206,0.45)" },
+  { gradient: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)", border: "#9a5300", glow: "rgba(217,119,6,0.45)" },
+  { gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)", border: "#065f46", glow: "rgba(5,150,105,0.45)" },
+];
 
-const TOTAL_TIME = 15;
+const TOTAL_TIME = 30;
 
 export default function ActiveGameplay() {
   const [selected, setSelected] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
+  const [questionData, setQuestionData] = useState<any>(null);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const gameAddress = searchParams.get("game");
+  const { address } = useAccount();
+
+  const { writeContractAsync, isPending } = useWriteContract();
 
   useEffect(() => {
-    if (selected !== null || timeLeft <= 0) return;
+    const qData = sessionStorage.getItem("current_question");
+    if (qData) {
+      setQuestionData(JSON.parse(qData));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selected !== null || timeLeft <= 0 || !questionData) return;
     const t = setInterval(() => setTimeLeft((n) => Math.max(0, n - 1)), 1000);
     return () => clearInterval(t);
-  }, [selected, timeLeft]);
+  }, [selected, timeLeft, questionData]);
 
-  const handlePick = (idx: number) => {
-    if (selected !== null) return;
+  const handlePick = async (idx: number) => {
+    if (selected !== null || !gameAddress || !address) return;
     setSelected(idx);
-    setTimeout(() => router.push("/waiting"), 3000);
+
+    const studentSalt = "studentSalt_" + Math.random().toString(36).substring(2, 10);
+    sessionStorage.setItem("my_answer_salt", studentSalt);
+    sessionStorage.setItem("my_answer_idx", idx.toString());
+
+    try {
+      const commitHash = keccak256(
+        encodePacked(['uint8', 'string', 'address'], [idx, studentSalt, address])
+      );
+
+      const tx = await writeContractAsync({
+        address: gameAddress as `0x${string}`,
+        abi: KahootGameABI.abi,
+        functionName: 'commitAnswer',
+        args: [commitHash],
+      });
+
+      router.push(`/waiting?game=${gameAddress}`);
+    } catch (e) {
+      console.error(e);
+      alert("Transaction failed. Are you connected?");
+      setSelected(null);
+    }
   };
 
   const timerUrgent = timeLeft <= 5;
@@ -104,7 +114,7 @@ export default function ActiveGameplay() {
         {/* Question pill */}
         <div className="px-5 py-2 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
           <span className="font-black text-slate-600 text-sm">
-            Question {QUESTION.number}/{QUESTION.total}
+            Question {questionData ? questionData.id + 1 : "?"}
           </span>
         </div>
       </div>
@@ -121,13 +131,14 @@ export default function ActiveGameplay() {
           className="font-black text-slate-800 text-center leading-snug"
           style={{ fontSize: "clamp(20px, 3vw, 32px)", fontFamily: "'Nunito', sans-serif" }}
         >
-          {QUESTION.text}
+          {questionData ? questionData.question : "Loading question..."}
         </p>
       </motion.div>
 
       {/* ── 3 & 4. 2×2 answer grid ───────────────────────────────────── */}
       <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
-        {QUESTION.options.map((opt, idx) => {
+        {questionData && questionData.options.map((optText: string, idx: number) => {
+          const opt = OPTION_STYLES[idx];
           const isSelected = selected === idx;
           const isDimmed = selected !== null && !isSelected;
           return (
@@ -169,12 +180,16 @@ export default function ActiveGameplay() {
                   fontFamily: "'Nunito', sans-serif",
                 }}
               >
-                {opt.label}
+                {isSelected && isPending ? (
+                  <Loader2 className="animate-spin text-white w-6 h-6" />
+                ) : (
+                  ["A", "B", "C", "D"][idx]
+                )}
               </div>
 
               {/* Answer text */}
               <span
-                className="text-white font-black text-center leading-snug px-4 relative z-10"
+                className="text-white font-extrabold text-center leading-snug px-4 relative z-10"
                 style={{
                   fontSize: "clamp(14px, 2vw, 22px)",
                   fontFamily: "'Nunito', sans-serif",
@@ -182,7 +197,7 @@ export default function ActiveGameplay() {
                   maxWidth: "90%",
                 }}
               >
-                {opt.text}
+                {optText}
               </span>
             </motion.button>
           );

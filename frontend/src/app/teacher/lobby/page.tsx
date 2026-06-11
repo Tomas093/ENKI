@@ -3,23 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check, Play, Users, Wifi } from "lucide-react";
-
-const CONTRACT_ADDRESS = "0xENKI...C0DE4821F9a3bD2e";
-
-const FAKE_WALLETS = [
-  "0x3fA9...B21C",
-  "0x8cD1...44Ee",
-  "0x1b2F...9901",
-  "0xAe77...CC34",
-  "0x55D2...1F0A",
-  "0x9012...B3D5",
-  "0x24aC...7E56",
-  "0xF301...2AB9",
-  "0x6e89...DD12",
-  "0x7714...C005",
-  "0xBB21...9F3E",
-  "0x0045...1122",
-];
+import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
+import KahootFactoryABI from "../../../abi/KahootFactory.json";
+import KahootGameABI from "../../../abi/KahootGame.json";
 
 const AVATAR_COLORS = [
   "bg-purple-500", "bg-blue-500", "bg-emerald-500",
@@ -32,23 +18,41 @@ export default function TeacherLobby() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionTitle = searchParams?.get("title") ?? "Trivia Session";
+  const { address } = useAccount();
+
+  const { data: kahoots } = useReadContract({
+    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+    abi: KahootFactoryABI.abi,
+    functionName: 'getKahootsDeProfesor',
+    args: address ? [address] : undefined,
+  });
+
+  const CONTRACT_ADDRESS = kahoots && (kahoots as string[]).length > 0 
+    ? (kahoots as string[])[(kahoots as string[]).length - 1] 
+    : "Loading address...";
 
   const [joined, setJoined] = useState<string[]>([]);
   const [copiedContract, setCopiedContract] = useState(false);
   const [pulse, setPulse] = useState(false);
 
-  // Simulate players joining one by one
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i >= FAKE_WALLETS.length) { clearInterval(interval); return; }
-      setJoined(prev => [...prev, FAKE_WALLETS[i]]);
-      setPulse(true);
-      setTimeout(() => setPulse(false), 600);
-      i++;
-    }, 1800);
-    return () => clearInterval(interval);
-  }, []);
+  useWatchContractEvent({
+    address: CONTRACT_ADDRESS !== "Loading address..." ? CONTRACT_ADDRESS as `0x${string}` : undefined,
+    abi: KahootGameABI.abi,
+    eventName: 'PlayerJoined',
+    onLogs(logs) {
+      logs.forEach(log => {
+        const player = (log as any).args.player;
+        if (player) {
+          setJoined(prev => {
+            if (prev.includes(player)) return prev;
+            setPulse(true);
+            setTimeout(() => setPulse(false), 600);
+            return [...prev, player];
+          });
+        }
+      });
+    },
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(CONTRACT_ADDRESS);
@@ -66,8 +70,8 @@ export default function TeacherLobby() {
           <p className="text-slate-400 font-semibold mt-1">Waiting for players to join and stake…</p>
         </div>
         <button
-          onClick={() => router.push("/gameplay")}
-          disabled={joined.length < 2}
+          onClick={() => router.push(`/teacher/play?game=${CONTRACT_ADDRESS}`)}
+          disabled={joined.length < 1 || CONTRACT_ADDRESS === "Loading address..."}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-7 py-3.5 rounded-[16px] shadow-lg shadow-emerald-200 disabled:shadow-none transition-all hover:-translate-y-0.5 disabled:hover:translate-y-0 cursor-pointer disabled:cursor-not-allowed"
         >
           <Play size={18} fill="white" />
@@ -137,16 +141,16 @@ export default function TeacherLobby() {
               <AnimatePresence>
                 {joined.map((wallet, i) => (
                   <motion.div
-                    key={wallet}
+                    key={wallet || i}
                     initial={{ opacity: 0, scale: 0.7, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 22 }}
                     className="flex items-center gap-3 bg-slate-50 border-2 border-slate-100 rounded-[16px] px-4 py-3 hover:border-purple-200 hover:bg-purple-50 transition-colors"
                   >
                     <div className={`w-8 h-8 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white font-black text-xs shrink-0`}>
-                      {wallet.slice(2, 4).toUpperCase()}
+                      {wallet ? wallet.slice(2, 4).toUpperCase() : "??"}
                     </div>
-                    <span className="font-bold text-slate-700 text-sm font-mono truncate">{wallet}</span>
+                    <span className="font-bold text-slate-700 text-sm font-mono truncate">{wallet || "0x???"}</span>
                   </motion.div>
                 ))}
               </AnimatePresence>

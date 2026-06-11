@@ -1,12 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Wallet, Gift, Trophy } from "lucide-react";
+import { Wallet, Gift, Trophy, Award } from "lucide-react";
 import { PlayfulButton } from "../../components/ui/PlayfulButton";
 import confetti from "canvas-confetti";
 import { motion } from "motion/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useWriteContract } from "wagmi";
+import KahootGameABI from "../../abi/KahootGame.json";
 
 export default function FinalLeaderboard() {
   const [claimed, setClaimed] = useState(false);
+  
+  const searchParams = useSearchParams();
+  const gameAddress = searchParams.get("game");
+  const { writeContractAsync, isPending } = useWriteContract();
 
   useEffect(() => {
     // Trigger confetti on mount
@@ -37,13 +44,39 @@ export default function FinalLeaderboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleClaim = () => {
-    setClaimed(true);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+  const handleClaim = async () => {
+    if (!gameAddress) return;
+    try {
+      await writeContractAsync({
+        address: gameAddress as `0x${string}`,
+        abi: KahootGameABI.abi,
+        functionName: 'claimPrize'
+      });
+      setClaimed(true);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Failed to claim prize. Did you rank in top 3?");
+    }
+  };
+
+  const handleClaimDiploma = async () => {
+    if (!gameAddress) return;
+    try {
+      await writeContractAsync({
+        address: gameAddress as `0x${string}`,
+        abi: KahootGameABI.abi,
+        functionName: 'claimDiploma'
+      });
+      alert("Diploma claimed! Check your wallet NFT collection.");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to claim diploma. Did you pass the threshold?");
+    }
   };
 
   return (
@@ -140,15 +173,27 @@ export default function FinalLeaderboard() {
           </div>
 
           {!claimed ? (
-            <PlayfulButton 
-              variant="purple" 
-              size="xl" 
-              className="w-full text-2xl py-6 z-10 shadow-xl"
-              onClick={handleClaim}
-            >
-              <Wallet className="mr-3 h-7 w-7" />
-              Claim Prize
-            </PlayfulButton>
+            <>
+              <PlayfulButton 
+                variant="purple" 
+                size="xl" 
+                className="w-full text-2xl py-6 z-10 shadow-xl disabled:opacity-50 mb-4"
+                onClick={handleClaim}
+                disabled={isPending}
+              >
+                <Wallet className="mr-3 h-7 w-7" />
+                {isPending ? "Claiming..." : "Claim Prize"}
+              </PlayfulButton>
+
+              <button 
+                onClick={handleClaimDiploma}
+                disabled={isPending}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-[20px] py-4 text-xl border-b-[4px] border-slate-300 flex items-center justify-center gap-2 z-10 shadow-sm transition-all disabled:opacity-50"
+              >
+                <Award className="h-6 w-6" />
+                Claim NFT Diploma
+              </button>
+            </>
           ) : (
             <div className="w-full bg-[#10B981] text-white rounded-[20px] py-5 text-2xl font-extrabold border-b-[6px] border-[#047857] flex items-center justify-center gap-2 z-10 shadow-lg">
               Claimed! <Wallet size={28} />
