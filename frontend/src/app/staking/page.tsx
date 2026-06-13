@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Search, ShieldCheck, Wallet } from "lucide-react";
+import toast from "react-hot-toast";
 import { PlayfulButton } from "../../components/ui/PlayfulButton";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -15,7 +16,6 @@ export default function StakingLobby() {
 
   const { data, isLoading: isReading } = useReadContracts({
     contracts: searchedAddress ? [
-      { address: searchedAddress, abi: KahootGameABI.abi, functionName: 'gameName' },
       { address: searchedAddress, abi: KahootGameABI.abi, functionName: 'professor' },
       { address: searchedAddress, abi: KahootGameABI.abi, functionName: 'entryFee' },
     ] : [],
@@ -28,24 +28,24 @@ export default function StakingLobby() {
     if (addressInput.length === 42 && addressInput.startsWith("0x")) {
       setSearchedAddress(addressInput as `0x${string}`);
     } else {
-      alert("Please enter a valid 0x... contract address");
+      toast.error("Please enter a valid 0x... contract address");
     }
   };
 
   const handleJoin = async () => {
-    if (!searchedAddress || !data || data[2].result === undefined) return;
+    if (!searchedAddress || !data || data[1].result === undefined) return;
     try {
       const hash = await writeContractAsync({
         address: searchedAddress,
         abi: KahootGameABI.abi,
         functionName: 'joinGame',
-        value: data[2].result as bigint,
+        value: data[1].result as bigint,
         gas: 500000n,
       });
       router.push(`/transaction-mining?hash=${hash}&game=${searchedAddress}`);
     } catch (e) {
       console.error(e);
-      alert("Failed to join. Did you reject the transaction?");
+      toast.error("Failed to join. Did you reject the transaction?");
     }
   };
 
@@ -105,19 +105,19 @@ export default function StakingLobby() {
                       <h3 className="text-xl font-bold text-slate-600 mb-2 uppercase tracking-wide text-sm">Match Found</h3>
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-center bg-white p-4 rounded-[12px] border-2 border-purple-100">
-                          <span className="font-bold text-slate-500 text-lg">Game</span>
-                          <span className="font-extrabold text-slate-800 text-xl">{data[0].result as string}</span>
+                          <span className="font-bold text-slate-500 text-lg">Game Address</span>
+                          <span className="font-extrabold text-slate-800 text-xl">{searchedAddress.slice(0,6)}...{searchedAddress.slice(-4)}</span>
                         </div>
                         <div className="flex justify-between items-center bg-white p-4 rounded-[12px] border-2 border-purple-100">
                           <span className="font-bold text-slate-500 text-lg">Host</span>
                           <span className="font-extrabold text-slate-800 text-lg break-all ml-4">
-                            {(data[1].result as string).slice(0, 6)}...{(data[1].result as string).slice(-4)}
+                            {(data[0].result as string).slice(0, 6)}...{(data[0].result as string).slice(-4)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center bg-white p-4 rounded-[12px] border-2 border-purple-100">
                           <span className="font-bold text-slate-500 text-lg">Entry Fee</span>
                           <span className="font-extrabold text-purple-600 text-xl">
-                            {formatEther((data[2].result as bigint) || 0n)} ETH
+                            {formatEther((data[1].result as bigint) || 0n)} ETH
                           </span>
                         </div>
                       </div>
@@ -136,7 +136,7 @@ export default function StakingLobby() {
                     ) : (
                       <>
                         <Wallet className="h-8 w-8" />
-                        Stake {formatEther((data[2].result as bigint) || 0n)} ETH & Enter Game
+                        Stake {formatEther((data[1].result as bigint) || 0n)} ETH & Enter Game
                       </>
                     )}
                   </PlayfulButton>

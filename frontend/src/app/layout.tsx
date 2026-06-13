@@ -3,6 +3,7 @@ import { DM_Sans, Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "../components/Navbar";
 import { Providers } from "./providers";
+import { Toaster } from "react-hot-toast";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
       className={`${dmSans.variable} ${nunito.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Toaster position="top-center" reverseOrder={false} />
         <Providers>
           <Navbar />
           {children}

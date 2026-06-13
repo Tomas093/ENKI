@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, ChevronDown, ChevronUp, Check } from "lucide-react";
-import { useWriteContract, useAccount, useWaitForTransactionReceipt } from "wagmi";
-import { encodePacked, keccak256, parseEther } from "viem";
+import { Plus, Trash2, ChevronDown, ChevronUp, Check, Palette } from "lucide-react";
+import toast from "react-hot-toast";
+import { useWriteContract, useAccount, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { encodePacked, keccak256, parseEther, decodeEventLog } from "viem";
 import KahootFactoryABI from "../../../abi/KahootFactory.json";
 
 type Answer = { text: string; correct: boolean };
@@ -33,7 +34,7 @@ export default function CreateSession() {
   const router = useRouter();
   const { address } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const { isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash });
 
   const [title, setTitle] = useState("");
   const [stakeAmount, setStakeAmount] = useState("0.01");
@@ -42,14 +43,42 @@ export default function CreateSession() {
   const [expanded, setExpanded] = useState<number>(1);
   const [nextId, setNextId] = useState(2);
 
+  const { data: creationFee } = useReadContract({
+    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
+    abi: KahootFactoryABI.abi,
+    functionName: 'creationFee',
+  });
+
   useEffect(() => {
-    if (isConfirmed) {
-      router.push(`/teacher/lobby?title=${encodeURIComponent(title)}`);
+    if (isConfirmed && receipt) {
+      let gameAddr = "";
+      try {
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: KahootFactoryABI.abi,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === 'GameCreated') {
+              gameAddr = (decoded.args as any).gameAddress;
+              break;
+            }
+          } catch (e) {
+            // Not the GameCreated event
+          }
+        }
+      } catch (err) {
+        console.error("Error decoding logs:", err);
+      }
+      
+      const param = gameAddr ? `&contract=${gameAddr}` : "";
+      router.push(`/teacher/lobby?title=${encodeURIComponent(title)}${param}`);
     }
-  }, [isConfirmed, router, title]);
+  }, [isConfirmed, receipt, router, title]);
 
   const handleLaunch = () => {
-    if (!address) return alert("Connect wallet first!");
+    if (!address) return toast.error("Connect wallet first!");
 
     const rondas = questions.map((q) => {
       const saltProfesor = "secretSalt123" + q.id; 
@@ -87,19 +116,27 @@ export default function CreateSession() {
     };
     localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
 
+    let diplomaURI = localStorage.getItem("saved_diploma_uri");
+    if (!diplomaURI) {
+      // Default basic ENKI diploma if none created
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#f1f5f9"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#7c3aed" stroke-width="8"/><text x="400" y="300" font-family="sans-serif" font-size="40" font-weight="bold" fill="#1e293b" text-anchor="middle">ENKI Diploma</text><text x="400" y="360" font-family="sans-serif" font-size="20" fill="#64748b" text-anchor="middle">Awarded for completing ${title}</text></svg>`;
+      const svgBase64 = btoa(unescape(encodeURIComponent(svgStr)));
+      const metadata = { name: `ENKI Diploma: ${title}`, description: "Basic ENKI Diploma", image: `data:image/svg+xml;base64,${svgBase64}` };
+      diplomaURI = `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(metadata))))}`;
+    }
+
     writeContract({
       address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
       abi: KahootFactoryABI.abi,
       functionName: 'createGame',
       args: [
-        title,
         Number(passingScore) || 1,
         questions.length,
-        "ipfs://dummy",
+        diplomaURI,
         rondas,
         parseEther(stakeAmount)
       ],
-      value: BigInt(0)
+      value: (creationFee as bigint) || parseEther("0.0001")
     });
   };
 
@@ -189,6 +226,20 @@ export default function CreateSession() {
               className="w-full bg-slate-50 border-2 border-slate-200 focus:border-emerald-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
             />
           </div>
+        </div>
+        
+        {/* Diploma Studio Button */}
+        <div className="pt-2 border-t-2 border-slate-100 flex items-center justify-between mt-2">
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-700 text-sm">NFT Diploma Design</span>
+            <span className="text-slate-400 text-xs font-medium">Customize the certificate your students will earn</span>
+          </div>
+          <button
+            onClick={() => router.push("/teacher/diploma-studio")}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-purple-600 font-bold px-4 py-2 rounded-[10px] transition-colors"
+          >
+            <Palette size={16} /> Customize Diploma
+          </button>
         </div>
       </motion.div>
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useWriteContract, useAccount } from "wagmi";
 import { keccak256, encodePacked } from "viem";
 import KahootGameABI from "../../abi/KahootGame.json";
@@ -64,7 +65,7 @@ export default function ActiveGameplay() {
       router.push(`/waiting?game=${gameAddress}`);
     } catch (e) {
       console.error(e);
-      alert("Transaction failed. Are you connected?");
+      toast.error("Transaction failed. Are you connected?");
       setSelected(null);
     }
   };

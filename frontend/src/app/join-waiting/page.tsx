@@ -15,14 +15,19 @@ export default function JoinWaitingRoom() {
   // Read Live Stats
   const { data: stats } = useReadContracts({
     contracts: gameAddress ? [
-      { address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalPlayers' },
+      { address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'entryFee' },
       { address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePool' },
     ] : [],
     query: { refetchInterval: 2000 }
   });
 
-  const totalPlayers = stats?.[0]?.result?.toString() || "0";
-  const prizePool = stats?.[1]?.result ? formatEther(stats[1].result as bigint) : "0.0";
+  const entryFeeVal = stats?.[0]?.result as bigint;
+  const prizePoolVal = stats?.[1]?.result as bigint;
+  
+  const totalPlayers = (prizePoolVal !== undefined && entryFeeVal !== undefined && entryFeeVal > 0n) 
+    ? (prizePoolVal / entryFeeVal).toString() 
+    : "0";
+  const prizePoolStr = prizePoolVal !== undefined ? formatEther(prizePoolVal) : "0.0";
 
   // Watch for Question
   useWatchContractEvent({
@@ -149,7 +154,7 @@ export default function JoinWaitingRoom() {
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               className="font-black text-2xl text-purple-600"
             >
-              {prizePool} ETH
+              {prizePoolStr} ETH
             </motion.span>
           </div>
         </div>

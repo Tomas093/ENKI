@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Play, Lock, Eye, ArrowRight, Trophy, Loader2 } from "lucide-react";
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useWriteContract, usePublicClient } from "wagmi";
+import toast from "react-hot-toast";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
 type Answer = { text: string; correct: boolean };
@@ -19,14 +20,17 @@ export default function TeacherPlay() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<"IDLE" | "COMMIT_OPEN" | "REVEAL_OPEN" | "FINISHED">("IDLE");
 
-  const { writeContractAsync, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
+  const { writeContractAsync, isPending: isWriting } = useWriteContract();
+  const [isWaiting, setIsWaiting] = useState(false);
+  const isPending = isWriting || isWaiting;
 
   useEffect(() => {
     const data = localStorage.getItem("current_kahoot_session");
     if (data) {
       setGameData(JSON.parse(data));
     } else {
-      alert("No active session found in local storage.");
+      toast.error("No active session found in local storage.");
       router.push("/host/dashboard");
     }
   }, [router]);
@@ -50,11 +54,14 @@ export default function TeacherPlay() {
           currentQ.saltProfesor,
         ]
       });
-      console.log("Tx hash:", tx);
+      setIsWaiting(true);
+      await publicClient?.waitForTransactionReceipt({ hash: tx });
+      setIsWaiting(false);
       setPhase("COMMIT_OPEN");
     } catch (error) {
       console.error(error);
-      alert("Transaction failed or was rejected.");
+      setIsWaiting(false);
+      toast.error("Transaction failed or was rejected.");
     }
   };
 
@@ -67,11 +74,14 @@ export default function TeacherPlay() {
         functionName: "closeQuestionAndStartReveal",
         args: [correctIdx, currentQ.saltProfesor],
       });
-      console.log("Tx hash:", tx);
+      setIsWaiting(true);
+      await publicClient?.waitForTransactionReceipt({ hash: tx });
+      setIsWaiting(false);
       setPhase("REVEAL_OPEN");
     } catch (error) {
       console.error(error);
-      alert("Transaction failed or was rejected.");
+      setIsWaiting(false);
+      toast.error("Transaction failed or was rejected.");
     }
   };
 
@@ -82,7 +92,9 @@ export default function TeacherPlay() {
         abi: KahootGameABI.abi,
         functionName: "advanceToNextQuestion",
       });
-      console.log("Tx hash:", tx);
+      setIsWaiting(true);
+      await publicClient?.waitForTransactionReceipt({ hash: tx });
+      setIsWaiting(false);
       if (isLastQuestion) {
         setPhase("FINISHED");
       } else {
@@ -91,7 +103,8 @@ export default function TeacherPlay() {
       }
     } catch (error) {
       console.error(error);
-      alert("Transaction failed or was rejected.");
+      setIsWaiting(false);
+      toast.error("Transaction failed or was rejected.");
     }
   };
 
@@ -106,7 +119,7 @@ export default function TeacherPlay() {
       router.push(`/teacher/session/${gameAddress}`);
     } catch (error) {
       console.error(error);
-      alert("Failed to calculate prizes. They might be already calculated.");
+      toast.error("Failed to calculate prizes. They might be already calculated.");
       router.push(`/teacher/session/${gameAddress}`);
     }
   };

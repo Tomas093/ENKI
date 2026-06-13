@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Download, CheckCircle, XCircle, Trophy, Wallet, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { useWriteContract, usePublicClient, useReadContract } from "wagmi";
+import toast from "react-hot-toast";
 import KahootGameABI from "../../../../abi/KahootGame.json";
 
 const PIE_COLORS = ["#7c3aed", "#e2e8f0"];
@@ -12,38 +13,58 @@ const medalColors = ["#F59E0B", "#94A3B8", "#D97706"];
 const medalLabels = ["🥇", "🥈", "🥉"];
 const podiumOrder = [1, 0, 2]; // silver, gold, bronze visual order
 
+import { createPublicClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
+
 export default function SessionDetails() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { writeContractAsync, isPending } = useWriteContract();
   const publicClient = usePublicClient();
 
-  const { data: nameData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'gameName' });
-  const { data: playersData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalPlayers' });
   const { data: passingScoreData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'passingScore' });
   const { data: totalQuestionsData } = useReadContract({ address: id as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' });
 
   const PASS_THRESHOLD = Number(passingScoreData) || 1;
   const TOTAL_QUESTIONS = Number(totalQuestionsData) || 1;
 
-  const session = { 
-    topic: nameData as string || "Loading...", 
-    players: Number(playersData) || 0, 
-    started: "Ended" 
-  };
-
   const [participants, setParticipants] = useState<{wallet: string, score: number, claimed: boolean}[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [sessionTitle, setSessionTitle] = useState("Loading...");
+
+  useEffect(() => {
+    const data = localStorage.getItem("current_kahoot_session");
+    if (data) {
+      setSessionTitle(JSON.parse(data).title);
+    } else {
+      setSessionTitle("Trivia Session");
+    }
+  }, []);
+
+  const session = { 
+    topic: sessionTitle, 
+    players: participants.length, 
+    started: "Ended" 
+  };
 
   useEffect(() => {
     if (!publicClient || !id) return;
     const fetchStats = async () => {
       try {
-        const logs = await publicClient.getContractEvents({
+        // Alchemy free tier limits eth_getLogs to 10 blocks. We use a public node for this specific heavy query.
+        const logClient = createPublicClient({
+          chain: sepolia,
+          transport: http('https://ethereum-sepolia-rpc.publicnode.com')
+        });
+
+        const currentBlock = await logClient.getBlockNumber();
+        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+
+        const logs = await logClient.getContractEvents({
           address: id as `0x${string}`,
           abi: KahootGameABI.abi,
           eventName: 'PlayerJoined',
-          fromBlock: 0n,
+          fromBlock: fromBlock,
           toBlock: 'latest'
         });
         
@@ -105,10 +126,10 @@ export default function SessionDetails() {
         abi: KahootGameABI.abi,
         functionName: 'claimPrize'
       });
-      alert("Earnings claimed successfully!");
+      toast.success("Earnings claimed successfully!");
     } catch (error) {
       console.error(error);
-      alert("Failed to claim earnings. They might already be claimed.");
+      toast.error("Failed to claim earnings. They might already be claimed.");
     }
   };
 
@@ -258,7 +279,7 @@ export default function SessionDetails() {
                   <td className="px-6 py-4 font-bold text-slate-700 font-mono text-sm">{p.wallet}</td>
                   <td className="px-6 py-4">
                     <span className={`font-black text-sm px-3 py-1 rounded-[8px] ${p.score >= PASS_THRESHOLD ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"}`}>
-                      {p.score}/10
+                      {p.score}/{TOTAL_QUESTIONS}
                     </span>
                   </td>
                   <td className="px-6 py-4">

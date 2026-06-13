@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check, Play, Users, Wifi } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
 import KahootFactoryABI from "../../../abi/KahootFactory.json";
 import KahootGameABI from "../../../abi/KahootGame.json";
@@ -19,7 +20,6 @@ export default function TeacherLobby() {
   const searchParams = useSearchParams();
   const sessionTitle = searchParams?.get("title") ?? "Trivia Session";
   const { address } = useAccount();
-
   const { data: kahoots } = useReadContract({
     address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
     abi: KahootFactoryABI.abi,
@@ -27,9 +27,12 @@ export default function TeacherLobby() {
     args: address ? [address] : undefined,
   });
 
-  const CONTRACT_ADDRESS = kahoots && (kahoots as string[]).length > 0 
-    ? (kahoots as string[])[(kahoots as string[]).length - 1] 
-    : "Loading address...";
+  const contractParam = searchParams?.get("contract");
+  const CONTRACT_ADDRESS = contractParam 
+    ? contractParam 
+    : (kahoots && (kahoots as string[]).length > 0)
+      ? (kahoots as string[])[(kahoots as string[]).length - 1]
+      : "Loading address...";
 
   const [joined, setJoined] = useState<string[]>([]);
   const [copiedContract, setCopiedContract] = useState(false);
@@ -55,9 +58,25 @@ export default function TeacherLobby() {
   });
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(CONTRACT_ADDRESS);
-    setCopiedContract(true);
-    setTimeout(() => setCopiedContract(false), 2000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCopiedContract(true);
+      setTimeout(() => setCopiedContract(false), 2000);
+    } else {
+      // Fallback for non-HTTPS connections (like 192.168.x.x)
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = CONTRACT_ADDRESS;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+        setCopiedContract(true);
+        setTimeout(() => setCopiedContract(false), 2000);
+      } catch (err) {
+        toast.error("Copia manual requerida (API bloqueada por usar HTTP).");
+      }
+    }
   };
 
   return (
