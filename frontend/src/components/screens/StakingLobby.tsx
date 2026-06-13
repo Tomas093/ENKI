@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShieldCheck } from "lucide-react";
+import { Search, ShieldCheck, Wallet } from "lucide-react";
 import { PlayfulButton } from "../ui/PlayfulButton";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";

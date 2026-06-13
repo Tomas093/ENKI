@@ -82,11 +82,12 @@ export function ProfessorCreateGame() {
   const [questions, setQuestions] = useState<Question[]>([createBlankQuestion(0)]);
 
   // Read factory creation fee
-  const { data: creationFee } = useReadContract({
+  const { data: rawCreationFee } = useReadContract({
     address: FACTORY_ADDRESS,
     abi: kahootFactoryAbi,
     functionName: "creationFee",
   });
+  const creationFee = rawCreationFee != null ? BigInt(rawCreationFee.toString()) : undefined;
 
   const addQuestion = () => setQuestions((prev) => [...prev, createBlankQuestion(Date.now())]);
   const removeQuestion = (qId: number) => setQuestions((prev) => prev.filter((q) => q.id !== qId));

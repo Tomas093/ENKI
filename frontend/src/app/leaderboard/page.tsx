@@ -71,7 +71,7 @@ export default function FinalLeaderboard() {
         fromBlock: fromBlock,
         toBlock: 'latest'
       });
-      const wallets = Array.from(new Set(logs.map(l => (l.args as any).player as `0x${string}`)));
+      const wallets = Array.from(new Set(logs.map(l => (l as any).args?.player as `0x${string}`)));
 
       // Use wagmiClient (Alchemy) for state reads to avoid public node lag
       if (!wagmiClient) return;

@@ -33,13 +33,13 @@ export default function StakingLobby() {
   };
 
   const handleJoin = async () => {
-    if (!searchedAddress || !data || data[1].result === undefined) return;
+    if (!searchedAddress || !data || data[1]?.result === undefined) return;
     try {
       const hash = await writeContractAsync({
         address: searchedAddress,
         abi: KahootGameABI.abi,
         functionName: 'joinGame',
-        value: data[1].result as bigint,
+        value: data[1]?.result as bigint,
         gas: 500000n,
       });
       router.push(`/transaction-mining?hash=${hash}&game=${searchedAddress}`);
@@ -95,7 +95,7 @@ export default function StakingLobby() {
             >
               {isReading ? (
                 <div className="text-center font-bold text-slate-500">Loading game info...</div>
-              ) : data && data[0].status === "success" ? (
+              ) : data && data[0]?.status === "success" ? (
                 <>
                   <div className="bg-purple-50 rounded-[20px] border-4 border-purple-100 p-6 mb-8 relative overflow-hidden">
                     <div className="absolute -right-4 -top-4 text-purple-200 transform rotate-12 opacity-50">
@@ -111,13 +111,13 @@ export default function StakingLobby() {
                         <div className="flex justify-between items-center bg-white p-4 rounded-[12px] border-2 border-purple-100">
                           <span className="font-bold text-slate-500 text-lg">Host</span>
                           <span className="font-extrabold text-slate-800 text-lg break-all ml-4">
-                            {(data[0].result as string).slice(0, 6)}...{(data[0].result as string).slice(-4)}
+                            {(data[0]?.result as string)?.slice(0, 6)}...{(data[0]?.result as string)?.slice(-4)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center bg-white p-4 rounded-[12px] border-2 border-purple-100">
                           <span className="font-bold text-slate-500 text-lg">Entry Fee</span>
                           <span className="font-extrabold text-purple-600 text-xl">
-                            {formatEther((data[1].result as bigint) || 0n)} ETH
+                            {formatEther((data[1]?.result as bigint) || 0n)} ETH
                           </span>
                         </div>
                       </div>
@@ -136,7 +136,7 @@ export default function StakingLobby() {
                     ) : (
                       <>
                         <Wallet className="h-8 w-8" />
-                        Stake {formatEther((data[1].result as bigint) || 0n)} ETH & Enter Game
+                        Stake {formatEther((data[1]?.result as bigint) || 0n)} ETH & Enter Game
                       </>
                     )}
                   </PlayfulButton>

@@ -68,7 +68,7 @@ export default function SessionDetails() {
           toBlock: 'latest'
         });
         
-        const wallets = Array.from(new Set(logs.map(l => (l.args as any).player as `0x${string}`)));
+        const wallets = Array.from(new Set(logs.map(l => (l as any).args?.player as `0x${string}`)));
         
         const scorePromises = wallets.map(wallet => 
           publicClient.readContract({

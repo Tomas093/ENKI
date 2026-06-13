@@ -53,13 +53,13 @@ export const StakingLobby = () => {
   });
 
   const gameInfo: GameInfo | null =
-    data && data.every((d) => d.status === "success")
+    data && data.length === 5 && data.every((d) => d?.status === "success")
       ? {
-          entryFee: data[0].result as bigint,
-          professor: data[1].result as string,
-          isFinished: data[2].result as boolean,
-          isCancelled: data[3].result as boolean,
-          hasJoined: data[4].result as boolean,
+          entryFee: data[0]?.result as bigint,
+          professor: data[1]?.result as string,
+          isFinished: data[2]?.result as boolean,
+          isCancelled: data[3]?.result as boolean,
+          hasJoined: data[4]?.result as boolean,
         }
       : null;
 

@@ -70,8 +70,9 @@ export const ActiveGameplay = () => {
     eventName: "QuestionRevealed",
     onLogs(logs) {
       const log = logs[0];
-      if (!log?.args) return;
-      const { questionId, enunciado, opciones } = log.args as {
+      const logAny = log as any;
+      if (!logAny?.args) return;
+      const { questionId, enunciado, opciones } = logAny.args as {
         questionId: bigint;
         enunciado: string;
         opciones: string[];

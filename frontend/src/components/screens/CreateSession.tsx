@@ -56,7 +56,10 @@ export const CreateSession = () => {
         if (q.id !== qId) return q;
         const answers = q.answers.map((a, i) => {
           if (field === "correct") return { ...a, correct: i === idx };
-          return i === idx ? { ...a, [field]: value } : a;
+          if (i === idx) {
+            return { ...a, text: field === "text" ? value as string : a.text };
+          }
+          return a;
         });
         return { ...q, answers };
       })

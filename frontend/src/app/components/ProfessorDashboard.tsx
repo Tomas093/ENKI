@@ -101,8 +101,8 @@ export function ProfessorDashboard() {
   const prizePool = data?.[3]?.result as bigint | undefined;
   const professorOnChain = data?.[4]?.result as string | undefined;
   const totalQuestions = data?.[5]?.result as bigint | undefined;
-  const profPrizeClaimed = data?.[7]?.result as boolean | undefined;
-  const profPrize = data?.[8]?.result as bigint | undefined;
+  const profPrizeClaimed = data?.[6]?.result as boolean | undefined;
+  const profPrize = data?.[7]?.result as bigint | undefined;
 
   // Read current round
   const { data: roundData, refetch: refetchRound } = useReadContracts({
