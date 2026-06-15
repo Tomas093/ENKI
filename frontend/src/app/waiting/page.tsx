@@ -48,28 +48,38 @@ export default function WaitingRoom() {
             fromBlock,
             toBlock: 'latest',
           });
-          if (revealLogs.length > 0) {
+
+          // Filter by current questionId to avoid picking up stale events
+          const qDataStr = sessionStorage.getItem("current_question");
+          const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
+          const matchingLog = currentQId !== null
+            ? revealLogs.find((l: any) => Number(l.args.questionId) === currentQId)
+            : revealLogs[0];
+
+          if (matchingLog) {
             isRevealingRef = true;
             setIsRevealing(true);
-            const log = revealLogs[0] as any;
+            const log = matchingLog as any;
             const qId = Number(log.args.questionId);
-            const myIdx = Number(sessionStorage.getItem("my_answer_idx"));
+            const myIdx = sessionStorage.getItem("my_answer_idx");
             const mySalt = sessionStorage.getItem("my_answer_salt");
-            if (!isNaN(myIdx) && mySalt) {
+            if (myIdx !== null && mySalt) {
               try {
                 await writeContractAsync({
                   address: gameAddress as `0x${string}`,
                   abi: KahootGameABI.abi,
                   functionName: 'revealAnswer',
-                  args: [qId, myIdx, mySalt],
+                  args: [qId, Number(myIdx), mySalt],
                 });
+
+                // revealedAnswers is set in the same tx as RevealPhaseStarted, so it's already on-chain
                 const correctAns = await publicClient.readContract({
                   address: gameAddress as `0x${string}`,
                   abi: KahootGameABI.abi,
                   functionName: 'revealedAnswers',
                   args: [BigInt(qId)],
                 });
-                setIsCorrect(Number(correctAns) === myIdx);
+                setIsCorrect(Number(correctAns) === Number(myIdx));
               } catch (e) {
                 console.error("Auto-reveal failed", e);
                 setIsCorrect(false);
