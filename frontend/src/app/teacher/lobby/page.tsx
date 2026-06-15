@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check, Play, Users, Wifi } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
+import { useAccount, useReadContract, useWatchContractEvent, usePublicClient } from "wagmi";
 import KahootFactoryABI from "../../../abi/KahootFactory.json";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
@@ -38,24 +38,49 @@ export default function TeacherLobby() {
   const [copiedContract, setCopiedContract] = useState(false);
   const [pulse, setPulse] = useState(false);
 
-  useWatchContractEvent({
-    address: CONTRACT_ADDRESS !== "Loading address..." ? CONTRACT_ADDRESS as `0x${string}` : undefined,
-    abi: KahootGameABI.abi,
-    eventName: 'PlayerJoined',
-    onLogs(logs) {
-      logs.forEach(log => {
-        const player = (log as any).args.player;
-        if (player) {
-          setJoined(prev => {
-            if (prev.includes(player)) return prev;
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    if (!publicClient || CONTRACT_ADDRESS === "Loading address..." || !CONTRACT_ADDRESS) return;
+
+    const fetchJoinedPlayers = async () => {
+      try {
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+
+        const logs = await publicClient.getContractEvents({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: KahootGameABI.abi,
+          eventName: 'PlayerJoined',
+          fromBlock: fromBlock,
+          toBlock: 'latest'
+        });
+
+        const wallets = Array.from(
+          new Set(
+            logs
+              .map(l => (l as any).args?.player as string)
+              .filter(Boolean)
+          )
+        );
+        
+        setJoined(prev => {
+          if (prev.length !== wallets.length) {
             setPulse(true);
             setTimeout(() => setPulse(false), 600);
-            return [...prev, player];
-          });
-        }
-      });
-    },
-  });
+            return wallets;
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error("Failed to fetch historical players:", err);
+      }
+    };
+
+    fetchJoinedPlayers();
+    const interval = setInterval(fetchJoinedPlayers, 3000);
+    return () => clearInterval(interval);
+  }, [publicClient, CONTRACT_ADDRESS]);
 
   const handleCopy = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
