@@ -5,10 +5,8 @@ import { useState } from "react";
 import { Wallet, Loader } from "lucide-react";
 
 const WALLETS = [
-  { name: "MetaMask", emoji: "🦊", color: "border-orange-400", hover: "hover:border-orange-500 hover:shadow-orange-300/40" },
-  { name: "WalletConnect", emoji: "🔵", color: "border-blue-400", hover: "hover:border-blue-500 hover:shadow-blue-300/40" },
-  { name: "Coinbase Wallet", emoji: "🟦", color: "border-sky-400", hover: "hover:border-sky-500 hover:shadow-sky-300/40" },
-  { name: "Phantom", emoji: "👻", color: "border-purple-400", hover: "hover:border-purple-500 hover:shadow-purple-300/40" },
+  { name: "MetaMask", icon: "/metamask.svg", color: "border-orange-400", hover: "hover:border-orange-500 hover:shadow-orange-300/40" },
+  { name: "WalletConnect", icon: "/walletconnect.svg", color: "border-blue-400", hover: "hover:border-blue-500 hover:shadow-blue-300/40" },
 ];
 
 export default function WalletConnect() {
@@ -60,7 +58,9 @@ export default function WalletConnect() {
               disabled={!!connecting}
               className={`group w-full bg-white rounded-[20px] border-[4px] ${wallet.color} ${!connecting ? wallet.hover : ""} shadow-lg p-5 flex items-center gap-5 cursor-pointer transition-all duration-200 hover:-translate-y-1 disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              <span className="text-3xl leading-none select-none">{wallet.emoji}</span>
+              <span className="w-8 h-8 flex items-center justify-center shrink-0">
+                <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
+              </span>
               <span className="font-black text-xl text-slate-800 flex-1 text-left">{wallet.name}</span>
               {isConnecting ? (
                 <Loader size={22} className="text-purple-500 animate-spin" />
