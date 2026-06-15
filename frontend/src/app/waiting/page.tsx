@@ -74,9 +74,12 @@ export default function WaitingRoom() {
                 console.error("Auto-reveal failed", e);
                 setIsCorrect(false);
               }
-              isRevealedRef = true;
-              setRevealed(true);
+            } else {
+              setIsCorrect(false);
             }
+            isRevealedRef = true;
+            setRevealed(true);
+            setIsRevealing(false);
           }
         }
 
