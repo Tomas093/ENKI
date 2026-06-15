@@ -8,33 +8,6 @@ interface IKahootFactory {
     function recordDiplomaWin(address student) external;
 }
 
-/**
- * @title KahootGame
- * @notice Contrato de juego Kahoot on-chain con diploma NFT y pozo de premios (Prize Pool).
- *
- * Mecánica del Prize Pool
- * ─────────────────────────────────────────────────────────────────────────────
- * 1. Cada jugador llama a joinGame() pagando el entryFee para registrarse.
- * 2. El pozo (prizePool) acumula todos los depósitos.
- * 3. Al finalizar el juego, cualquiera puede llamar a calculatePrizes() una sola vez.
- *    La función itera sobre los posibles puntajes (de mayor a menor) para encontrar
- *    los 3 puntajes más altos distintos — O(totalQuestions), muy eficiente en gas.
- * 4. Distribución: 1er puesto 60% / 2do 20% / 3er 10% / Profesor 10% + sobrantes.
- *    Si un puesto está vacante (ej. todos empataron en el 1er puntaje), su porcentaje
- *    se acumula al premio del profesor.
- *    El redondeo por división entera también se acumula al profesor para que nunca
- *    queden fondos atrapados en el contrato.
- * 5. Empates: el premio del rango se divide en partes iguales entre los empatados.
- * 6. Los ganadores (y el profesor) retiran con claimPrize(), protegido con nonReentrant.
- *
- * Seguimiento dinámico de scoreFrequency
- * ─────────────────────────────────────────────────────────────────────────────
- * En lugar de iterar sobre todos los jugadores al final, mantenemos un mapping
- *   scoreFrequency[score] => cantidad de jugadores con ese puntaje
- * que se actualiza en cada revealAnswer() correcto (2 SSTOREs por respuesta acertada).
- * Esto hace que calculatePrizes() solo necesite recorrer totalQuestions valores, sin
- * importar cuántos jugadores haya.
- */
 contract KahootGame is ReentrancyGuard {
     // ─── Datos del juego ───────────────────────────────────────────────────────
     address public factory;
@@ -48,13 +21,6 @@ contract KahootGame is ReentrancyGuard {
     mapping(uint256 => uint8) public revealedAnswers;
     bool public isFinished;
 
-    /**
-     * @notice Almacena los hashes pre-calculados de cada ronda (Doble Commit-Reveal).
-     * @dev hashVerificacionPregunta = keccak256(abi.encodePacked(enunciado, op[0], op[1], op[2], op[3], saltProfesor))
-     *      hashRespuestaCorrecta    = keccak256(abi.encodePacked(opcionCorrecta, saltProfesor, direccionProfesor))
-     *      Nota: abi.encodePacked con strings dinámicos puede tener colisiones teóricas;
-     *      es aceptable aquí porque el profesor controla y pre-computa ambos lados.
-     */
     struct RondaOculta {
         bytes32 hashVerificacionPregunta; // keccak256(enunciado + opciones[4] + saltProfesor)
         bytes32 hashRespuestaCorrecta;    // keccak256(opcionCorrecta + saltProfesor + direccionProfesor)
@@ -86,19 +52,31 @@ contract KahootGame is ReentrancyGuard {
     mapping(address => bool) public hasPrizeClaimed;
     bool public professorPrizeClaimed;
 
+    // ─── Timeout / Circuit Breaker ─────────────────────────────────────────────
+
+    uint256 public lastActionTime;
+    bool public isCancelled;
+    uint256 public constant INACTIVITY_TIMEOUT = 12 hours;
+
     // ─── Eventos ───────────────────────────────────────────────────────────────
     event QuestionOpened(uint256 indexed questionId);
-    /// @notice Emitido cuando el profesor revela el enunciado; el frontend renderiza la pregunta en tiempo real.
     event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones);
     event RevealPhaseStarted(uint256 indexed questionId);
     event DiplomaClaimed(address indexed student);
     event PlayerJoined(address indexed player, uint256 feePaid);
     event PrizesCalculated(uint256 rank1Score, uint256 rank2Score, uint256 rank3Score);
     event PrizeClaimed(address indexed recipient, uint256 amount);
+    event RefundClaimed(address indexed player, uint256 amount);
+    event GameCancelledByInactivity(uint256 triggeredAt);
 
     // ─── Modificadores ─────────────────────────────────────────────────────────
     modifier onlyProfessor() {
         require(msg.sender == professor, "Solo el profe puede ejecutar esto");
+        _;
+    }
+
+    modifier notCancelled() {
+        require(!isCancelled, "El juego fue cancelado por inactividad");
         _;
     }
 
@@ -129,15 +107,11 @@ contract KahootGame is ReentrancyGuard {
         }
 
         diplomaContract = new DiplomaNFT(address(this));
+        lastActionTime = block.timestamp;
     }
 
     // ─── Unirse al juego ───────────────────────────────────────────────────────
-
-    /**
-     * @notice Paga el entryFee y se registra como jugador.
-     * Debe llamarse antes de commitAnswer(). El ETH enviado se suma al prizePool.
-     */
-    function joinGame() external payable {
+function joinGame() external payable notCancelled {
         require(currentQuestionId == 0 && !listaDeRondas[0].commitPhaseOpen, "El juego ya comenzo o ya termino");
         require(!hasJoined[msg.sender], "Ya te uniste al juego");
         require(msg.value == entryFee, "Debes enviar exactamente el entryFee");
@@ -151,12 +125,11 @@ contract KahootGame is ReentrancyGuard {
     }
 
     // ─── Flujo del juego ───────────────────────────────────────────────────────
-
     function startNextQuestion(
         string calldata _enunciado,
         string[4] calldata _opciones,
         string calldata _saltProfesor
-    ) external onlyProfessor {
+    ) external onlyProfessor notCancelled {
         require(!isFinished, "El juego termino");
 
         uint256 currentQ = currentQuestionId;
@@ -176,6 +149,7 @@ contract KahootGame is ReentrancyGuard {
         require(hashCalculado == listaDeRondas[currentQ].hashVerificacionPregunta, "Hash de pregunta invalido");
 
         listaDeRondas[currentQ].commitPhaseOpen = true;
+        lastActionTime = block.timestamp; // ← resetea el reloj de inactividad
         emit QuestionOpened(currentQ);
         emit QuestionRevealed(currentQ, _enunciado, _opciones);
     }
@@ -190,7 +164,7 @@ contract KahootGame is ReentrancyGuard {
         commits[currentQ][msg.sender] = _commitHash;
     }
 
-    function closeQuestionAndStartReveal(uint8 _correctOption, string calldata _professorSalt) external onlyProfessor {
+    function closeQuestionAndStartReveal(uint8 _correctOption, string calldata _professorSalt) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
         require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
 
@@ -200,6 +174,7 @@ contract KahootGame is ReentrancyGuard {
         revealedAnswers[currentQ] = _correctOption;
         listaDeRondas[currentQ].commitPhaseOpen = false;
         listaDeRondas[currentQ].revealPhaseOpen = true;
+        lastActionTime = block.timestamp;
 
         emit RevealPhaseStarted(currentQ);
     }
@@ -226,36 +201,46 @@ contract KahootGame is ReentrancyGuard {
         }
     }
 
-    function advanceToNextQuestion() external onlyProfessor {
+    function advanceToNextQuestion() external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
         require(listaDeRondas[currentQ].revealPhaseOpen, "Primero hay que abrir los reveals");
 
         listaDeRondas[currentQ].revealPhaseOpen = false;
         currentQuestionId += 1;
+        lastActionTime = block.timestamp;
 
         if (currentQuestionId == totalQuestions) {
             isFinished = true;
         }
     }
 
-    // ─── Cálculo de premios ────────────────────────────────────────────────────
+    // ─── Reembolso por inactividad (timeout) ───────────────────────────────────
+    function claimRefund() external nonReentrant {
+        // ── CHECKS ──────────────────────────────────────────────────────────────
+        require(hasJoined[msg.sender], "No participaste en este juego");
+        require(!hasPrizeClaimed[msg.sender], "Ya retiraste un premio o reembolso");
+        require(
+            block.timestamp >= lastActionTime + INACTIVITY_TIMEOUT,
+            "El timeout de inactividad aun no vencio"
+        );
+        require(!isFinished, "El juego ya termino; usa claimPrize()");
 
-    /**
-     * @notice Calcula y congela los premios. Puede ser llamada por cualquiera una vez
-     * que el juego haya finalizado y haya un pozo de premios.
-     *
-     * Complejidad: O(totalQuestions) — itera sobre los puntajes posibles de mayor a menor
-     * hasta encontrar los 3 puntajes más altos distintos. No itera sobre jugadores.
-     *
-     * Distribución:
-     *   Rango 1 (puntaje más alto):    60% dividido entre los empatados
-     *   Rango 2 (2do puntaje más alto): 20% dividido entre los empatados
-     *   Rango 3 (3er puntaje más alto): 10% dividido entre los empatados
-     *   Profesor:                       10% base + puestos vacantes + sobrantes de redondeo
-     *
-     * Los "sobrantes de redondeo" (wei perdidos por división entera) se acumulan al
-     * profesor para garantizar que nunca queden fondos atrapados en el contrato.
-     */
+        // ── EFFECTS ─────────────────────────────────────────────────────────────
+        hasPrizeClaimed[msg.sender] = true;
+        prizePool -= entryFee;
+        if (!isCancelled) {
+            isCancelled = true;
+            emit GameCancelledByInactivity(block.timestamp);
+        }
+
+        // ── INTERACTIONS ────────────────────────────────────────────────────────
+        (bool success, ) = msg.sender.call{value: entryFee}("");
+        require(success, "La transferencia de ETH fallo");
+
+        emit RefundClaimed(msg.sender, entryFee);
+    }
+
+    // ─── Cálculo de premios ────────────────────────────────────────────────────
     function calculatePrizes() external {
         require(isFinished, "El juego no ha terminado");
         require(!prizesCalculated, "Los premios ya fueron calculados");
@@ -263,43 +248,46 @@ contract KahootGame is ReentrancyGuard {
 
         prizesCalculated = true;
 
-        // Encontrar los 3 puntajes más altos distintos con jugadores (O(totalQuestions))
-        uint8 ranksFound = 0;
-        for (uint256 i = totalQuestions; ranksFound < 3; ) {
-            if (scoreFrequency[i] > 0) {
-                topScoreValues[ranksFound] = i;
-                topScoreCounts[ranksFound] = scoreFrequency[i];
-                ranksFound++;
-            }
-            if (i == 0) break;
-            i--;
-        }
-
         // Montos brutos por rango (con división entera)
         uint256 rank1Total = (prizePool * 60) / 100;
         uint256 rank2Total = (prizePool * 20) / 100;
         uint256 rank3Total = (prizePool * 10) / 100;
 
-        // El profesor empieza con 10% y acumula puestos vacantes + sobrantes de redondeo
+        uint256 slotsUsed      = 0;  // slots del top-3 ya consumidos por grupos anteriores
+        uint8   ranksFound     = 0;  // grupos con derecho a premio encontrados (máx 3)
         uint256 totalToPlayers = 0;
 
-        if (ranksFound >= 1) {
-            prizePerPlayerAtRank[0] = rank1Total / topScoreCounts[0];
-            totalToPlayers += prizePerPlayerAtRank[0] * topScoreCounts[0];
-        }
-        // Si ranksFound < 1, rank1Total queda sin asignar → va al profesor vía el cálculo final
+        // Recorre puntajes de mayor a menor hasta agotar los 3 slots premiados
+        for (uint256 s = totalQuestions; slotsUsed < 3; ) {
+            uint256 freq = scoreFrequency[s];
 
-        if (ranksFound >= 2) {
-            prizePerPlayerAtRank[1] = rank2Total / topScoreCounts[1];
-            totalToPlayers += prizePerPlayerAtRank[1] * topScoreCounts[1];
+            if (freq > 0) {
+                // Este grupo ocupa los slots [slotStart .. slotEnd]
+                uint256 slotStart = slotsUsed + 1;
+                uint256 slotEnd   = slotsUsed + freq;
+
+                // Acumular los % de los slots premiados que caen en [slotStart, slotEnd]
+                uint256 poolAcumulado = 0;
+                if (slotStart <= 1 && slotEnd >= 1) poolAcumulado += rank1Total;
+                if (slotStart <= 2 && slotEnd >= 2) poolAcumulado += rank2Total;
+                if (slotStart <= 3 && slotEnd >= 3) poolAcumulado += rank3Total;
+
+                if (poolAcumulado > 0) {
+                    topScoreValues[ranksFound]       = s;
+                    topScoreCounts[ranksFound]       = freq;
+                    prizePerPlayerAtRank[ranksFound] = poolAcumulado / freq;
+                    totalToPlayers += prizePerPlayerAtRank[ranksFound] * freq;
+                    ranksFound++;
+                }
+
+                slotsUsed += freq;
+            }
+
+            if (s == 0) break;
+            s--;
         }
 
-        if (ranksFound >= 3) {
-            prizePerPlayerAtRank[2] = rank3Total / topScoreCounts[2];
-            totalToPlayers += prizePerPlayerAtRank[2] * topScoreCounts[2];
-        }
-
-        // El profesor recibe todo lo restante: su 10% base + puestos vacantes + wei de redondeo
+        // El profesor recibe: 10 % base + slots vacantes + dust de divisiones enteras
         professorPrize = prizePool - totalToPlayers;
 
         emit PrizesCalculated(
@@ -310,13 +298,6 @@ contract KahootGame is ReentrancyGuard {
     }
 
     // ─── Retiro de premios ─────────────────────────────────────────────────────
-
-    /**
-     * @notice Retira el premio del pozo correspondiente al caller.
-     * - El profesor llama esta función para retirar su comisión.
-     * - Los jugadores la llaman si su puntaje final coincide con alguno de los top 3.
-     * - Es independiente de claimDiploma() y usa nonReentrant como protección.
-     */
     function claimPrize() external nonReentrant {
         require(prizesCalculated, "Primero se debe llamar a calculatePrizes()");
 

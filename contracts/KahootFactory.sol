@@ -16,6 +16,8 @@ contract KahootFactory {
     uint256[10] public topBalances;
     mapping(address => bool) public isOfficialGame;
 
+    mapping(address => KahootGame[]) public kahootsDeProfesor;
+
     event GameCreated(address indexed gameAddress, address indexed professor);
     event LeaderboardUpdated(address indexed student, uint256 newTotal);
     event CreationFeeUpdated(uint256 oldFee, uint256 newFee);
@@ -60,10 +62,15 @@ contract KahootFactory {
             _entryFee
         );
         games.push(newGame);
+        kahootsDeProfesor[msg.sender].push(newGame);
         isOfficialGame[address(newGame)] = true;
         emit GameCreated(address(newGame), msg.sender);
 
         return address(newGame);
+    }
+
+    function getKahootsDeProfesor(address _profesor) external view returns (KahootGame[] memory) {
+        return kahootsDeProfesor[_profesor];
     }
 
     /**
