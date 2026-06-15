@@ -39,14 +39,24 @@ export default function TeacherLobby() {
   const [pulse, setPulse] = useState(false);
   const publicClient = usePublicClient();
 
-  // 1. Cargar jugadores históricos UNA SOLA VEZ al iniciar
+  // Cargar jugadores usando polling eficiente (soporta RPCs sin WebSocket)
   useEffect(() => {
     if (!publicClient || CONTRACT_ADDRESS === "Loading address..." || !CONTRACT_ADDRESS) return;
+
+    let lastCheckedBlock = 0n;
 
     const fetchJoinedPlayers = async () => {
       try {
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
+        
+        // La primera vez busca en los últimos 9000 bloques, luego solo busca en los bloques nuevos
+        let fromBlock = lastCheckedBlock === 0n 
+          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n) 
+          : lastCheckedBlock + 1n;
+
+        if (fromBlock > currentBlock) {
+          fromBlock = currentBlock;
+        }
 
         const logs = await publicClient.getContractEvents({
           address: CONTRACT_ADDRESS as `0x${string}`,
@@ -56,42 +66,36 @@ export default function TeacherLobby() {
           toBlock: 'latest'
         });
 
-        const wallets = Array.from(
-          new Set(
-            logs
-              .map(l => (l as any).args?.player as string)
-              .filter(Boolean)
-          )
-        );
+        if (logs.length > 0) {
+          const newWallets = logs.map(l => (l as any).args?.player as string).filter(Boolean);
+          
+          setJoined(prev => {
+            const updated = [...prev];
+            let added = false;
+            for (const w of newWallets) {
+              if (!updated.includes(w)) {
+                updated.push(w);
+                added = true;
+              }
+            }
+            if (added) {
+              setPulse(true);
+              setTimeout(() => setPulse(false), 600);
+            }
+            return updated;
+          });
+        }
         
-        setJoined(wallets);
+        lastCheckedBlock = currentBlock;
       } catch (err) {
-        console.error("Failed to fetch historical players:", err);
+        console.error("Failed to fetch players:", err);
       }
     };
 
     fetchJoinedPlayers();
+    const interval = setInterval(fetchJoinedPlayers, 3500);
+    return () => clearInterval(interval);
   }, [publicClient, CONTRACT_ADDRESS]);
-
-  // 2. Escuchar eventos NUEVOS en tiempo real
-  useWatchContractEvent({
-    address: CONTRACT_ADDRESS !== "Loading address..." ? CONTRACT_ADDRESS as `0x${string}` : undefined,
-    abi: KahootGameABI.abi,
-    eventName: 'PlayerJoined',
-    onLogs(logs) {
-      logs.forEach(log => {
-        const player = (log as any).args?.player as string;
-        if (player) {
-          setJoined(prev => {
-            if (prev.includes(player)) return prev;
-            setPulse(true);
-            setTimeout(() => setPulse(false), 600);
-            return [...prev, player];
-          });
-        }
-      });
-    },
-  });
 
   const handleCopy = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
