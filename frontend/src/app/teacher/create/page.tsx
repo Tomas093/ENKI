@@ -50,6 +50,20 @@ export default function CreateSession() {
   });
 
   useEffect(() => {
+    const draft = localStorage.getItem("draft_session");
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.stakeAmount) setStakeAmount(parsed.stakeAmount);
+        if (parsed.passingScore) setPassingScore(parsed.passingScore);
+        if (parsed.questions) setQuestions(parsed.questions);
+        if (parsed.nextId) setNextId(parsed.nextId);
+      } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
     if (isConfirmed && receipt) {
       let gameAddr = "";
       try {
@@ -76,6 +90,11 @@ export default function CreateSession() {
       router.push(`/teacher/lobby?title=${encodeURIComponent(title)}${param}`);
     }
   }, [isConfirmed, receipt, router, title]);
+
+  const handleCustomizeDiploma = () => {
+    localStorage.setItem("draft_session", JSON.stringify({ title, stakeAmount, passingScore, questions, nextId }));
+    router.push("/teacher/diploma-studio");
+  };
 
   const handleLaunch = () => {
     if (!address) return toast.error("Connect wallet first!");
@@ -116,10 +135,12 @@ export default function CreateSession() {
     };
     localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
 
+    localStorage.removeItem("draft_session");
+    
     let diplomaURI = localStorage.getItem("saved_diploma_uri");
     if (!diplomaURI) {
       // Default basic ENKI diploma if none created
-      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#f1f5f9"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#7c3aed" stroke-width="8"/><text x="400" y="300" font-family="sans-serif" font-size="40" font-weight="bold" fill="#1e293b" text-anchor="middle">ENKI Diploma</text><text x="400" y="360" font-family="sans-serif" font-size="20" fill="#64748b" text-anchor="middle">Awarded for completing ${title}</text></svg>`;
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#f1f5f9"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#7c3aed" stroke-width="8"/><text x="400" y="300" font-family="sans-serif" font-size="40" font-weight="bold" fill="#1e293b" text-anchor="middle">ENKI Diploma</text><text x="400" y="360" font-family="sans-serif" font-size="14" fill="#64748b" text-anchor="middle">Awarded for completing ${title}</text></svg>`;
       const svgBase64 = btoa(unescape(encodeURIComponent(svgStr)));
       const metadata = { name: `ENKI Diploma: ${title}`, description: "Basic ENKI Diploma", image: `data:image/svg+xml;base64,${svgBase64}` };
       diplomaURI = `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(metadata))))}`;
@@ -235,7 +256,7 @@ export default function CreateSession() {
             <span className="text-slate-400 text-xs font-medium">Customize the certificate your students will earn</span>
           </div>
           <button
-            onClick={() => router.push("/teacher/diploma-studio")}
+            onClick={handleCustomizeDiploma}
             className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-purple-600 font-bold px-4 py-2 rounded-[10px] transition-colors"
           >
             <Palette size={16} /> Customize Diploma

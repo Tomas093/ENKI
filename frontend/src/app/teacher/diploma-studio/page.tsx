@@ -85,7 +85,7 @@ export default function DiplomaStudio() {
         <text x="400" y="140" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="42" font-weight="900" fill="${textColor}" text-anchor="middle" letter-spacing="4" filter="url(#shadow)">CERTIFICATE OF ACHIEVEMENT</text>
         <text x="400" y="210" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="400" fill="${textColor}" text-anchor="middle" filter="url(#shadow)">This certifies that the holder has successfully completed</text>
         <text x="400" y="310" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="900" fill="${accentColor}" text-anchor="middle" filter="url(#shadow)">${courseTitle}</text>
-        <text x="400" y="390" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-style="italic" fill="${textColor}" text-anchor="middle" filter="url(#shadow)">${subtitle}</text>
+        <text x="400" y="390" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-style="italic" fill="${textColor}" text-anchor="middle" filter="url(#shadow)">${subtitle}</text>
         
         <line x1="250" y1="480" x2="550" y2="480" stroke="${textColor}" stroke-width="2" opacity="0.8" filter="url(#shadow)"/>
         <text x="400" y="520" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="${textColor}" text-anchor="middle" letter-spacing="1" filter="url(#shadow)">Issued by ${issuerName}</text>

@@ -176,10 +176,10 @@ export default function TeacherLobby() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="bg-white rounded-[24px] border-[3px] border-slate-100 shadow-sm overflow-hidden"
+        className={`rounded-[24px] border-[4px] shadow-sm overflow-hidden transition-all duration-300 ${pulse ? "bg-emerald-50 border-emerald-400 scale-[1.02]" : "bg-white border-slate-100 scale-100"}`}
       >
         {/* Title row */}
-        <div className="px-6 py-5 border-b-2 border-slate-100 flex items-center justify-between">
+        <div className={`px-6 py-5 border-b-2 flex items-center justify-between transition-colors duration-300 ${pulse ? "border-emerald-200" : "border-slate-100"}`}>
           <div className="flex items-center gap-3">
             <h2 className="font-black text-slate-800 text-xl">Players Joined</h2>
             <span className={`flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full transition-all ${pulse ? "bg-emerald-100 text-emerald-600 scale-110" : "bg-slate-100 text-slate-500"}`}>

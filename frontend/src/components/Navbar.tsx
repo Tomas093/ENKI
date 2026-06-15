@@ -1,10 +1,14 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Bell, Wallet, ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAccount, useDisconnect } from "wagmi";
 
 export const Navbar = () => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const pathname = usePathname();
   const router = useRouter();
   const { address } = useAccount();
@@ -36,9 +40,9 @@ export const Navbar = () => {
         </button>
         <div className="h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center px-4 gap-3 shadow-sm font-bold text-slate-700">
           <Wallet size={20} className="text-purple-500" />
-          <span>{address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}</span>
+          <span>{mounted && address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}</span>
         </div>
-        {address && (
+        {mounted && address && (
           <button 
             onClick={() => {
               disconnect();

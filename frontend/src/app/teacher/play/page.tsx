@@ -19,6 +19,14 @@ export default function TeacherPlay() {
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<"IDLE" | "COMMIT_OPEN" | "REVEAL_OPEN" | "FINISHED">("IDLE");
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (phase === "COMMIT_OPEN" && timeLeft !== null && timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, timeLeft]);
 
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending: isWriting } = useWriteContract();
@@ -58,6 +66,7 @@ export default function TeacherPlay() {
       await publicClient?.waitForTransactionReceipt({ hash: tx });
       setIsWaiting(false);
       setPhase("COMMIT_OPEN");
+      setTimeLeft(currentQ.timeLimit || 30);
     } catch (error) {
       console.error(error);
       setIsWaiting(false);
@@ -210,6 +219,24 @@ export default function TeacherPlay() {
                   </button>
                 )}
               </div>
+              
+              {/* Timer UI */}
+              {phase === "COMMIT_OPEN" && timeLeft !== null && (
+                <div className={`mt-6 p-4 rounded-[16px] border-[3px] w-full max-w-md flex flex-col items-center justify-center transition-all ${
+                  timeLeft === 0 
+                    ? "bg-red-50 border-red-400 text-red-600 scale-105 shadow-xl animate-pulse" 
+                    : timeLeft <= 5 
+                      ? "bg-orange-50 border-orange-400 text-orange-600 scale-105"
+                      : "bg-slate-50 border-slate-200 text-slate-700"
+                }`}>
+                  <span className="font-black text-4xl md:text-5xl tabular-nums tracking-tight">
+                    00:{timeLeft.toString().padStart(2, "0")}
+                  </span>
+                  <span className="font-bold text-sm uppercase tracking-widest mt-1 opacity-80">
+                    {timeLeft === 0 ? "🚨 TIME'S UP! LOCK ANSWERS NOW 🚨" : "Time Remaining"}
+                  </span>
+                </div>
+              )}
             </div>
           </>
         ) : (
