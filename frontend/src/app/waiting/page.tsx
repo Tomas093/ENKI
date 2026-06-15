@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Hourglass, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWatchContractEvent, useWriteContract, usePublicClient } from "wagmi";
+import { useWriteContract, usePublicClient } from "wagmi";
 import KahootGameABI from "../../abi/KahootGame.json";
 
 export default function WaitingRoom() {
@@ -24,82 +24,107 @@ export default function WaitingRoom() {
     return () => clearTimeout(bannerTimer);
   }, []);
 
-  useWatchContractEvent({
-    address: gameAddress as `0x${string}`,
-    abi: KahootGameABI.abi,
-    eventName: 'RevealPhaseStarted',
-    async onLogs(logs) {
-      if (logs.length > 0 && !isRevealing && !revealed) {
-        setIsRevealing(true);
-        const log = logs[0] as any;
-        const qId = Number(log.args.questionId);
+  // Polling para detectar RevealPhaseStarted, QuestionRevealed y PrizesCalculated
+  useEffect(() => {
+    if (!publicClient || !gameAddress) return;
 
-        const myIdx = Number(sessionStorage.getItem("my_answer_idx"));
-        const mySalt = sessionStorage.getItem("my_answer_salt");
+    let lastCheckedBlock = 0n;
+    let isRevealingRef = false;
+    let isRevealedRef = false;
 
-        if (isNaN(myIdx) || !mySalt) return;
+    const poll = async () => {
+      try {
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = lastCheckedBlock === 0n
+          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
+          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
 
-        try {
-          await writeContractAsync({
+        // 1. Buscar RevealPhaseStarted (para hacer el reveal automático)
+        if (!isRevealingRef && !isRevealedRef) {
+          const revealLogs = await publicClient.getContractEvents({
             address: gameAddress as `0x${string}`,
             abi: KahootGameABI.abi,
-            functionName: 'revealAnswer',
-            args: [qId, myIdx, mySalt],
+            eventName: 'RevealPhaseStarted',
+            fromBlock,
+            toBlock: 'latest',
           });
-          
-          if (publicClient) {
-            const correctAns = await publicClient.readContract({
-              address: gameAddress as `0x${string}`,
-              abi: KahootGameABI.abi,
-              functionName: 'revealedAnswers',
-              args: [BigInt(qId)]
-            });
-            setIsCorrect(Number(correctAns) === myIdx);
-          } else {
-            setIsCorrect(true);
+          if (revealLogs.length > 0) {
+            isRevealingRef = true;
+            setIsRevealing(true);
+            const log = revealLogs[0] as any;
+            const qId = Number(log.args.questionId);
+            const myIdx = Number(sessionStorage.getItem("my_answer_idx"));
+            const mySalt = sessionStorage.getItem("my_answer_salt");
+            if (!isNaN(myIdx) && mySalt) {
+              try {
+                await writeContractAsync({
+                  address: gameAddress as `0x${string}`,
+                  abi: KahootGameABI.abi,
+                  functionName: 'revealAnswer',
+                  args: [qId, myIdx, mySalt],
+                });
+                const correctAns = await publicClient.readContract({
+                  address: gameAddress as `0x${string}`,
+                  abi: KahootGameABI.abi,
+                  functionName: 'revealedAnswers',
+                  args: [BigInt(qId)],
+                });
+                setIsCorrect(Number(correctAns) === myIdx);
+              } catch (e) {
+                console.error("Auto-reveal failed", e);
+                setIsCorrect(false);
+              }
+              isRevealedRef = true;
+              setRevealed(true);
+            }
+          }
+        }
+
+        // 2. Si ya revelamos, esperar la siguiente pregunta o el fin del juego
+        if (isRevealedRef) {
+          const nextQLogs = await publicClient.getContractEvents({
+            address: gameAddress as `0x${string}`,
+            abi: KahootGameABI.abi,
+            eventName: 'QuestionRevealed',
+            fromBlock,
+            toBlock: 'latest',
+          });
+          if (nextQLogs.length > 0) {
+            const log = nextQLogs[0] as any;
+            const args = log.args;
+            const questionData = {
+              id: Number(args.questionId),
+              question: args.enunciado,
+              options: args.opciones,
+            };
+            sessionStorage.setItem("current_question", JSON.stringify(questionData));
+            router.push(`/gameplay?game=${gameAddress}`);
+            return;
           }
 
-          setRevealed(true);
-        } catch (e) {
-          console.error("Auto-reveal failed", e);
-          setIsCorrect(false);
-          setRevealed(true);
+          const endLogs = await publicClient.getContractEvents({
+            address: gameAddress as `0x${string}`,
+            abi: KahootGameABI.abi,
+            eventName: 'PrizesCalculated',
+            fromBlock,
+            toBlock: 'latest',
+          });
+          if (endLogs.length > 0) {
+            router.push(`/leaderboard?game=${gameAddress}`);
+            return;
+          }
         }
-      }
-    },
-  });
 
-  // Listen for Next Question
-  useWatchContractEvent({
-    address: gameAddress as `0x${string}`,
-    abi: KahootGameABI.abi,
-    eventName: 'QuestionRevealed',
-    onLogs(logs) {
-      if (logs.length > 0 && revealed) {
-        const log = logs[0] as any;
-        const args = log.args;
-        const questionData = {
-          id: Number(args.questionId),
-          question: args.enunciado,
-          options: args.opciones,
-        };
-        sessionStorage.setItem("current_question", JSON.stringify(questionData));
-        router.push(`/gameplay?game=${gameAddress}`);
+        lastCheckedBlock = currentBlock;
+      } catch (err) {
+        console.error("Polling error:", err);
       }
-    },
-  });
+    };
 
-  // Listen for Game End
-  useWatchContractEvent({
-    address: gameAddress as `0x${string}`,
-    abi: KahootGameABI.abi,
-    eventName: 'PrizesCalculated',
-    onLogs() {
-      if (revealed) {
-        router.push(`/leaderboard?game=${gameAddress}`);
-      }
-    },
-  });
+    const interval = setInterval(poll, 3500);
+    poll();
+    return () => clearInterval(interval);
+  }, [publicClient, gameAddress]);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center w-full z-10 relative">

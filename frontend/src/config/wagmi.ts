@@ -1,4 +1,4 @@
-import { http, createConfig } from 'wagmi'
+import { http, createConfig, fallback } from 'wagmi'
 import { hardhat, sepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
@@ -9,6 +9,10 @@ export const config = createConfig({
   ],
   transports: {
     [hardhat.id]: http('http://127.0.0.1:8545'),
-    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL),
+    [sepolia.id]: fallback([
+      http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL),
+      http('https://ethereum-sepolia-rpc.publicnode.com'),
+      http('https://rpc.sepolia.org')
+    ]),
   },
 })

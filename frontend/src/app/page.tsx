@@ -58,7 +58,7 @@ const WalletScreen = ({ onConnect }: { onConnect: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#F4F6FA] px-4 relative">
+    <div className="h-[100dvh] overflow-hidden w-full flex items-center justify-center bg-[#F4F6FA] px-4 relative">
       <LoginCornerShapes />
 
       <motion.div
@@ -168,7 +168,7 @@ const RoleScreen = ({ onDisconnect }: { onDisconnect: () => void }) => {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-[#F4F6FA] relative">
+    <div className="h-[100dvh] overflow-hidden w-full flex flex-col bg-[#F4F6FA] relative">
       <LoginCornerShapes />
 
 

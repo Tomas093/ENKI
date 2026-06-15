@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Users, Coins } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWatchContractEvent, useReadContracts } from "wagmi";
+import { useReadContracts, usePublicClient } from "wagmi";
 import { formatEther } from "viem";
 import KahootGameABI from "../../abi/KahootGame.json";
 
@@ -11,6 +11,7 @@ export default function JoinWaitingRoom() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const gameAddress = searchParams.get("game");
+  const publicClient = usePublicClient();
 
   // Read Live Stats
   const { data: stats } = useReadContracts({
@@ -29,35 +30,63 @@ export default function JoinWaitingRoom() {
     : "0";
   const prizePoolStr = prizePoolVal !== undefined ? formatEther(prizePoolVal) : "0.0";
 
-  // Watch for Question
-  useWatchContractEvent({
-    address: gameAddress as `0x${string}`,
-    abi: KahootGameABI.abi,
-    eventName: 'QuestionRevealed',
-    onLogs(logs) {
-      if (logs.length > 0) {
-        const log = logs[0] as any;
-        const args = log.args;
-        const questionData = {
-          id: Number(args.questionId),
-          question: args.enunciado,
-          options: args.opciones,
-        };
-        sessionStorage.setItem("current_question", JSON.stringify(questionData));
-        router.push(`/gameplay?game=${gameAddress}`);
-      }
-    },
-  });
+  // Polling para detectar QuestionRevealed y PrizesCalculated
+  useEffect(() => {
+    if (!publicClient || !gameAddress) return;
 
-  // Watch for Game Over
-  useWatchContractEvent({
-    address: gameAddress as `0x${string}`,
-    abi: KahootGameABI.abi,
-    eventName: 'PrizesCalculated',
-    onLogs() {
-      router.push(`/leaderboard?game=${gameAddress}`);
-    },
-  });
+    let lastCheckedBlock = 0n;
+
+    const poll = async () => {
+      try {
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = lastCheckedBlock === 0n
+          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
+          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
+
+        // Buscar QuestionRevealed (el profe lanzó la primera pregunta)
+        const questionLogs = await publicClient.getContractEvents({
+          address: gameAddress as `0x${string}`,
+          abi: KahootGameABI.abi,
+          eventName: 'QuestionRevealed',
+          fromBlock,
+          toBlock: 'latest',
+        });
+        if (questionLogs.length > 0) {
+          const log = questionLogs[0] as any;
+          const args = log.args;
+          const questionData = {
+            id: Number(args.questionId),
+            question: args.enunciado,
+            options: args.opciones,
+          };
+          sessionStorage.setItem("current_question", JSON.stringify(questionData));
+          router.push(`/gameplay?game=${gameAddress}`);
+          return;
+        }
+
+        // Buscar fin del juego
+        const endLogs = await publicClient.getContractEvents({
+          address: gameAddress as `0x${string}`,
+          abi: KahootGameABI.abi,
+          eventName: 'PrizesCalculated',
+          fromBlock,
+          toBlock: 'latest',
+        });
+        if (endLogs.length > 0) {
+          router.push(`/leaderboard?game=${gameAddress}`);
+          return;
+        }
+
+        lastCheckedBlock = currentBlock;
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    };
+
+    const interval = setInterval(poll, 3500);
+    poll();
+    return () => clearInterval(interval);
+  }, [publicClient, gameAddress]);
 
   return (
     <motion.div
