@@ -92,12 +92,18 @@ export default function WaitingRoom() {
           if (nextQLogs.length > 0) {
             const log = nextQLogs[0] as any;
             const args = log.args;
-            const questionData = {
-              id: Number(args.questionId),
-              question: args.enunciado,
-              options: args.opciones,
-            };
-            sessionStorage.setItem("current_question", JSON.stringify(questionData));
+          const rawQuestion = args.enunciado;
+          const parts = rawQuestion.split("||");
+          const actualQuestion = parts[0];
+          const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
+
+          const questionData = {
+            id: Number(args.questionId),
+            question: actualQuestion,
+            timeLimit: timeLimit,
+            options: args.opciones,
+          };
+          sessionStorage.setItem("current_question", JSON.stringify(questionData));
             router.push(`/gameplay?game=${gameAddress}`);
             return;
           }

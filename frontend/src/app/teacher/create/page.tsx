@@ -103,10 +103,11 @@ export default function CreateSession() {
       const saltProfesor = "secretSalt123" + q.id; 
       const correctOptionIndex = q.answers.findIndex((a) => a.correct);
 
+      const encodedQuestion = `${q.question}||${q.timeLimit || 30}`;
       const hashVerificacionPregunta = keccak256(
         encodePacked(
           ['string', 'string', 'string', 'string', 'string', 'string'],
-          [q.question, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltProfesor]
+          [encodedQuestion, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltProfesor]
         )
       );
 

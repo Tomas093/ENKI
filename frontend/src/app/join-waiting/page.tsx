@@ -54,9 +54,15 @@ export default function JoinWaitingRoom() {
         if (questionLogs.length > 0) {
           const log = questionLogs[0] as any;
           const args = log.args;
+          const rawQuestion = args.enunciado;
+          const parts = rawQuestion.split("||");
+          const actualQuestion = parts[0];
+          const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
+
           const questionData = {
             id: Number(args.questionId),
-            question: args.enunciado,
+            question: actualQuestion,
+            timeLimit: timeLimit,
             options: args.opciones,
           };
           sessionStorage.setItem("current_question", JSON.stringify(questionData));

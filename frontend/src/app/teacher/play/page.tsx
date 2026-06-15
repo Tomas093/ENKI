@@ -57,7 +57,7 @@ export default function TeacherPlay() {
         abi: KahootGameABI.abi,
         functionName: "startNextQuestion",
         args: [
-          currentQ.question,
+          `${currentQ.question}||${currentQ.timeLimit || 30}`,
           [currentQ.answers[0].text, currentQ.answers[1].text, currentQ.answers[2].text, currentQ.answers[3].text],
           currentQ.saltProfesor,
         ]

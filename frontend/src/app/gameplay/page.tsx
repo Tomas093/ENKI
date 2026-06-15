@@ -19,8 +19,9 @@ const TOTAL_TIME = 30;
 
 export default function ActiveGameplay() {
   const [selected, setSelected] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [questionData, setQuestionData] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [totalTime, setTotalTime] = useState(30);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,7 +33,10 @@ export default function ActiveGameplay() {
   useEffect(() => {
     const qData = sessionStorage.getItem("current_question");
     if (qData) {
-      setQuestionData(JSON.parse(qData));
+      const parsed = JSON.parse(qData);
+      setQuestionData(parsed);
+      setTimeLeft(parsed.timeLimit || 30);
+      setTotalTime(parsed.timeLimit || 30);
     }
   }, []);
 
@@ -41,6 +45,18 @@ export default function ActiveGameplay() {
     const t = setInterval(() => setTimeLeft((n) => Math.max(0, n - 1)), 1000);
     return () => clearInterval(t);
   }, [selected, timeLeft, questionData]);
+
+  // Auto-redirect if time runs out and no answer was picked
+  useEffect(() => {
+    if (timeLeft <= 0 && selected === null && gameAddress) {
+      sessionStorage.removeItem("my_answer_idx");
+      sessionStorage.removeItem("my_answer_salt");
+      const t = setTimeout(() => {
+        router.push(`/waiting?game=${gameAddress}`);
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [timeLeft, selected, gameAddress, router]);
 
   const handlePick = async (idx: number) => {
     if (selected !== null || !gameAddress || !address) return;
@@ -71,7 +87,7 @@ export default function ActiveGameplay() {
   };
 
   const timerUrgent = timeLeft <= 5;
-  const timerPct = (timeLeft / TOTAL_TIME) * 100;
+  const timerPct = (timeLeft / totalTime) * 100;
   const timerColor = timerUrgent ? "#EF4444" : "#7C3AED";
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
@@ -83,37 +99,25 @@ export default function ActiveGameplay() {
       className="flex flex-col w-full gap-4"
       style={{ height: "calc(100vh - 88px)" }}
     >
+      {/* ── Sleek Horizontal Timer Bar ──────────────────────────────────────── */}
+      <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-2 relative">
+        <motion.div
+          animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
+          transition={{ duration: 1, ease: "linear" }}
+          className="h-full rounded-full"
+        />
+      </div>
 
-      {/* ── 1. Header: Timer + Question pill ─────────────────────────── */}
-      <div className="flex items-center justify-center gap-4 pt-2">
-
-        {/* Circular timer */}
-        <div className="relative flex items-center justify-center">
-          <svg width="72" height="72" className="-rotate-90">
-            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(124,58,237,0.12)" strokeWidth="6" />
-            <motion.circle
-              cx="36" cy="36" r="30"
-              fill="none"
-              stroke={timerColor}
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 30}
-              strokeDashoffset={2 * Math.PI * 30 * (1 - timerPct / 100)}
-              style={{ filter: `drop-shadow(0 0 6px ${timerColor})`, transition: "stroke 0.4s" }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span
-              className="font-black tabular-nums"
-              style={{ fontSize: 16, color: timerColor, fontFamily: "'Nunito', sans-serif" }}
-            >
-              {mm}:{ss}
-            </span>
+      {/* ── 1. Header: Timer text + Question pill ─────────────────────────── */}
+      <div className="flex items-center justify-between px-2 pt-1">
+        <div className="flex items-center gap-2">
+          <div className={`font-black text-xl tabular-nums ${timerUrgent ? 'text-red-500 animate-pulse' : 'text-purple-600'}`}>
+            {mm}:{ss}
           </div>
         </div>
 
         {/* Question pill */}
-        <div className="px-5 py-2 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
+        <div className="px-5 py-1.5 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
           <span className="font-black text-slate-600 text-sm">
             Question {questionData ? questionData.id + 1 : "?"}
           </span>
@@ -146,9 +150,9 @@ export default function ActiveGameplay() {
             <motion.button
               key={idx}
               onClick={() => handlePick(idx)}
-              disabled={selected !== null}
+              disabled={selected !== null || timeLeft <= 0}
               initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: isDimmed ? 0.5 : 1, scale: isSelected ? 0.97 : 1 }}
+              animate={{ opacity: isDimmed ? 0.5 : (timeLeft <= 0 && !isSelected ? 0.3 : 1), scale: isSelected ? 0.97 : 1 }}
               transition={{ delay: 0.12 + idx * 0.06, type: "spring", stiffness: 300, damping: 22 }}
               className="flex flex-col items-center justify-center gap-3 relative overflow-hidden"
               style={{
