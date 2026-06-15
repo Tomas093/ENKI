@@ -7,7 +7,7 @@ import { useAccount, useDisconnect } from "wagmi";
 
 import { useState, useEffect } from "react";
 import { useReadContract } from "wagmi";
-import KahootGameABI from "../../abi/KahootGame.json";
+import KahootGameABI from "../abi/KahootGame.json";
 
 export const Navbar = () => {
   const [mounted, setMounted] = useState(false);
