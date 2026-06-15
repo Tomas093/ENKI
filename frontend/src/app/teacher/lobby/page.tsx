@@ -39,36 +39,13 @@ export default function TeacherLobby() {
   const [pulse, setPulse] = useState(false);
   const publicClient = usePublicClient();
 
-  // Cargar jugadores que ya se unieron ANTES de que el lobby abriera
-  useEffect(() => {
-    if (!publicClient || !CONTRACT_ADDRESS || CONTRACT_ADDRESS === "Loading address...") return;
-
-    publicClient.getContractEvents({
-      address: CONTRACT_ADDRESS as `0x${string}`,
-      abi: KahootGameABI.abi,
-      eventName: 'PlayerJoined',
-      fromBlock: 0n,
-    }).then((logs: any[]) => {
-      logs.forEach((log) => {
-        const player = log.args?.player;
-        if (player) {
-          setJoined(prev => prev.includes(player) ? prev : [...prev, player]);
-        }
-      });
-    }).catch((err: any) => {
-      console.error("Error cargando eventos históricos PlayerJoined:", err);
-    });
-  }, [publicClient, CONTRACT_ADDRESS]);
-
-  const publicClient = usePublicClient();
-
   useEffect(() => {
     if (!publicClient || CONTRACT_ADDRESS === "Loading address..." || !CONTRACT_ADDRESS) return;
 
     const fetchJoinedPlayers = async () => {
       try {
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+        const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
 
         const logs = await publicClient.getContractEvents({
           address: CONTRACT_ADDRESS as `0x${string}`,
