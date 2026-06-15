@@ -46,7 +46,7 @@ export default function TeacherLobby() {
     const fetchJoinedPlayers = async () => {
       try {
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+        const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
 
         const logs = await publicClient.getContractEvents({
           address: CONTRACT_ADDRESS as `0x${string}`,
