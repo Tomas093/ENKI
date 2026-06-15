@@ -39,6 +39,7 @@ export default function TeacherLobby() {
   const [pulse, setPulse] = useState(false);
   const publicClient = usePublicClient();
 
+  // 1. Cargar jugadores históricos UNA SOLA VEZ al iniciar
   useEffect(() => {
     if (!publicClient || CONTRACT_ADDRESS === "Loading address..." || !CONTRACT_ADDRESS) return;
 
@@ -63,23 +64,34 @@ export default function TeacherLobby() {
           )
         );
         
-        setJoined(prev => {
-          if (prev.length !== wallets.length) {
-            setPulse(true);
-            setTimeout(() => setPulse(false), 600);
-            return wallets;
-          }
-          return prev;
-        });
+        setJoined(wallets);
       } catch (err) {
         console.error("Failed to fetch historical players:", err);
       }
     };
 
     fetchJoinedPlayers();
-    const interval = setInterval(fetchJoinedPlayers, 3000);
-    return () => clearInterval(interval);
   }, [publicClient, CONTRACT_ADDRESS]);
+
+  // 2. Escuchar eventos NUEVOS en tiempo real
+  useWatchContractEvent({
+    address: CONTRACT_ADDRESS !== "Loading address..." ? CONTRACT_ADDRESS as `0x${string}` : undefined,
+    abi: KahootGameABI.abi,
+    eventName: 'PlayerJoined',
+    onLogs(logs) {
+      logs.forEach(log => {
+        const player = (log as any).args?.player as string;
+        if (player) {
+          setJoined(prev => {
+            if (prev.includes(player)) return prev;
+            setPulse(true);
+            setTimeout(() => setPulse(false), 600);
+            return [...prev, player];
+          });
+        }
+      });
+    },
+  });
 
   const handleCopy = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
