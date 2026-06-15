@@ -58,7 +58,7 @@ export default function SessionDetails() {
         });
 
         const currentBlock = await logClient.getBlockNumber();
-        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+        const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
 
         const logs = await logClient.getContractEvents({
           address: id as `0x${string}`,
