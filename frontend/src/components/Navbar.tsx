@@ -4,11 +4,56 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAccount, useDisconnect } from "wagmi";
 
+import { useState, useEffect } from "react";
+import { useReadContract } from "wagmi";
+import KahootGameABI from "../../abi/KahootGame.json";
+
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { address } = useAccount();
   const { disconnect } = useDisconnect();
+
+  const [gameAddress, setGameAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setGameAddress(params.get("game"));
+    }
+  }, [pathname]);
+
+  const { data: lastActionTime } = useReadContract({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    functionName: 'lastActionTime',
+    query: { enabled: !!gameAddress, refetchInterval: 60000 }
+  });
+
+  const [isInactive, setIsInactive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    if (!lastActionTime) {
+      setIsInactive(false);
+      return;
+    }
+    const checkInactivity = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const limit = Number(lastActionTime) + (12 * 60 * 60); // 12 hours
+      const diff = limit - now;
+      if (diff <= 3600) { // Less than 1 hour left or already passed
+        setIsInactive(true);
+        if (diff <= 0) setTimeLeft("Claim fee now!");
+        else setTimeLeft(`${Math.floor(diff/60)}m left`);
+      } else {
+        setIsInactive(false);
+      }
+    };
+    checkInactivity();
+    const interval = setInterval(checkInactivity, 60000);
+    return () => clearInterval(interval);
+  }, [lastActionTime]);
 
   if (pathname === "/") return null;
 
@@ -31,8 +76,25 @@ export const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="w-12 h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-colors shadow-sm">
+        <button 
+          onClick={() => {
+            if (isInactive && gameAddress) {
+              router.push(`/emergency-refund?game=${gameAddress}`);
+            } else {
+              // Standard notification panel toggle could go here
+            }
+          }}
+          className={`w-12 h-12 bg-white rounded-[16px] border-4 flex items-center justify-center transition-colors shadow-sm relative group ${isInactive ? 'border-orange-300 text-orange-500 hover:bg-orange-50' : 'border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}
+        >
           <Bell strokeWidth={2.5} size={24} />
+          {isInactive && (
+            <>
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-pulse" />
+              <div className="absolute top-14 right-0 w-max bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Inactive game: {timeLeft}
+              </div>
+            </>
+          )}
         </button>
         <div className="h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center px-4 gap-3 shadow-sm font-bold text-slate-700">
           <Wallet size={20} className="text-purple-500" />
@@ -42,7 +104,6 @@ export const Navbar = () => {
           <button 
             onClick={() => {
               disconnect();
-              router.push('/');
             }}
             className="w-12 h-12 bg-white rounded-[16px] border-4 border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
           >
