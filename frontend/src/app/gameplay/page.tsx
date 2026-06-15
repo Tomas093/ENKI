@@ -15,7 +15,7 @@ const OPTION_STYLES = [
   { gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)", border: "#065f46", glow: "rgba(5,150,105,0.45)" },
 ];
 
-const TOTAL_TIME = 30;
+
 
 export default function ActiveGameplay() {
   const [selected, setSelected] = useState<number | null>(null);
