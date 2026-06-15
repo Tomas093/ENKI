@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check, Play, Users, Wifi } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
+import { useAccount, useReadContract, useWatchContractEvent, usePublicClient } from "wagmi";
 import KahootFactoryABI from "../../../abi/KahootFactory.json";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
@@ -37,6 +37,28 @@ export default function TeacherLobby() {
   const [joined, setJoined] = useState<string[]>([]);
   const [copiedContract, setCopiedContract] = useState(false);
   const [pulse, setPulse] = useState(false);
+  const publicClient = usePublicClient();
+
+  // Cargar jugadores que ya se unieron ANTES de que el lobby abriera
+  useEffect(() => {
+    if (!publicClient || !CONTRACT_ADDRESS || CONTRACT_ADDRESS === "Loading address...") return;
+
+    publicClient.getContractEvents({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: KahootGameABI.abi,
+      eventName: 'PlayerJoined',
+      fromBlock: 0n,
+    }).then((logs: any[]) => {
+      logs.forEach((log) => {
+        const player = log.args?.player;
+        if (player) {
+          setJoined(prev => prev.includes(player) ? prev : [...prev, player]);
+        }
+      });
+    }).catch((err: any) => {
+      console.error("Error cargando eventos históricos PlayerJoined:", err);
+    });
+  }, [publicClient, CONTRACT_ADDRESS]);
 
   useWatchContractEvent({
     address: CONTRACT_ADDRESS !== "Loading address..." ? CONTRACT_ADDRESS as `0x${string}` : undefined,
