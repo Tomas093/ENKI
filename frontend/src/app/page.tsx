@@ -24,30 +24,11 @@ const LoginCornerShapes = () => (
 // ── Wallet icons (SVG inline, brand-accurate colors) ─────────────────────────
 
 const MetaMaskIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 212 189" fill="none">
-    <polygon points="196,0 116,56 131,23" fill="#E2761B" stroke="#E2761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="16,0 95,57 81,23" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="168,136 147,168 192,180 205,137" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="7,137 20,180 65,168 44,136" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="63,82 50,101 94,103 92,55" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="149,82 120,55 118,103 162,101" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="65,168 91,154 68,137" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-    <polygon points="121,154 147,168 144,137" fill="#E4761B" stroke="#E4761B" strokeWidth="2" strokeLinejoin="round"/>
-  </svg>
+  <img src="/metamask.svg" alt="MetaMask" width="28" height="28" />
 );
 
 const WalletConnectIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="16" fill="#3B99FC"/>
-    <path d="M9.6 13.2c3.5-3.5 9.3-3.5 12.8 0l0.4 0.4c0.2 0.2 0.2 0.5 0 0.7l-1.4 1.4c-0.1 0.1-0.3 0.1-0.4 0l-0.6-0.6c-2.5-2.5-6.5-2.5-9 0l-0.6 0.6c-0.1 0.1-0.3 0.1-0.4 0l-1.4-1.4c-0.2-0.2-0.2-0.5 0-0.7l0.6-0.4zM24.4 15.7l1.3 1.3c0.2 0.2 0.2 0.5 0 0.7l-5.8 5.8c-0.2 0.2-0.5 0.2-0.7 0l-4.1-4.1c-0.1-0.1-0.1-0.1-0.2 0l-4.1 4.1c-0.2 0.2-0.5 0.2-0.7 0L4.3 17.7c-0.2-0.2-0.2-0.5 0-0.7l1.3-1.3c0.2-0.2 0.5-0.2 0.7 0l4.1 4.1c0.1 0.1 0.1 0.1 0.2 0l4.1-4.1c0.2-0.2 0.5-0.2 0.7 0l4.1 4.1c0.1 0.1 0.1 0.1 0.2 0l4.1-4.1c0.2-0.2 0.5-0.2 0.7 0z" fill="white"/>
-  </svg>
-);
-
-const CoinbaseIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="16" fill="#1652F0"/>
-    <path d="M16 7C11.03 7 7 11.03 7 16s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zm-2-5.5a2 2 0 104 0 2 2 0 00-4 0z" fill="white"/>
-  </svg>
+  <img src="/walletconnect.svg" alt="WalletConnect" width="28" height="28" />
 );
 
 // ── Screen 1: Wallet Connection ──────────────────────────────────────────────
@@ -55,7 +36,6 @@ const CoinbaseIcon = () => (
 const WALLETS = [
   { id: "metamask",      label: "MetaMask",       Icon: MetaMaskIcon },
   { id: "walletconnect", label: "WalletConnect",   Icon: WalletConnectIcon },
-  { id: "coinbase",      label: "Coinbase Wallet", Icon: CoinbaseIcon },
 ];
 
 import { useConnect, useAccount } from 'wagmi';
