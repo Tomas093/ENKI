@@ -16,6 +16,9 @@ const AVATAR_COLORS = [
 ];
 
 export default function TeacherLobby() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionTitle = searchParams?.get("title") ?? "Trivia Session";
@@ -102,6 +105,8 @@ export default function TeacherLobby() {
       }
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto pt-8 pb-20 gap-8 relative z-10">
