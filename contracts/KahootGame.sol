@@ -14,6 +14,7 @@ contract KahootGame is ReentrancyGuard {
     address public professor;
     DiplomaNFT public diplomaContract;
 
+    string public gameName;
     uint256 public passingScore;
     uint256 public totalQuestions;
     uint256 public currentQuestionId;
@@ -84,6 +85,7 @@ contract KahootGame is ReentrancyGuard {
     constructor(
         address _factory,
         address _professor,
+        string memory _gameName,
         uint256 _passingScore,
         uint256 _totalQuestions,
         string memory _diplomaTokenURI,
@@ -97,6 +99,7 @@ contract KahootGame is ReentrancyGuard {
 
         factory = _factory;
         professor = _professor;
+        gameName = _gameName;
         passingScore = _passingScore;
         totalQuestions = _totalQuestions;
         diplomaTokenURI = _diplomaTokenURI;

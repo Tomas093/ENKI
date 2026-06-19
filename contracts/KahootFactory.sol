@@ -45,6 +45,7 @@ contract KahootFactory {
     }
 
     function createGame(
+        string calldata _gameName,
         uint256 _passingScore,
         uint256 _totalQuestions,
         string calldata _diplomaTokenURI,
@@ -55,6 +56,7 @@ contract KahootFactory {
         KahootGame newGame = new KahootGame(
             address(this),
             msg.sender,
+            _gameName,
             _passingScore,
             _totalQuestions,
             _diplomaTokenURI,

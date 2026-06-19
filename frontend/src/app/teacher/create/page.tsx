@@ -152,6 +152,7 @@ export default function CreateSession() {
       abi: KahootFactoryABI.abi,
       functionName: 'createGame',
       args: [
+        title,
         Number(passingScore) || 1,
         questions.length,
         diplomaURI,

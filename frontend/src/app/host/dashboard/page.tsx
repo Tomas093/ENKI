@@ -13,11 +13,14 @@ function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
   const [copied, setCopied] = useState<boolean>(false);
 
   const { data: nameData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'gameName' });
-  const { data: playersData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'totalPlayers' });
   const { data: finishedData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'isFinished' });
+  const { data: prizePoolData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePool' });
+  const { data: entryFeeData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'entryFee' });
 
-  const name = nameData as string || "Loading...";
-  const players = Number(playersData) || 0;
+  const name = (nameData as string) || "Loading...";
+  const prizePool = Number(prizePoolData) || 0;
+  const entryFee = Number(entryFeeData) || 0;
+  const players = entryFee > 0 ? Math.floor(prizePool / entryFee) : 0;
   const isFinished = finishedData as boolean;
 
   const handleCopy = (e: any) => {

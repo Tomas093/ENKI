@@ -11,7 +11,7 @@ import KahootGameABI from "../../../../abi/KahootGame.json";
 const PIE_COLORS = ["#7c3aed", "#e2e8f0"];
 const medalColors = ["#F59E0B", "#94A3B8", "#D97706"];
 const medalLabels = ["🥇", "🥈", "🥉"];
-const podiumOrder = [1, 0, 2]; // silver, gold, bronze visual order
+const podiumOrder = [1, 0, 2];
 
 import { createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
@@ -51,7 +51,6 @@ export default function SessionDetails() {
     if (!publicClient || !id) return;
     const fetchStats = async () => {
       try {
-        // Alchemy free tier limits eth_getLogs to 10 blocks. We use a public node for this specific heavy query.
         const logClient = createPublicClient({
           chain: sepolia,
           transport: http('https://ethereum-sepolia-rpc.publicnode.com')
