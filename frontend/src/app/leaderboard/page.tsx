@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Wallet, Gift, Trophy, Award, Loader2, Frown } from "lucide-react";
 import toast from "react-hot-toast";
-import { PlayfulButton } from "../../components/ui/PlayfulButton";
+import { PlayfulButton } from "../components/ui/PlayfulButton";
 import confetti from "canvas-confetti";
 import { motion } from "motion/react";
 import { useSearchParams } from "next/navigation";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Nunito } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "../components/Navbar";
+import { Navbar } from "./components/Navbar";
 import { Providers } from "./providers";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react";

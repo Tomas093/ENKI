@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Search, ShieldCheck, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
-import { PlayfulButton } from "../../components/ui/PlayfulButton";
+import { PlayfulButton } from "../components/ui/PlayfulButton";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { useReadContracts, useWriteContract } from "wagmi";
