@@ -4,9 +4,7 @@ pragma solidity ^0.8.20;
 import "./DiplomaNFT.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-interface IKahootFactory {
-    function recordDiplomaWin(address student) external;
-}
+
 
 contract KahootGame is ReentrancyGuard {
     // ─── Datos del juego ───────────────────────────────────────────────────────
@@ -399,7 +397,7 @@ function joinGame() external payable notCancelled {
 
         hasClaimed[msg.sender] = true;
         diplomaContract.mintDiploma(msg.sender);
-        IKahootFactory(factory).recordDiplomaWin(msg.sender);
+
 
         emit DiplomaClaimed(msg.sender);
     }

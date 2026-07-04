@@ -10,14 +10,12 @@ contract KahootFactory {
     address public owner;
     uint256 public creationFee;
 
-    // ─── Leaderboard Global (Top 10) ──────────────────────────────────────────
-    mapping(address => uint256) public totalDiplomasWon;
-    mapping(address => bool) public isOfficialGame;
+
 
     mapping(address => KahootGame[]) public kahootsDeProfesor;
 
     event GameCreated(address indexed gameAddress, address indexed professor);
-    event LeaderboardUpdated(address indexed student, uint256 newTotal);
+
     event CreationFeeUpdated(uint256 oldFee, uint256 newFee);
 
     modifier onlyOwner() {
@@ -63,7 +61,7 @@ contract KahootFactory {
         );
         games.push(newGame);
         kahootsDeProfesor[msg.sender].push(newGame);
-        isOfficialGame[address(newGame)] = true;
+
         emit GameCreated(address(newGame), msg.sender);
 
         return address(newGame);
@@ -73,16 +71,7 @@ contract KahootFactory {
         return kahootsDeProfesor[_profesor];
     }
 
-    /**
-     * @notice Registra un diploma ganado por un estudiante y actualiza el Top 10.
-     * @dev Solo puede ser llamada por un contrato KahootGame válido creado por este Factory.
-     */
-    function recordDiplomaWin(address student) external {
-        require(isOfficialGame[msg.sender], "Hackeo detectado: Solo juegos oficiales pueden dar puntos");
-        uint256 newTotal = totalDiplomasWon[student] + 1;
-        totalDiplomasWon[student] = newTotal;
-        emit LeaderboardUpdated(student, newTotal);
-    }
+
 
     function getGamesCount() external view returns (uint256) {
         return games.length;
