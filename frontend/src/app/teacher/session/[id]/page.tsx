@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Download, CheckCircle, XCircle, Trophy, Wallet, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, Wallet, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { useWriteContract, usePublicClient, useReadContract } from "wagmi";
 import toast from "react-hot-toast";
@@ -149,10 +149,6 @@ export default function SessionDetails() {
           >
             {isPending ? <Loader2 className="animate-spin" size={18} /> : <Wallet size={18} />}
             Claim Earnings
-          </button>
-          <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-[16px] shadow-lg shadow-purple-200 transition-all hover:-translate-y-0.5">
-            <Download size={18} />
-            Export Data
           </button>
         </div>
       </motion.div>
