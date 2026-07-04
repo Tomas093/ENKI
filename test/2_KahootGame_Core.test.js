@@ -134,7 +134,6 @@ describe("KahootGame - Flujo Principal (Core)", function () {
     expect((await game.read.professor()).toLowerCase()).to.equal(profesor.account.address.toLowerCase());
     expect(await game.read.passingScore()).to.equal(1n);
     expect(await game.read.totalQuestions()).to.equal(1n);
-    expect(await game.read.diplomaTokenURI()).to.equal(diplomaURI);
     expect(await game.read.isFinished()).to.be.false;
     expect(await game.read.currentQuestionId()).to.equal(0n);
   });

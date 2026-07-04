@@ -7,6 +7,10 @@ import toast from "react-hot-toast";
 import { useWriteContract, useAccount } from "wagmi";
 import { keccak256, encodePacked } from "viem";
 import KahootGameABI from "../../abi/KahootGame.json";
+import { GlobalLoadingOverlay } from "../components/GlobalLoadingOverlay";
+
+import { useGameState, useWatchGameEvents } from "../../hooks/useGameContract";
+import { useDisplayName } from "../../hooks/useDisplayName";
 
 const OPTION_STYLES = [
   { gradient: "linear-gradient(135deg, #FF3B5C 0%, #E21B3C 100%)", border: "#9b0026", glow: "rgba(226,27,60,0.45)" },
@@ -14,8 +18,6 @@ const OPTION_STYLES = [
   { gradient: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)", border: "#9a5300", glow: "rgba(217,119,6,0.45)" },
   { gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)", border: "#065f46", glow: "rgba(5,150,105,0.45)" },
 ];
-
-
 
 export default function ActiveGameplay() {
   const [selected, setSelected] = useState<number | null>(null);
@@ -25,10 +27,30 @@ export default function ActiveGameplay() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const gameAddress = searchParams.get("game");
+  const gameAddress = searchParams.get("game") as `0x${string}`;
   const { address } = useAccount();
+  const { displayName } = useDisplayName(address);
 
   const { writeContractAsync, isPending } = useWriteContract();
+  const { currentQuestionId } = useGameState(gameAddress);
+
+  useWatchGameEvents(gameAddress, (args) => {
+    // When a question is revealed, the host will trigger this
+    if (args.questionId !== undefined) {
+      setQuestionData({
+        id: Number(args.questionId),
+        question: args.enunciado,
+        options: args.opciones,
+      });
+      setTimeLeft(30);
+      setTotalTime(30);
+      setSelected(null);
+    }
+  }, (args) => {
+    if (args.questionId === currentQuestionId) {
+       router.push(`/waiting?game=${gameAddress}`);
+    }
+  });
 
   useEffect(() => {
     const qData = sessionStorage.getItem("current_question");
@@ -71,8 +93,8 @@ export default function ActiveGameplay() {
         encodePacked(['uint8', 'string', 'address'], [idx, studentSalt, address])
       );
 
-      const tx = await writeContractAsync({
-        address: gameAddress as `0x${string}`,
+      await writeContractAsync({
+        address: gameAddress,
         abi: KahootGameABI.abi,
         functionName: 'commitAnswer',
         args: [commitHash],
@@ -99,7 +121,6 @@ export default function ActiveGameplay() {
       className="flex flex-col w-full gap-4"
       style={{ height: "calc(100vh - 88px)" }}
     >
-      {/* ── Sleek Horizontal Timer Bar ──────────────────────────────────────── */}
       <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-2 relative">
         <motion.div
           animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
@@ -108,7 +129,6 @@ export default function ActiveGameplay() {
         />
       </div>
 
-      {/* ── 1. Header: Timer text + Question pill ─────────────────────────── */}
       <div className="flex items-center justify-between px-2 pt-1">
         <div className="flex items-center gap-2">
           <div className={`font-black text-xl tabular-nums ${timerUrgent ? 'text-red-500 animate-pulse' : 'text-purple-600'}`}>
@@ -116,7 +136,6 @@ export default function ActiveGameplay() {
           </div>
         </div>
 
-        {/* Question pill */}
         <div className="px-5 py-1.5 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
           <span className="font-black text-slate-600 text-sm">
             Question {questionData ? questionData.id + 1 : "?"}
@@ -124,7 +143,6 @@ export default function ActiveGameplay() {
         </div>
       </div>
 
-      {/* ── 2. Question card ──────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -140,7 +158,6 @@ export default function ActiveGameplay() {
         </p>
       </motion.div>
 
-      {/* ── 3 & 4. 2×2 answer grid ───────────────────────────────────── */}
       <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
         {questionData && questionData.options.map((optText: string, idx: number) => {
           const opt = OPTION_STYLES[idx];
@@ -163,7 +180,6 @@ export default function ActiveGameplay() {
                 boxShadow: isSelected ? `0 0 32px ${opt.glow}` : `0 4px 20px ${opt.glow}`,
               }}
             >
-              {/* Glassy shimmer overlay */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -172,7 +188,6 @@ export default function ActiveGameplay() {
                 }}
               />
 
-              {/* Label badge */}
               <div
                 className="flex items-center justify-center font-black relative z-10"
                 style={{
@@ -192,7 +207,6 @@ export default function ActiveGameplay() {
                 )}
               </div>
 
-              {/* Answer text */}
               <span
                 className="text-white font-extrabold text-center leading-snug px-4 relative z-10"
                 style={{
@@ -209,45 +223,16 @@ export default function ActiveGameplay() {
         })}
       </div>
 
-      {/* ── 5. Footer ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-center pb-1">
-        <span className="text-slate-400 font-bold text-xs">Player: 0xAbc...def</span>
+        <span className="text-slate-400 font-bold text-xs">Player: {displayName}</span>
       </div>
 
-      {/* ── Web3 signing overlay ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {selected !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white p-8 rounded-[32px] max-w-md w-full text-center shadow-2xl border-4 border-slate-200 flex flex-col items-center"
-            >
-              <div className="w-20 h-20 bg-purple-100 rounded-[20px] flex items-center justify-center mb-5 border-4 border-purple-200">
-                <Loader2 size={40} className="text-purple-600 animate-spin" strokeWidth={3} />
-              </div>
-              <h2 className="font-black text-slate-800 mb-2" style={{ fontSize: 26, fontFamily: "'Nunito', sans-serif" }}>
-                Locking answer on-chain...
-              </h2>
-              <p className="text-slate-500 font-bold mb-5" style={{ fontSize: 17 }}>
-                Please sign in your wallet.
-              </p>
-              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 3, ease: "linear" }}
-                  className="h-full bg-purple-500 rounded-full"
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <GlobalLoadingOverlay 
+        isVisible={selected !== null} 
+        message="Locking answer on-chain..." 
+        subMessage="Please sign in your wallet."
+      />
     </motion.div>
   );
-};
+}
+;

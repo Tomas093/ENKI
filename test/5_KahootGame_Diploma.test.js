@@ -149,7 +149,7 @@ describe("KahootGame - Diploma NFT y Reclamos", function () {
   it("DiplomaNFT - solo el contrato KahootGame puede mintear", async function () {
     await expectRevert(
       diplomaNFT.write.mintDiploma(
-        [alumnoHonesto.account.address, diplomaURI],
+        [alumnoHonesto.account.address],
         { account: profesor.account }
       ),
       "UnauthorizedGame"
@@ -159,7 +159,7 @@ describe("KahootGame - Diploma NFT y Reclamos", function () {
   it("DiplomaNFT - falla con InvalidAddress si game es address(0)", async function () {
     const zeroAddress = "0x0000000000000000000000000000000000000000";
     await expectRevert(
-      viem.deployContract("DiplomaNFT", [zeroAddress]),
+      viem.deployContract("DiplomaNFT", [zeroAddress, diplomaURI]),
       "InvalidAddress"
     );
   });

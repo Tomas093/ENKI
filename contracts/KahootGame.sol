@@ -14,11 +14,9 @@ contract KahootGame is ReentrancyGuard {
     address public professor;
     DiplomaNFT public diplomaContract;
 
-    string public gameName;
     uint256 public passingScore;
     uint256 public totalQuestions;
     uint256 public currentQuestionId;
-    string public diplomaTokenURI;
     mapping(uint256 => uint8) public revealedAnswers;
     bool public isFinished;
 
@@ -85,7 +83,6 @@ contract KahootGame is ReentrancyGuard {
     constructor(
         address _factory,
         address _professor,
-        string memory _gameName,
         uint256 _passingScore,
         uint256 _totalQuestions,
         string memory _diplomaTokenURI,
@@ -99,17 +96,15 @@ contract KahootGame is ReentrancyGuard {
 
         factory = _factory;
         professor = _professor;
-        gameName = _gameName;
         passingScore = _passingScore;
         totalQuestions = _totalQuestions;
-        diplomaTokenURI = _diplomaTokenURI;
         entryFee = _entryFee;
 
         for (uint256 i = 0; i < _rondas.length; i++) {
             listaDeRondas.push(_rondas[i]);
         }
 
-        diplomaContract = new DiplomaNFT(address(this));
+        diplomaContract = new DiplomaNFT(address(this), _diplomaTokenURI);
         lastActionTime = block.timestamp;
     }
 
@@ -181,6 +176,43 @@ function joinGame() external payable notCancelled {
 
         emit RevealPhaseStarted(currentQ);
     }
+    
+    function closeCurrentAndOpenNext(
+        uint8 _correctOption, 
+        string calldata _professorSalt,
+        string calldata _nextEnunciado,
+        string[4] calldata _nextOpciones,
+        string calldata _nextSaltProfesor
+    ) external onlyProfessor notCancelled {
+        uint256 currentQ = currentQuestionId;
+        require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
+
+        bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _professorSalt, msg.sender));
+        require(generatedHash == listaDeRondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
+
+        revealedAnswers[currentQ] = _correctOption;
+        listaDeRondas[currentQ].commitPhaseOpen = false;
+        listaDeRondas[currentQ].revealPhaseOpen = false;
+        
+        emit RevealPhaseStarted(currentQ);
+        
+        currentQuestionId += 1;
+        uint256 nextQ = currentQuestionId;
+        
+        require(nextQ < totalQuestions, "No hay mas preguntas");
+
+        bytes32 hashCalculado = keccak256(abi.encodePacked(
+            _nextEnunciado,
+            _nextOpciones[0], _nextOpciones[1], _nextOpciones[2], _nextOpciones[3],
+            _nextSaltProfesor
+        ));
+        require(hashCalculado == listaDeRondas[nextQ].hashVerificacionPregunta, "Hash de pregunta invalido");
+
+        listaDeRondas[nextQ].commitPhaseOpen = true;
+        lastActionTime = block.timestamp;
+        emit QuestionOpened(nextQ);
+        emit QuestionRevealed(nextQ, _nextEnunciado, _nextOpciones);
+    }
 
     function revealAnswer(uint256 _questionId, uint8 _option, string memory _salt) external {
         require(hasJoined[msg.sender], "Debes unirte primero con joinGame()");
@@ -201,6 +233,32 @@ function joinGame() external payable notCancelled {
             scoreFrequency[oldScore] -= 1;
             scores[msg.sender] = oldScore + 1;
             scoreFrequency[oldScore + 1] += 1;
+        }
+    }
+
+
+    function batchRevealAnswers(uint256[] calldata _questionIds, uint8[] calldata _options, string[] calldata _salts) external {
+        require(hasJoined[msg.sender], "Debes unirte primero con joinGame()");
+        require(_questionIds.length == _options.length && _options.length == _salts.length, "Mismatched lengths");
+        
+        for (uint256 i = 0; i < _questionIds.length; i++) {
+            uint256 qId = _questionIds[i];
+            require(listaDeRondas[qId].revealPhaseOpen || (qId < currentQuestionId) || isFinished, "Fase de reveal cerrada o no es el momento");
+            
+            bytes32 storedCommit = commits[qId][msg.sender];
+            if (storedCommit == bytes32(0)) continue;
+            
+            bytes32 generatedHash = keccak256(abi.encodePacked(_options[i], _salts[i], msg.sender));
+            require(generatedHash == storedCommit, "El hash no coincide con tu commit");
+            
+            commits[qId][msg.sender] = bytes32(0);
+            
+            if (_options[i] == revealedAnswers[qId]) {
+                uint256 oldScore = scores[msg.sender];
+                scoreFrequency[oldScore] -= 1;
+                scores[msg.sender] = oldScore + 1;
+                scoreFrequency[oldScore + 1] += 1;
+            }
         }
     }
 
@@ -340,7 +398,7 @@ function joinGame() external payable notCancelled {
         require(scores[msg.sender] >= passingScore, "No alcanzas el puntaje minimo");
 
         hasClaimed[msg.sender] = true;
-        diplomaContract.mintDiploma(msg.sender, diplomaTokenURI);
+        diplomaContract.mintDiploma(msg.sender);
         IKahootFactory(factory).recordDiplomaWin(msg.sender);
 
         emit DiplomaClaimed(msg.sender);

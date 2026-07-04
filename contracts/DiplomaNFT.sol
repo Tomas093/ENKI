@@ -7,6 +7,7 @@ contract DiplomaNFT is ERC721URIStorage {
     uint256 private _nextTokenId;
     
     address public immutable kahootGame;
+    string public gameTokenURI;
 
     error UnauthorizedGame(address caller);
     error InvalidAddress();
@@ -16,14 +17,15 @@ contract DiplomaNFT is ERC721URIStorage {
         _;
     }
 
-    constructor(address _game) ERC721("Kahoot Web3 Diploma", "KWD") {
+    constructor(address _game, string memory _tokenURI) ERC721("Kahoot Web3 Diploma", "KWD") {
         if (_game == address(0)) revert InvalidAddress();
         kahootGame = _game;
+        gameTokenURI = _tokenURI;
     }
 
-    function mintDiploma(address to, string memory tokenURI) external onlyGame {
+    function mintDiploma(address to) external onlyGame {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
+        _setTokenURI(tokenId, gameTokenURI);
     }
 }

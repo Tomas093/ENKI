@@ -11,6 +11,7 @@ export default function WaitingRoom() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  const [correctAnswerText, setCorrectAnswerText] = useState("");
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,38 +59,43 @@ export default function WaitingRoom() {
 
           if (matchingLog) {
             isRevealingRef = true;
-            setIsRevealing(true);
             const log = matchingLog as any;
             const qId = Number(log.args.questionId);
             const myIdx = sessionStorage.getItem("my_answer_idx");
             const mySalt = sessionStorage.getItem("my_answer_salt");
+            
             if (myIdx !== null && mySalt) {
-              try {
-                await writeContractAsync({
-                  address: gameAddress as `0x${string}`,
-                  abi: KahootGameABI.abi,
-                  functionName: 'revealAnswer',
-                  args: [qId, Number(myIdx), mySalt],
-                });
+              // Store it in pending reveals instead of sending a TX immediately!
+              const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+              pendingReveals.push({ qId, myIdx: Number(myIdx), mySalt });
+              sessionStorage.setItem("pending_reveals", JSON.stringify(pendingReveals));
+            }
 
-                // revealedAnswers is set in the same tx as RevealPhaseStarted, so it's already on-chain
-                const correctAns = await publicClient.readContract({
-                  address: gameAddress as `0x${string}`,
-                  abi: KahootGameABI.abi,
-                  functionName: 'revealedAnswers',
-                  args: [BigInt(qId)],
-                });
-                setIsCorrect(Number(correctAns) === Number(myIdx));
-              } catch (e) {
-                console.error("Auto-reveal failed", e);
-                setIsCorrect(false);
+            try {
+              // Fetch the correct answer directly without signing a transaction
+              const correctAns = await publicClient.readContract({
+                address: gameAddress as `0x${string}`,
+                abi: KahootGameABI.abi,
+                functionName: 'revealedAnswers',
+                args: [BigInt(qId)],
+              });
+              
+              const qDataStr = sessionStorage.getItem("current_question");
+              if (qDataStr) {
+                 const qData = JSON.parse(qDataStr);
+                 const text = qData.options[Number(correctAns)] || "";
+                 sessionStorage.setItem("correct_answer_text", text);
+                 setCorrectAnswerText(text);
               }
-            } else {
+              
+              setIsCorrect(myIdx !== null && Number(correctAns) === Number(myIdx));
+            } catch (e) {
+              console.error("Failed to read correct answer", e);
               setIsCorrect(false);
             }
+
             isRevealedRef = true;
             setRevealed(true);
-            setIsRevealing(false);
           }
         }
 
@@ -103,11 +109,8 @@ export default function WaitingRoom() {
             toBlock: 'latest',
           });
 
-          // Get current question ID to prevent going back
           const qDataStr = sessionStorage.getItem("current_question");
           const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
-
-          // Find the actual next question log
           const validNextLog = nextQLogs.find((log: any) => Number(log.args.questionId) > currentQuestionId);
 
           if (validNextLog) {
@@ -129,16 +132,43 @@ export default function WaitingRoom() {
             return;
           }
 
-          const endLogs = await publicClient.getContractEvents({
+          // Check if game is finished so we can batch reveal!
+          const finished = await publicClient.readContract({
             address: gameAddress as `0x${string}`,
             abi: KahootGameABI.abi,
-            eventName: 'PrizesCalculated',
-            fromBlock,
-            toBlock: 'latest',
+            functionName: 'isFinished'
           });
-          if (endLogs.length > 0) {
-            router.push(`/leaderboard?game=${gameAddress}`);
-            return;
+
+          if (finished) {
+            // Trigger Batch Reveal before routing to leaderboard
+            setIsRevealing(true);
+            const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+            
+            if (pendingReveals.length > 0) {
+              try {
+                const qIds = pendingReveals.map((r: any) => BigInt(r.qId));
+                const options = pendingReveals.map((r: any) => r.myIdx);
+                const salts = pendingReveals.map((r: any) => r.mySalt);
+
+                await writeContractAsync({
+                  address: gameAddress as `0x${string}`,
+                  abi: KahootGameABI.abi,
+                  functionName: 'batchRevealAnswers',
+                  args: [qIds, options, salts],
+                });
+                
+                sessionStorage.removeItem("pending_reveals");
+                router.push(`/leaderboard?game=${gameAddress}`);
+                return;
+              } catch (e) {
+                console.error("Batch reveal failed", e);
+                // Allow them to proceed even if it fails, maybe they rejected it
+                setIsRevealing(false);
+              }
+            } else {
+              router.push(`/leaderboard?game=${gameAddress}`);
+              return;
+            }
           }
         }
 
@@ -315,6 +345,13 @@ export default function WaitingRoom() {
               >
                 {isCorrect ? "+1 Point" : "+0 Points"}
               </p>
+              
+              {!isCorrect && (
+                <p className="font-bold text-white/90 text-md tracking-wide mb-2 bg-black/40 px-4 py-2 rounded-xl">
+                  Correct Answer: {correctAnswerText || "?"}
+                </p>
+              )}
+
               <p className="font-bold text-white/80 text-sm tracking-wide">
                 Waiting for Professor to continue...
               </p>
