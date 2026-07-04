@@ -9,7 +9,8 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const profeSalt = "secretoProfe";
+  const saltPregunta = "secretoPregunta";
+  const saltRespuesta = "secretoRespuesta";
   const enunciado = "¿Cuánto es 2+2?";
   const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
@@ -28,9 +29,9 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
     return {
       hashVerificacionPregunta: keccak256(encodePacked(
         ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], profeSalt]
+        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
       )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, profeSalt, profesorAddr),
+      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
       commitPhaseOpen: false,
       revealPhaseOpen: false,
     };

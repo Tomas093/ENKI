@@ -10,7 +10,8 @@ describe("KahootGame - Economía y Prize Pool", function () {
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const profeSalt = "secretoProfe";
+  const saltPregunta = "secretoPregunta";
+  const saltRespuesta = "secretoRespuesta";
   const enunciado = "¿Cuánto es 2+2?";
   const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
@@ -29,9 +30,9 @@ describe("KahootGame - Economía y Prize Pool", function () {
     return {
       hashVerificacionPregunta: keccak256(encodePacked(
         ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], profeSalt]
+        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
       )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, profeSalt, profesorAddr),
+      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
       commitPhaseOpen: false,
       revealPhaseOpen: false,
     };
@@ -109,14 +110,14 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await prizeGame.write.joinGame({ value: entryFee, account: a5.account });
 
     // --- PREGUNTA 1 ---
-    await prizeGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await prizeGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a1.account.address)], { account: a1.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a2.account.address)], { account: a2.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a3.account.address)], { account: a3.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a4.account.address)], { account: a4.account });
     await prizeGame.write.commitAnswer([generateHash(2, "s", a5.account.address)], { account: a5.account });
     
-    await prizeGame.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await prizeGame.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     await prizeGame.write.revealAnswer([0n, 1, "s"], { account: a1.account });
     await prizeGame.write.revealAnswer([0n, 1, "s"], { account: a2.account });
     await prizeGame.write.revealAnswer([0n, 1, "s"], { account: a3.account });
@@ -125,14 +126,14 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await prizeGame.write.advanceToNextQuestion({ account: profesor.account });
 
     // --- PREGUNTA 2 ---
-    await prizeGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await prizeGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await prizeGame.write.commitAnswer([generateHash(2, "s", a1.account.address)], { account: a1.account });
     await prizeGame.write.commitAnswer([generateHash(2, "s", a2.account.address)], { account: a2.account });
     await prizeGame.write.commitAnswer([generateHash(2, "s", a3.account.address)], { account: a3.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a4.account.address)], { account: a4.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a5.account.address)], { account: a5.account });
     
-    await prizeGame.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account });
+    await prizeGame.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account });
     await prizeGame.write.revealAnswer([1n, 2, "s"], { account: a1.account });
     await prizeGame.write.revealAnswer([1n, 2, "s"], { account: a2.account });
     await prizeGame.write.revealAnswer([1n, 2, "s"], { account: a3.account });
@@ -141,14 +142,14 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await prizeGame.write.advanceToNextQuestion({ account: profesor.account });
 
     // --- PREGUNTA 3 ---
-    await prizeGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await prizeGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await prizeGame.write.commitAnswer([generateHash(3, "s", a1.account.address)], { account: a1.account });
     await prizeGame.write.commitAnswer([generateHash(3, "s", a2.account.address)], { account: a2.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a3.account.address)], { account: a3.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a4.account.address)], { account: a4.account });
     await prizeGame.write.commitAnswer([generateHash(1, "s", a5.account.address)], { account: a5.account });
     
-    await prizeGame.write.closeQuestionAndStartReveal([3, profeSalt], { account: profesor.account });
+    await prizeGame.write.closeQuestionAndStartReveal([3, saltRespuesta], { account: profesor.account });
     await prizeGame.write.revealAnswer([2n, 3, "s"], { account: a1.account });
     await prizeGame.write.revealAnswer([2n, 3, "s"], { account: a2.account });
     await prizeGame.write.revealAnswer([2n, 1, "s"], { account: a3.account });
@@ -189,12 +190,12 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await lastGame.write.joinGame({ value: entryFee, account: a4.account });
 
     // PREGUNTA 1
-    await lastGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await lastGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a1.account.address)], { account: a1.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a2.account.address)], { account: a2.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a3.account.address)], { account: a3.account });
     await lastGame.write.commitAnswer([generateHash(2, "s", a4.account.address)], { account: a4.account });
-    await lastGame.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await lastGame.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     await lastGame.write.revealAnswer([0n, 1, "s"], { account: a1.account });
     await lastGame.write.revealAnswer([0n, 1, "s"], { account: a2.account });
     await lastGame.write.revealAnswer([0n, 1, "s"], { account: a3.account });
@@ -202,12 +203,12 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await lastGame.write.advanceToNextQuestion({ account: profesor.account });
 
     // PREGUNTA 2
-    await lastGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await lastGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await lastGame.write.commitAnswer([generateHash(2, "s", a1.account.address)], { account: a1.account });
     await lastGame.write.commitAnswer([generateHash(2, "s", a2.account.address)], { account: a2.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a3.account.address)], { account: a3.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a4.account.address)], { account: a4.account });
-    await lastGame.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account });
+    await lastGame.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account });
     await lastGame.write.revealAnswer([1n, 2, "s"], { account: a1.account });
     await lastGame.write.revealAnswer([1n, 2, "s"], { account: a2.account });
     await lastGame.write.revealAnswer([1n, 1, "s"], { account: a3.account });
@@ -215,12 +216,12 @@ describe("KahootGame - Economía y Prize Pool", function () {
     await lastGame.write.advanceToNextQuestion({ account: profesor.account });
 
     // PREGUNTA 3
-    await lastGame.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await lastGame.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await lastGame.write.commitAnswer([generateHash(3, "s", a1.account.address)], { account: a1.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a2.account.address)], { account: a2.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a3.account.address)], { account: a3.account });
     await lastGame.write.commitAnswer([generateHash(1, "s", a4.account.address)], { account: a4.account });
-    await lastGame.write.closeQuestionAndStartReveal([3, profeSalt], { account: profesor.account });
+    await lastGame.write.closeQuestionAndStartReveal([3, saltRespuesta], { account: profesor.account });
     await lastGame.write.revealAnswer([2n, 3, "s"], { account: a1.account });
     await lastGame.write.revealAnswer([2n, 1, "s"], { account: a2.account });
     await lastGame.write.revealAnswer([2n, 1, "s"], { account: a3.account });

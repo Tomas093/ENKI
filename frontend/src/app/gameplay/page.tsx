@@ -84,7 +84,7 @@ export default function ActiveGameplay() {
     if (selected !== null || !gameAddress || !address) return;
     setSelected(idx);
 
-    const studentSalt = "studentSalt_" + Math.random().toString(36).substring(2, 10);
+    const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
     sessionStorage.setItem("my_answer_salt", studentSalt);
     sessionStorage.setItem("my_answer_idx", idx.toString());
 

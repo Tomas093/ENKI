@@ -10,7 +10,8 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const profeSalt  = "secretoProfe";
+  const saltPregunta = "secretoPregunta";
+  const saltRespuesta = "secretoRespuesta";
   const enunciado  = "¿Cuánto es 2+2?";
   const opciones   = ["A", "B", "C", "D"];
   const entryFee   = parseEther("0.01");
@@ -24,9 +25,9 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     return {
       hashVerificacionPregunta: keccak256(encodePacked(
         ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], profeSalt]
+        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
       )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, profeSalt, profesorAddr),
+      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
       commitPhaseOpen: false,
       revealPhaseOpen: false,
     };
@@ -74,7 +75,7 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     for (const p of players) {
       await game.write.joinGame({ value: entryFee, account: p.account });
     }
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const p of players) {
       const option = correct.includes(p) ? 1 : 2;
       await game.write.commitAnswer(
@@ -82,7 +83,7 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
         { account: p.account }
       );
     }
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     for (const p of players) {
       const option = correct.includes(p) ? 1 : 2;
       await game.write.revealAnswer([0n, option, "s"], { account: p.account });
@@ -112,12 +113,12 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     }
 
     // Pregunta 0 (opción correcta = 1)
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const p of players) {
       const opt = correctPerQ[0].includes(p) ? 1 : 3;
       await game.write.commitAnswer([generateHash(opt, "s0", p.account.address)], { account: p.account });
     }
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     for (const p of players) {
       const opt = correctPerQ[0].includes(p) ? 1 : 3;
       await game.write.revealAnswer([0n, opt, "s0"], { account: p.account });
@@ -125,12 +126,12 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     await game.write.advanceToNextQuestion({ account: profesor.account });
 
     // Pregunta 1 (opción correcta = 2)
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const p of players) {
       const opt = correctPerQ[1].includes(p) ? 2 : 3;
       await game.write.commitAnswer([generateHash(opt, "s1", p.account.address)], { account: p.account });
     }
-    await game.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account });
     for (const p of players) {
       const opt = correctPerQ[1].includes(p) ? 2 : 3;
       await game.write.revealAnswer([1n, opt, "s1"], { account: p.account });
@@ -168,33 +169,33 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     }
 
     // Q0 (correct=1): a1,a2,a3,a4 aciertan; a5 falla
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const [p, opt] of [[a1,1],[a2,1],[a3,1],[a4,1],[a5,2]]) {
       await game.write.commitAnswer([generateHash(opt, "s", p.account.address)], { account: p.account });
     }
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     for (const [p, opt] of [[a1,1],[a2,1],[a3,1],[a4,1],[a5,2]]) {
       await game.write.revealAnswer([0n, opt, "s"], { account: p.account });
     }
     await game.write.advanceToNextQuestion({ account: profesor.account });
 
     // Q1 (correct=2): a1,a2,a3 aciertan; a4,a5 fallan
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const [p, opt] of [[a1,2],[a2,2],[a3,2],[a4,1],[a5,1]]) {
       await game.write.commitAnswer([generateHash(opt, "s", p.account.address)], { account: p.account });
     }
-    await game.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account });
     for (const [p, opt] of [[a1,2],[a2,2],[a3,2],[a4,1],[a5,1]]) {
       await game.write.revealAnswer([1n, opt, "s"], { account: p.account });
     }
     await game.write.advanceToNextQuestion({ account: profesor.account });
 
     // Q2 (correct=3): a1,a2 aciertan; a3,a4,a5 fallan
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     for (const [p, opt] of [[a1,3],[a2,3],[a3,1],[a4,1],[a5,1]]) {
       await game.write.commitAnswer([generateHash(opt, "s", p.account.address)], { account: p.account });
     }
-    await game.write.closeQuestionAndStartReveal([3, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([3, saltRespuesta], { account: profesor.account });
     for (const [p, opt] of [[a1,3],[a2,3],[a3,1],[a4,1],[a5,1]]) {
       await game.write.revealAnswer([2n, opt, "s"], { account: p.account });
     }
@@ -428,12 +429,12 @@ describe("KahootGame - Rankings y Distribución de Premios (Ranking Olímpico)",
     const game = await viem.getContractAt("KahootGame", gameAddr);
 
     await game.write.joinGame({ value: 0n, account: a1.account });
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game.write.commitAnswer(
       [generateHash(1, "s", a1.account.address)],
       { account: a1.account }
     );
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     await game.write.revealAnswer([0n, 1, "s"], { account: a1.account });
     await game.write.advanceToNextQuestion({ account: profesor.account });
 

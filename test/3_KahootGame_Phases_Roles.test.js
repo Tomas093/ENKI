@@ -9,7 +9,8 @@ describe("KahootGame - Fases y Roles", function () {
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const profeSalt = "secretoProfe";
+  const saltPregunta = "secretoPregunta";
+  const saltRespuesta = "secretoRespuesta";
   const enunciado = "¿Cuánto es 2+2?";
   const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
@@ -28,9 +29,9 @@ describe("KahootGame - Fases y Roles", function () {
     return {
       hashVerificacionPregunta: keccak256(encodePacked(
         ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], profeSalt]
+        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
       )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, profeSalt, profesorAddr),
+      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
       commitPhaseOpen: false,
       revealPhaseOpen: false,
     };
@@ -76,7 +77,7 @@ describe("KahootGame - Fases y Roles", function () {
       "Fase de commit cerrada"
     );
 
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game.write.commitAnswer([hash], { account: alumnoHonesto.account });
 
     await expectRevert(
@@ -84,7 +85,7 @@ describe("KahootGame - Fases y Roles", function () {
       "Fase de reveal cerrada"
     );
 
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
 
     const hash2 = generateHash(2, "salt2", alumnoTramposo.account.address);
     await expectRevert(
@@ -100,7 +101,7 @@ describe("KahootGame - Fases y Roles", function () {
     const gameAddr = await factory.read.games([1n]);
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
 
-    await game2.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game2.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
 
     await expectRevert(
       game2.write.advanceToNextQuestion({ account: profesor.account }),
@@ -116,13 +117,13 @@ describe("KahootGame - Fases y Roles", function () {
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
 
     await game2.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game2.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game2.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game2.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
     
-    await game2.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game2.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
 
     await expectRevert(
-      game2.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account }),
+      game2.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account }),
       "No esta en fase de commit"
     );
   });
@@ -134,7 +135,7 @@ describe("KahootGame - Fases y Roles", function () {
     const gameAddr = await factory.read.games([1n]);
     const game2 = await viem.getContractAt("KahootGame", gameAddr);
 
-    await game2.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game2.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
 
     await expectRevert(
       game2.write.advanceToNextQuestion({ account: profesor.account }),
@@ -144,7 +145,7 @@ describe("KahootGame - Fases y Roles", function () {
 
   it("Seguridad del Profesor (start y close)", async function () {
     await expectRevert(
-      game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: alumnoTramposo.account }),
+      game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: alumnoTramposo.account }),
       "Solo el profe puede ejecutar esto"
     );
     await expectRevert(
@@ -155,24 +156,24 @@ describe("KahootGame - Fases y Roles", function () {
 
   it("Alumno no puede llamar startNextQuestion", async function () {
     await expectRevert(
-      game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: alumnoHonesto.account }),
+      game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: alumnoHonesto.account }),
       "Solo el profe puede ejecutar esto"
     );
   });
 
   it("Alumno no puede llamar closeQuestionAndStartReveal", async function () {
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await expectRevert(
-      game.write.closeQuestionAndStartReveal([1, profeSalt], { account: alumnoHonesto.account }),
+      game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: alumnoHonesto.account }),
       "Solo el profe puede ejecutar esto"
     );
   });
 
   it("Alumno no puede llamar advanceToNextQuestion", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
 
     await expectRevert(
       game.write.advanceToNextQuestion({ account: alumnoHonesto.account }),
@@ -182,11 +183,11 @@ describe("KahootGame - Fases y Roles", function () {
 
   it("Owner (no profesor) tampoco puede ejecutar funciones de profesor", async function () {
     await expectRevert(
-      game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: owner.account }),
+      game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: owner.account }),
       "Solo el profe puede ejecutar esto"
     );
     await expectRevert(
-      game.write.closeQuestionAndStartReveal([1, profeSalt], { account: owner.account }),
+      game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: owner.account }),
       "Solo el profe puede ejecutar esto"
     );
     await expectRevert(
@@ -197,21 +198,21 @@ describe("KahootGame - Fases y Roles", function () {
 
   it("startNextQuestion falla cuando no hay más preguntas", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
     await game.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account });
     await game.write.advanceToNextQuestion({ account: profesor.account });
 
     await expectRevert(
-      game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account }),
+      game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account }),
       "El juego termino"
     );
   });
 
   it("closeQuestionAndStartReveal falla si no hay commit phase abierta", async function () {
     await expectRevert(
-      game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account }),
+      game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account }),
       "No esta en fase de commit"
     );
   });

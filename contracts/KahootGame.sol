@@ -126,7 +126,7 @@ function joinGame() external payable notCancelled {
     function startNextQuestion(
         string calldata _enunciado,
         string[4] calldata _opciones,
-        string calldata _saltProfesor
+        string calldata _saltPregunta
     ) external onlyProfessor notCancelled {
         require(!isFinished, "El juego termino");
 
@@ -142,7 +142,7 @@ function joinGame() external payable notCancelled {
         bytes32 hashCalculado = keccak256(abi.encodePacked(
             _enunciado,
             _opciones[0], _opciones[1], _opciones[2], _opciones[3],
-            _saltProfesor
+            _saltPregunta
         ));
         require(hashCalculado == listaDeRondas[currentQ].hashVerificacionPregunta, "Hash de pregunta invalido");
 
@@ -162,11 +162,11 @@ function joinGame() external payable notCancelled {
         commits[currentQ][msg.sender] = _commitHash;
     }
 
-    function closeQuestionAndStartReveal(uint8 _correctOption, string calldata _professorSalt) external onlyProfessor notCancelled {
+    function closeQuestionAndStartReveal(uint8 _correctOption, string calldata _saltRespuesta) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
         require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
 
-        bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _professorSalt, msg.sender));
+        bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _saltRespuesta, msg.sender));
         require(generatedHash == listaDeRondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
 
         revealedAnswers[currentQ] = _correctOption;
@@ -179,7 +179,7 @@ function joinGame() external payable notCancelled {
     
     function closeCurrentAndOpenNext(
         uint8 _correctOption, 
-        string calldata _professorSalt,
+        string calldata _saltRespuesta,
         string calldata _nextEnunciado,
         string[4] calldata _nextOpciones,
         string calldata _nextSaltProfesor
@@ -187,7 +187,7 @@ function joinGame() external payable notCancelled {
         uint256 currentQ = currentQuestionId;
         require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
 
-        bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _professorSalt, msg.sender));
+        bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _saltRespuesta, msg.sender));
         require(generatedHash == listaDeRondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
 
         revealedAnswers[currentQ] = _correctOption;

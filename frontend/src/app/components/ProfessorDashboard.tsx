@@ -11,7 +11,8 @@ interface StoredQuestion {
   text: string;
   options: string[];
   correctOption: number;
-  salt: string;
+  saltPregunta: string;
+  saltRespuesta: string;
 }
 
 // Professor stores questions in sessionStorage when creating the game
@@ -172,7 +173,7 @@ export function ProfessorDashboard() {
       address: gameAddr,
       abi: kahootGameAbi,
       functionName: "startNextQuestion",
-      args: [currentQ.text, currentQ.options as [string, string, string, string], currentQ.salt],
+      args: [currentQ.text, currentQ.options as [string, string, string, string], currentQ.saltPregunta],
     });
   };
 
@@ -182,7 +183,7 @@ export function ProfessorDashboard() {
       address: gameAddr,
       abi: kahootGameAbi,
       functionName: "closeQuestionAndStartReveal",
-      args: [currentQ.correctOption as unknown as number, currentQ.salt],
+      args: [currentQ.correctOption as unknown as number, currentQ.saltRespuesta],
     });
   };
 
@@ -265,7 +266,7 @@ export function ProfessorDashboard() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-slate-400 font-mono">Salt: {currentQ.salt.slice(0, 16)}…</p>
+                <p className="text-xs text-slate-400 font-mono">Salt Pregunta: {currentQ.saltPregunta?.slice(0, 8)}… | Salt Respuesta: {currentQ.saltRespuesta?.slice(0, 8)}…</p>
               </>
             ) : (
               <p className="text-slate-400 font-bold">No question data found in this session.</p>

@@ -9,7 +9,8 @@ describe("KahootGame - Flujo Principal (Core)", function () {
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const profeSalt = "secretoProfe";
+  const saltPregunta = "secretoPregunta";
+  const saltRespuesta = "secretoRespuesta";
   const enunciado = "¿Cuánto es 2+2?";
   const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
@@ -28,9 +29,9 @@ describe("KahootGame - Flujo Principal (Core)", function () {
     return {
       hashVerificacionPregunta: keccak256(encodePacked(
         ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], profeSalt]
+        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
       )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, profeSalt, profesorAddr),
+      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
       commitPhaseOpen: false,
       revealPhaseOpen: false,
     };
@@ -71,14 +72,14 @@ describe("KahootGame - Flujo Principal (Core)", function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
     await game.write.joinGame({ value: entryFee, account: alumnoTramposo.account });
 
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
 
     const hashHonesto = generateHash(1, "secreto", alumnoHonesto.account.address);
     
     await game.write.commitAnswer([hashHonesto], { account: alumnoHonesto.account });
     await game.write.commitAnswer([hashHonesto], { account: alumnoTramposo.account });
 
-    await game.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
 
     await game.write.revealAnswer([0n, 1, "secreto"], { account: alumnoHonesto.account });
     expect(await game.read.scores([alumnoHonesto.account.address])).to.equal(1n);
@@ -104,23 +105,23 @@ describe("KahootGame - Flujo Principal (Core)", function () {
     await game3.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
 
     // Q1
-    await game3.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game3.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game3.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
-    await game3.write.closeQuestionAndStartReveal([1, profeSalt], { account: profesor.account }); 
+    await game3.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account }); 
     await game3.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
     // Q2
-    await game3.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game3.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game3.write.commitAnswer([generateHash(2, "s2", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
-    await game3.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account }); 
+    await game3.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account }); 
     await game3.write.revealAnswer([1n, 2, "s2"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
     // Q3
-    await game3.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game3.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await game3.write.commitAnswer([generateHash(1, "s3", alumnoHonesto.account.address)], { account: alumnoHonesto.account });
-    await game3.write.closeQuestionAndStartReveal([2, profeSalt], { account: profesor.account }); 
+    await game3.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account }); 
     await game3.write.revealAnswer([2n, 1, "s3"], { account: alumnoHonesto.account });
     await game3.write.advanceToNextQuestion({ account: profesor.account });
 
@@ -140,7 +141,7 @@ describe("KahootGame - Flujo Principal (Core)", function () {
 
   it("Un alumno NO puede unirse después de que comience el juego", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, profeSalt], { account: profesor.account });
+    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
     await expectRevert(
       game.write.joinGame({ value: entryFee, account: alumnoTramposo.account }),
       "El juego ya comenzo o ya termino"

@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
 type Answer = { text: string; correct: boolean };
-type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltProfesor: string };
+type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltPregunta: string; saltRespuesta: string; };
 type GameData = { title: string; stakeAmount: string; questions: Question[] };
 
 export default function TeacherPlay() {
@@ -59,7 +59,7 @@ export default function TeacherPlay() {
         args: [
           `${currentQ.question}||${currentQ.timeLimit || 30}`,
           [currentQ.answers[0].text, currentQ.answers[1].text, currentQ.answers[2].text, currentQ.answers[3].text],
-          currentQ.saltProfesor,
+          currentQ.saltPregunta,
         ]
       });
       setIsWaiting(true);
@@ -81,7 +81,7 @@ export default function TeacherPlay() {
         address: gameAddress as `0x${string}`,
         abi: KahootGameABI.abi,
         functionName: "closeQuestionAndStartReveal",
-        args: [correctIdx, currentQ.saltProfesor],
+        args: [correctIdx, currentQ.saltRespuesta],
       });
       setIsWaiting(true);
       await publicClient?.waitForTransactionReceipt({ hash: tx });

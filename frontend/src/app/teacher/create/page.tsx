@@ -9,7 +9,7 @@ import { encodePacked, keccak256, parseEther, decodeEventLog } from "viem";
 import KahootFactoryABI from "../../../abi/KahootFactory.json";
 
 type Answer = { text: string; correct: boolean };
-type Question = { id: number; question: string; answers: Answer[]; timeLimit: number };
+type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltPregunta?: string; saltRespuesta?: string };
 
 const makeQuestion = (id: number): Question => ({
   id,
@@ -100,21 +100,26 @@ export default function CreateSession() {
     if (!address) return toast.error("Connect wallet first!");
 
     const rondas = questions.map((q) => {
-      const saltProfesor = "secretSalt123" + q.id; 
+      const saltPregunta = window.crypto.randomUUID().replace(/-/g, "");
+      const saltRespuesta = window.crypto.randomUUID().replace(/-/g, "");
+      
+      q.saltPregunta = saltPregunta;
+      q.saltRespuesta = saltRespuesta;
+      
       const correctOptionIndex = q.answers.findIndex((a) => a.correct);
 
       const encodedQuestion = `${q.question}||${q.timeLimit || 30}`;
       const hashVerificacionPregunta = keccak256(
         encodePacked(
           ['string', 'string', 'string', 'string', 'string', 'string'],
-          [encodedQuestion, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltProfesor]
+          [encodedQuestion, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltPregunta]
         )
       );
 
       const hashRespuestaCorrecta = keccak256(
         encodePacked(
           ['uint8', 'string', 'address'],
-          [correctOptionIndex, saltProfesor, address]
+          [correctOptionIndex, saltRespuesta, address]
         )
       );
 
@@ -130,8 +135,7 @@ export default function CreateSession() {
       title,
       stakeAmount,
       questions: questions.map(q => ({
-        ...q,
-        saltProfesor: "secretSalt123" + q.id
+        ...q
       }))
     };
     localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
