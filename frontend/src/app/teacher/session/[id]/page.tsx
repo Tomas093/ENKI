@@ -114,7 +114,7 @@ export default function SessionDetails() {
   participants.forEach(p => {
     scoreCount[p.score] = (scoreCount[p.score] || 0) + 1;
   });
-  const BAR_DATA = Array.from({ length: TOTAL_QUESTIONS + 1 }, (_, i) => ({ score: i, students: scoreCount[i] || 0 }));
+  const BAR_DATA = Array.from({ length: TOTAL_QUESTIONS + 1 }, (_, i) => ({ score: i.toString(), students: scoreCount[i] || 0 }));
 
   const PODIUM = participants.slice(0, 3);
 

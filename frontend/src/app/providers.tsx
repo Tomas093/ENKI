@@ -13,7 +13,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isReconnecting && !isConnected && pathname !== "/") {
+    const isMockRoute = pathname.startsWith('/mock-');
+    if (!isReconnecting && !isConnected && pathname !== "/" && !isMockRoute) {
       router.push("/");
     }
   }, [isConnected, isReconnecting, pathname, router]);

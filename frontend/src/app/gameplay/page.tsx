@@ -2,21 +2,20 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { useWriteContract, useAccount } from "wagmi";
+import { useWriteContract, useAccount, usePublicClient } from "wagmi";
 import { keccak256, encodePacked } from "viem";
 import KahootGameABI from "../../abi/KahootGame.json";
 import { GlobalLoadingOverlay } from "../components/GlobalLoadingOverlay";
 
-import { useGameState, useWatchGameEvents } from "../../hooks/useGameContract";
 import { useDisplayName } from "../../hooks/useDisplayName";
 
 const OPTION_STYLES = [
-  { gradient: "linear-gradient(135deg, #FF3B5C 0%, #E21B3C 100%)", border: "#9b0026", glow: "rgba(226,27,60,0.45)" },
+  { gradient: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)", border: "#4C1D95", glow: "rgba(109,40,217,0.45)" },
   { gradient: "linear-gradient(135deg, #3B82F6 0%, #1368CE 100%)", border: "#0a4a99", glow: "rgba(19,104,206,0.45)" },
-  { gradient: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)", border: "#9a5300", glow: "rgba(217,119,6,0.45)" },
-  { gradient: "linear-gradient(135deg, #34D399 0%, #059669 100%)", border: "#065f46", glow: "rgba(5,150,105,0.45)" },
+  { gradient: "linear-gradient(135deg, #F97316 0%, #C2410C 100%)", border: "#7C2D12", glow: "rgba(194,65,12,0.45)" },
+  { gradient: "linear-gradient(135deg, #EC4899 0%, #BE185D 100%)", border: "#831843", glow: "rgba(190,24,93,0.45)" },
 ];
 
 export default function ActiveGameplay() {
@@ -25,32 +24,18 @@ export default function ActiveGameplay() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [totalTime, setTotalTime] = useState(30);
   
+  const [correctAnswerIdx, setCorrectAnswerIdx] = useState<number | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const gameAddress = searchParams.get("game") as `0x${string}`;
   const { address } = useAccount();
   const { displayName } = useDisplayName(address);
+  const publicClient = usePublicClient();
 
   const { writeContractAsync, isPending } = useWriteContract();
-  const { currentQuestionId } = useGameState(gameAddress);
-
-  useWatchGameEvents(gameAddress, (args) => {
-    // When a question is revealed, the host will trigger this
-    if (args.questionId !== undefined) {
-      setQuestionData({
-        id: Number(args.questionId),
-        question: args.enunciado,
-        options: args.opciones,
-      });
-      setTimeLeft(30);
-      setTotalTime(30);
-      setSelected(null);
-    }
-  }, (args) => {
-    if (args.questionId === currentQuestionId) {
-       router.push(`/waiting?game=${gameAddress}`);
-    }
-  });
 
   useEffect(() => {
     const qData = sessionStorage.getItem("current_question");
@@ -68,17 +53,13 @@ export default function ActiveGameplay() {
     return () => clearInterval(t);
   }, [selected, timeLeft, questionData]);
 
-  // Auto-redirect if time runs out and no answer was picked
   useEffect(() => {
     if (timeLeft <= 0 && selected === null && gameAddress) {
+      setSelected(-1);
       sessionStorage.removeItem("my_answer_idx");
       sessionStorage.removeItem("my_answer_salt");
-      const t = setTimeout(() => {
-        router.push(`/waiting?game=${gameAddress}`);
-      }, 2000);
-      return () => clearTimeout(t);
     }
-  }, [timeLeft, selected, gameAddress, router]);
+  }, [timeLeft, selected, gameAddress]);
 
   const handlePick = async (idx: number) => {
     if (selected !== null || !gameAddress || !address) return;
@@ -99,8 +80,6 @@ export default function ActiveGameplay() {
         functionName: 'commitAnswer',
         args: [commitHash],
       });
-
-      router.push(`/waiting?game=${gameAddress}`);
     } catch (e) {
       console.error(e);
       toast.error("Transaction failed. Are you connected?");
@@ -108,11 +87,161 @@ export default function ActiveGameplay() {
     }
   };
 
+  useEffect(() => {
+    if (!publicClient || !gameAddress) return;
+
+    let lastCheckedBlock = 0n;
+    let isRevealingRef = false;
+
+    const poll = async () => {
+      try {
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = lastCheckedBlock === 0n
+          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
+          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
+
+        if (correctAnswerIdx === null) {
+          const revealLogs = await publicClient.getContractEvents({
+            address: gameAddress as `0x${string}`,
+            abi: KahootGameABI.abi,
+            eventName: 'RevealPhaseStarted',
+            fromBlock,
+            toBlock: 'latest',
+          });
+
+          const qDataStr = sessionStorage.getItem("current_question");
+          const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
+          const matchingLog = currentQId !== null
+            ? revealLogs.find((l: any) => Number(l.args.questionId) === currentQId)
+            : revealLogs[0];
+
+          if (matchingLog) {
+            const log = matchingLog as any;
+            const qId = Number(log.args.questionId);
+            const myIdx = sessionStorage.getItem("my_answer_idx");
+            const mySalt = sessionStorage.getItem("my_answer_salt");
+            
+            if (myIdx !== null && mySalt) {
+              const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+              pendingReveals.push({ qId, myIdx: Number(myIdx), mySalt });
+              sessionStorage.setItem("pending_reveals", JSON.stringify(pendingReveals));
+            }
+
+            try {
+              const correctAns = await publicClient.readContract({
+                address: gameAddress as `0x${string}`,
+                abi: KahootGameABI.abi,
+                functionName: 'revealedAnswers',
+                args: [BigInt(qId)],
+              });
+              
+              setCorrectAnswerIdx(Number(correctAns));
+              setIsCorrect(myIdx !== null && Number(correctAns) === Number(myIdx));
+            } catch (e) {
+              console.error("Failed to read correct answer", e);
+              setIsCorrect(false);
+            }
+          }
+        }
+
+        if (correctAnswerIdx !== null) {
+          const nextQLogs = await publicClient.getContractEvents({
+            address: gameAddress as `0x${string}`,
+            abi: KahootGameABI.abi,
+            eventName: 'QuestionRevealed',
+            fromBlock,
+            toBlock: 'latest',
+          });
+
+          const qDataStr = sessionStorage.getItem("current_question");
+          const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
+          const validNextLog = nextQLogs.find((log: any) => Number(log.args.questionId) > currentQuestionId);
+
+          if (validNextLog) {
+            const log = validNextLog as any;
+            const args = log.args;
+            const rawQuestion = args.enunciado;
+            const parts = rawQuestion.split("||");
+            const actualQuestion = parts[0];
+            const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
+
+            const newQuestionData = {
+              id: Number(args.questionId),
+              question: actualQuestion,
+              timeLimit: timeLimit,
+              options: args.opciones,
+            };
+            sessionStorage.setItem("current_question", JSON.stringify(newQuestionData));
+            
+            setQuestionData(newQuestionData);
+            setTimeLeft(timeLimit);
+            setTotalTime(timeLimit);
+            setSelected(null);
+            setCorrectAnswerIdx(null);
+            setIsCorrect(false);
+            return;
+          }
+
+          if (!isRevealingRef) {
+            const finished = await publicClient.readContract({
+              address: gameAddress as `0x${string}`,
+              abi: KahootGameABI.abi,
+              functionName: 'isFinished'
+            });
+
+            if (finished) {
+              isRevealingRef = true;
+              setIsRevealing(true);
+              const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+              
+              if (pendingReveals.length > 0) {
+                try {
+                  const qIds = pendingReveals.map((r: any) => BigInt(r.qId));
+                  const options = pendingReveals.map((r: any) => r.myIdx);
+                  const salts = pendingReveals.map((r: any) => r.mySalt);
+
+                  await writeContractAsync({
+                    address: gameAddress as `0x${string}`,
+                    abi: KahootGameABI.abi,
+                    functionName: 'batchRevealAnswers',
+                    args: [qIds, options, salts],
+                  });
+                  
+                  sessionStorage.removeItem("pending_reveals");
+                  router.push(`/leaderboard?game=${gameAddress}`);
+                  return;
+                } catch (e) {
+                  console.error("Batch reveal failed", e);
+                  setIsRevealing(false);
+                  router.push(`/leaderboard?game=${gameAddress}`);
+                  return;
+                }
+              } else {
+                router.push(`/leaderboard?game=${gameAddress}`);
+                return;
+              }
+            }
+          }
+        }
+
+        lastCheckedBlock = currentBlock;
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    };
+
+    const interval = setInterval(poll, 3500);
+    poll();
+    return () => clearInterval(interval);
+  }, [publicClient, gameAddress, correctAnswerIdx, writeContractAsync, router]);
+
   const timerUrgent = timeLeft <= 5;
   const timerPct = (timeLeft / totalTime) * 100;
   const timerColor = timerUrgent ? "#EF4444" : "#7C3AED";
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
+
+  const isRevealed = correctAnswerIdx !== null;
 
   return (
     <motion.div
@@ -123,7 +252,7 @@ export default function ActiveGameplay() {
     >
       <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-2 relative">
         <motion.div
-          animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
+          animate={{ width: isRevealed ? "0%" : `${timerPct}%`, backgroundColor: isRevealed ? "#94a3b8" : timerColor }}
           transition={{ duration: 1, ease: "linear" }}
           className="h-full rounded-full"
         />
@@ -131,8 +260,8 @@ export default function ActiveGameplay() {
 
       <div className="flex items-center justify-between px-2 pt-1">
         <div className="flex items-center gap-2">
-          <div className={`font-black text-xl tabular-nums ${timerUrgent ? 'text-red-500 animate-pulse' : 'text-purple-600'}`}>
-            {mm}:{ss}
+          <div className={`font-black text-xl tabular-nums ${timerUrgent && !isRevealed ? 'text-red-500 animate-pulse' : 'text-purple-600'}`}>
+            {isRevealed ? "00:00" : `${mm}:${ss}`}
           </div>
         </div>
 
@@ -162,22 +291,50 @@ export default function ActiveGameplay() {
         {questionData && questionData.options.map((optText: string, idx: number) => {
           const opt = OPTION_STYLES[idx];
           const isSelected = selected === idx;
-          const isDimmed = selected !== null && !isSelected;
+          const isActualCorrect = correctAnswerIdx === idx;
+          
+          let opacity = 1;
+          let scale = 1;
+          let currentGradient = opt.gradient;
+          let currentGlow = opt.glow;
+
+          if (isRevealed) {
+            if (isActualCorrect) {
+              scale = 1;
+              currentGradient = "linear-gradient(135deg, #10B981 0%, #059669 100%)";
+              currentGlow = "rgba(16,185,129,0.45)";
+            } else if (isSelected) {
+              scale = 1;
+              currentGradient = "linear-gradient(135deg, rgba(239,68,68,0.8) 0%, rgba(185,28,28,0.8) 100%)";
+              currentGlow = "rgba(239,68,68,0.35)";
+            } else {
+              opacity = 0.3;
+            }
+          } else {
+            if (selected !== null && !isSelected) {
+              opacity = 0.5;
+            } else if (timeLeft <= 0 && !isSelected) {
+              opacity = 0.3;
+            }
+            if (isSelected) scale = 0.97;
+          }
+
+          const disableClick = selected !== null || timeLeft <= 0 || isRevealed;
+
           return (
             <motion.button
               key={idx}
               onClick={() => handlePick(idx)}
-              disabled={selected !== null || timeLeft <= 0}
+              disabled={disableClick}
               initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: isDimmed ? 0.5 : (timeLeft <= 0 && !isSelected ? 0.3 : 1), scale: isSelected ? 0.97 : 1 }}
-              transition={{ delay: 0.12 + idx * 0.06, type: "spring", stiffness: 300, damping: 22 }}
+              animate={{ opacity, scale }}
+              transition={{ delay: isRevealed ? 0 : 0.12 + idx * 0.06, type: "spring", stiffness: 300, damping: 22 }}
               className="flex flex-col items-center justify-center gap-3 relative overflow-hidden"
               style={{
-                background: opt.gradient,
+                background: currentGradient,
                 borderRadius: 24,
-                borderBottom: `6px solid ${opt.border}`,
-                cursor: selected !== null ? "default" : "pointer",
-                boxShadow: isSelected ? `0 0 32px ${opt.glow}` : `0 4px 20px ${opt.glow}`,
+                cursor: disableClick ? "default" : "pointer",
+                boxShadow: (isSelected || (isRevealed && isActualCorrect)) ? `0 0 32px ${currentGlow}` : `0 4px 20px ${currentGlow}`,
               }}
             >
               <div
@@ -200,7 +357,7 @@ export default function ActiveGameplay() {
                   fontFamily: "'Nunito', sans-serif",
                 }}
               >
-                {isSelected && isPending ? (
+                {isPending && isSelected ? (
                   <Loader2 className="animate-spin text-white w-6 h-6" />
                 ) : (
                   ["A", "B", "C", "D"][idx]
@@ -218,6 +375,17 @@ export default function ActiveGameplay() {
               >
                 {optText}
               </span>
+
+              {isRevealed && isActualCorrect && (
+                <div className="absolute top-4 right-4 bg-white/25 p-2 rounded-full backdrop-blur-md">
+                  <CheckCircle2 size={24} className="text-white drop-shadow-md" strokeWidth={3} />
+                </div>
+              )}
+              {isRevealed && !isActualCorrect && (
+                <div className="absolute top-4 right-4 bg-white/25 p-2 rounded-full backdrop-blur-md">
+                  <XCircle size={24} className="text-white drop-shadow-md" strokeWidth={3} />
+                </div>
+              )}
             </motion.button>
           );
         })}
@@ -228,11 +396,10 @@ export default function ActiveGameplay() {
       </div>
 
       <GlobalLoadingOverlay 
-        isVisible={selected !== null} 
-        message="Locking answer on-chain..." 
-        subMessage="Please sign in your wallet."
+        isVisible={isRevealing} 
+        message="Revealing answers on-chain..." 
+        subMessage="Please sign in your wallet to compute points."
       />
     </motion.div>
   );
 }
-;

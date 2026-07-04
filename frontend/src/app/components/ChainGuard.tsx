@@ -33,7 +33,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className={isWrongNetwork ? "opacity-50 pointer-events-none" : ""}>
+      <div className={`flex-1 flex flex-col w-full ${isWrongNetwork ? "opacity-50 pointer-events-none" : ""}`}>
         {children}
       </div>
     </>

@@ -11,7 +11,18 @@ export default function WaitingRoom() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
-  const [correctAnswerText, setCorrectAnswerText] = useState("");
+  const [options, setOptions] = useState<string[]>([]);
+  const [questionText, setQuestionText] = useState<string>("");
+  const [questionNumber, setQuestionNumber] = useState<number>(1);
+  const [myAnswerIdx, setMyAnswerIdx] = useState<number | null>(null);
+  const [correctAnswerIdx, setCorrectAnswerIdx] = useState<number | null>(null);
+  
+  const OPTION_STYLES = [
+    { gradient: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)", border: "#4C1D95", glow: "rgba(109,40,217,0.45)" }, // Purple
+    { gradient: "linear-gradient(135deg, #3B82F6 0%, #1368CE 100%)", border: "#0a4a99", glow: "rgba(19,104,206,0.45)" }, // Blue
+    { gradient: "linear-gradient(135deg, #F97316 0%, #C2410C 100%)", border: "#7C2D12", glow: "rgba(194,65,12,0.45)" }, // Orange
+    { gradient: "linear-gradient(135deg, #EC4899 0%, #BE185D 100%)", border: "#831843", glow: "rgba(190,24,93,0.45)" }, // Pink
+  ];
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,6 +33,17 @@ export default function WaitingRoom() {
 
   useEffect(() => {
     const bannerTimer = setTimeout(() => setShowBanner(true), 15000);
+    const qDataStr = sessionStorage.getItem("current_question");
+    if (qDataStr) {
+       const qData = JSON.parse(qDataStr);
+       setOptions(qData.options || []);
+       setQuestionText(qData.question || "");
+       setQuestionNumber((qData.id !== undefined ? Number(qData.id) : 0) + 1);
+    }
+    const myIdx = sessionStorage.getItem("my_answer_idx");
+    if (myIdx !== null) {
+       setMyAnswerIdx(Number(myIdx));
+    }
     return () => clearTimeout(bannerTimer);
   }, []);
 
@@ -80,14 +102,7 @@ export default function WaitingRoom() {
                 args: [BigInt(qId)],
               });
               
-              const qDataStr = sessionStorage.getItem("current_question");
-              if (qDataStr) {
-                 const qData = JSON.parse(qDataStr);
-                 const text = qData.options[Number(correctAns)] || "";
-                 sessionStorage.setItem("correct_answer_text", text);
-                 setCorrectAnswerText(text);
-              }
-              
+              setCorrectAnswerIdx(Number(correctAns));
               setIsCorrect(myIdx !== null && Number(correctAns) === Number(myIdx));
             } catch (e) {
               console.error("Failed to read correct answer", e);
@@ -184,7 +199,7 @@ export default function WaitingRoom() {
   }, [publicClient, gameAddress]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center w-full z-10 relative">
+    <div className="flex-1 flex flex-col items-center justify-center w-full z-10 relative" style={{ height: "calc(100vh - 88px)" }}>
 
       {/* ── EMERGENCY BANNER ─────────────────────────────────────────────── */}
       <AnimatePresence>
@@ -303,59 +318,152 @@ export default function WaitingRoom() {
           </motion.div>
         ) : (
           <motion.div
-            key="feedback"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`fixed inset-0 z-50 flex items-center justify-center flex-col p-8 ${
-              isCorrect ? "bg-[#10B981]" : "bg-red-500"
-            }`}
+            key="feedback-gameplay-style"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col w-full gap-4"
+            style={{ height: "calc(100vh - 88px)" }}
           >
-            <motion.div
-              initial={{ scale: 0, rotate: -45 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", bounce: 0.6, duration: 0.8 }}
-              className="bg-white/20 p-8 rounded-full mb-8 backdrop-blur-md"
-            >
-              {isCorrect ? (
-                <CheckCircle2 size={120} className="text-white" strokeWidth={3} />
-              ) : (
-                <XCircle size={120} className="text-white" strokeWidth={3} />
-              )}
-            </motion.div>
+            <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-2 relative">
+              <motion.div
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                className="h-full rounded-full bg-slate-400"
+              />
+            </div>
 
-            <motion.h1
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="font-black text-white mb-4 tracking-tight text-center drop-shadow-lg"
-              style={{ fontSize: "clamp(48px, 10vw, 96px)", fontFamily: "'Nunito', sans-serif" }}
-            >
-              {isCorrect ? "CORRECT!" : "INCORRECT"}
-            </motion.h1>
+            <div className="flex items-center justify-between px-2 pt-1">
+              <div className="flex items-center gap-2">
+                {isCorrect ? (
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-100 border-[3px] border-emerald-200 rounded-full">
+                    <CheckCircle2 className="text-emerald-600" size={18} strokeWidth={3} />
+                    <span className="font-black text-emerald-600 text-sm tracking-wide">+1 Point</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-red-100 border-[3px] border-red-200 rounded-full">
+                    <XCircle className="text-red-600" size={18} strokeWidth={3} />
+                    <span className="font-black text-red-600 text-sm tracking-wide">Incorrect</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 py-1.5 rounded-full bg-white border-[3px] border-slate-200 shadow-sm">
+                <span className="font-black text-slate-600 text-sm">Question {questionNumber}</span>
+              </div>
+            </div>
 
             <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="bg-black/20 px-8 py-4 rounded-[24px] backdrop-blur-sm"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="bg-white rounded-[28px] border-[3px] border-slate-200 shadow-md flex items-center justify-center px-8 py-6"
+              style={{ minHeight: 120 }}
             >
               <p
-                className="font-extrabold text-white mb-2"
-                style={{ fontSize: 28, fontFamily: "'Nunito', sans-serif" }}
+                className="font-black text-slate-800 text-center leading-snug"
+                style={{ fontSize: "clamp(20px, 3vw, 32px)", fontFamily: "'Nunito', sans-serif" }}
               >
-                {isCorrect ? "+1 Point" : "+0 Points"}
-              </p>
-              
-              {!isCorrect && (
-                <p className="font-bold text-white/90 text-md tracking-wide mb-2 bg-black/40 px-4 py-2 rounded-xl">
-                  Correct Answer: {correctAnswerText || "?"}
-                </p>
-              )}
-
-              <p className="font-bold text-white/80 text-sm tracking-wide">
-                Waiting for Professor to continue...
+                {questionText}
               </p>
             </motion.div>
+
+            <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
+              {options.map((optText: string, idx: number) => {
+                const opt = OPTION_STYLES[idx] || OPTION_STYLES[0];
+                const isSelected = myAnswerIdx === idx;
+                const isActualCorrect = correctAnswerIdx === idx;
+                const isDimmed = !isActualCorrect && !isSelected;
+
+                let currentGradient = opt.gradient;
+                let currentGlow = opt.glow;
+
+                if (isActualCorrect) {
+                  currentGradient = "linear-gradient(135deg, #10B981 0%, #059669 100%)";
+                  currentGlow = "rgba(16,185,129,0.45)";
+                } else if (isSelected) {
+                  currentGradient = "linear-gradient(135deg, rgba(239,68,68,0.8) 0%, rgba(185,28,28,0.8) 100%)";
+                  currentGlow = "rgba(239,68,68,0.35)";
+                }
+
+                return (
+                  <motion.button
+                    key={idx}
+                    disabled
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ 
+                      opacity: isDimmed ? 0.3 : 1, 
+                      scale: 1 
+                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                    className="flex flex-col items-center justify-center gap-3 relative overflow-hidden"
+                    style={{
+                      background: currentGradient,
+                      borderRadius: 24,
+                      cursor: "default",
+                      boxShadow: (isSelected || isActualCorrect) ? `0 0 32px ${currentGlow}` : `0 4px 20px ${currentGlow}`,
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%)",
+                        borderRadius: 24,
+                      }}
+                    />
+                    
+                    <div
+                      className="flex items-center justify-center font-black relative z-10"
+                      style={{
+                        width: 48, height: 48,
+                        borderRadius: 14,
+                        background: "rgba(255,255,255,0.25)",
+                        backdropFilter: "blur(4px)",
+                        color: "white",
+                        fontSize: 22,
+                        fontFamily: "'Nunito', sans-serif",
+                      }}
+                    >
+                      {["A", "B", "C", "D"][idx]}
+                    </div>
+                    
+                    <span
+                      className="text-white font-extrabold text-center leading-snug px-4 relative z-10"
+                      style={{
+                        fontSize: "clamp(14px, 2vw, 22px)",
+                        fontFamily: "'Nunito', sans-serif",
+                        textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                        maxWidth: "90%",
+                      }}
+                    >
+                      {optText}
+                    </span>
+
+                    {isActualCorrect && (
+                      <motion.div 
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute top-4 right-4 bg-white/25 p-2 rounded-full backdrop-blur-md"
+                      >
+                        <CheckCircle2 size={24} className="text-white drop-shadow-md" strokeWidth={3} />
+                      </motion.div>
+                    )}
+                    {!isActualCorrect && (
+                      <motion.div 
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute top-4 right-4 bg-white/25 p-2 rounded-full backdrop-blur-md"
+                      >
+                        <XCircle size={24} className="text-white drop-shadow-md" strokeWidth={3} />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+            
+            <div className="flex items-center justify-center pb-1 mt-2 mb-4">
+              <span className="text-slate-400 font-bold text-xs animate-pulse">Waiting for Professor to continue...</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
