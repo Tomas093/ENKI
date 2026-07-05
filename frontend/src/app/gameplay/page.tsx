@@ -250,6 +250,9 @@ export default function ActiveGameplay() {
       className="flex flex-col w-full gap-4"
       style={{ height: "calc(100vh - 88px)" }}
     >
+      {isRevealing && (
+        <GlobalLoadingOverlay isVisible={true} message="Revealing your answers on-chain... Please check your wallet to sign the final transaction!" />
+      )}
       <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-2 relative">
         <motion.div
           animate={{ width: isRevealed ? "0%" : `${timerPct}%`, backgroundColor: isRevealed ? "#94a3b8" : timerColor }}

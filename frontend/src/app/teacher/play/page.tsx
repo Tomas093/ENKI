@@ -106,7 +106,6 @@ export default function TeacherPlay() {
       setIsWaiting(false);
       if (isLastQuestion) {
         setPhase("FINISHED");
-        handleFinishGame();
       } else {
         setCurrentIndex(prev => prev + 1);
         setPhase("IDLE");
