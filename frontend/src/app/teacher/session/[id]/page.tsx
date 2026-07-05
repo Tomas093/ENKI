@@ -13,8 +13,7 @@ const medalColors = ["#F59E0B", "#94A3B8", "#D97706"];
 const medalLabels = ["🥇", "🥈", "🥉"];
 const podiumOrder = [1, 0, 2];
 
-import { createPublicClient, http } from 'viem';
-import { sepolia } from 'viem/chains';
+
 
 export default function SessionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -51,15 +50,10 @@ export default function SessionDetails() {
     if (!publicClient || !id) return;
     const fetchStats = async () => {
       try {
-        const logClient = createPublicClient({
-          chain: sepolia,
-          transport: http('https://ethereum-sepolia-rpc.publicnode.com')
-        });
-
-        const currentBlock = await logClient.getBlockNumber();
+        const currentBlock = await publicClient.getBlockNumber();
         const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
 
-        const logs = await logClient.getContractEvents({
+        const logs = await publicClient.getContractEvents({
           address: id as `0x${string}`,
           abi: KahootGameABI.abi,
           eventName: 'PlayerJoined',
@@ -163,34 +157,47 @@ export default function SessionDetails() {
         <h2 className="font-black text-slate-800 text-xl mb-8 flex items-center gap-2">
           <Trophy size={22} className="text-yellow-500" /> Top 3 Players
         </h2>
-        <div className="flex items-end justify-center gap-4 md:gap-8">
-          {podiumOrder.map((rank) => {
-            const player = PODIUM[rank];
-            if (!player) return <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]"></div>;
+        {loadingStats ? (
+          <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+            <Loader2 className="animate-spin" size={24} />
+            <span className="font-bold">Loading results...</span>
+          </div>
+        ) : participants.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2 text-slate-400">
+            <Trophy size={40} className="opacity-30" />
+            <p className="font-bold">No participants found. Make sure prizes are calculated.</p>
+          </div>
+        ) : (
+          <div className="flex items-end justify-center gap-4 md:gap-8">
+            {podiumOrder.map((rank) => {
+              const player = PODIUM[rank];
+              if (!player) return <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]"></div>;
 
-            const heights = ["h-28", "h-36", "h-24"];
-            const bgColors = [
-              "bg-gradient-to-b from-amber-50 to-amber-100 border-amber-300",
-              "bg-gradient-to-b from-yellow-50 to-yellow-100 border-yellow-400",
-              "bg-gradient-to-b from-orange-50 to-orange-100 border-orange-300",
-            ];
-            return (
-              <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]">
-                <div className="text-4xl">{medalLabels[rank]}</div>
-                <div className="font-black text-slate-800 text-sm text-center">{player.wallet}</div>
-                <div className="font-black text-2xl" style={{ color: medalColors[rank] }}>{player.score}/{TOTAL_QUESTIONS}</div>
-                <div
-                  className={`w-full rounded-t-[16px] border-[3px] flex items-end justify-center pb-3 ${heights[rank]} ${bgColors[rank]}`}
-                >
-                  <span className="font-black text-slate-500 text-sm">#{rank + 1}</span>
+              const heights = ["h-28", "h-36", "h-24"];
+              const bgColors = [
+                "bg-gradient-to-b from-amber-50 to-amber-100 border-amber-300",
+                "bg-gradient-to-b from-yellow-50 to-yellow-100 border-yellow-400",
+                "bg-gradient-to-b from-orange-50 to-orange-100 border-orange-300",
+              ];
+              return (
+                <div key={rank} className="flex flex-col items-center gap-3 flex-1 max-w-[180px]">
+                  <div className="text-4xl">{medalLabels[rank]}</div>
+                  <div className="font-black text-slate-800 text-sm text-center">{player.wallet}</div>
+                  <div className="font-black text-2xl" style={{ color: medalColors[rank] }}>{player.score}/{TOTAL_QUESTIONS}</div>
+                  <div
+                    className={`w-full rounded-t-[16px] border-[3px] flex items-end justify-center pb-3 ${heights[rank]} ${bgColors[rank]}`}
+                  >
+                    <span className="font-black text-slate-500 text-sm">#{rank + 1}</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
 
-      {/* 3. Analytics */}
+      {/* 3. Analytics — only shown when data is ready */}
+      {!loadingStats && participants.length > 0 && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -218,7 +225,7 @@ export default function SessionDetails() {
               </Pie>
               <Tooltip formatter={(v: number) => [`${v} students`, ""]} />
               <Legend
-                formatter={(value, entry) => {
+                formatter={(value) => {
                   const item = PIE_DATA.find(d => d.name === value);
                   const total = participants.length || 1;
                   const pct = item ? Math.round((item.value / total) * 100) : 0;
@@ -244,6 +251,7 @@ export default function SessionDetails() {
           </ResponsiveContainer>
         </div>
       </motion.div>
+      )}
 
       {/* 4. Full Leaderboard Table */}
       <motion.div

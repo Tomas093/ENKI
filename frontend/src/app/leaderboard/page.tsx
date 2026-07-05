@@ -7,8 +7,7 @@ import confetti from "canvas-confetti";
 import { motion } from "motion/react";
 import { useSearchParams } from "next/navigation";
 import { useWriteContract, useAccount, useReadContract, usePublicClient } from "wagmi";
-import { createPublicClient, http, formatEther } from 'viem';
-import { sepolia } from 'viem/chains';
+import { formatEther } from 'viem';
 import KahootGameABI from "../../abi/KahootGame.json";
 
 type Player = { wallet: string, score: number, claimed: boolean, diplomaClaimed: boolean };
@@ -56,15 +55,11 @@ export default function FinalLeaderboard() {
 
   const fetchStats = async () => {
     try {
-      // logClient is only used for getContractEvents to bypass Alchemy's 10-block limit on Free Tier
-      const logClient = createPublicClient({
-        chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com')
-      });
-      const currentBlock = await logClient.getBlockNumber();
+      if (!wagmiClient) return;
+      const currentBlock = await wagmiClient.getBlockNumber();
       const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
 
-      const logs = await logClient.getContractEvents({
+      const logs = await wagmiClient.getContractEvents({
         address: gameAddress as `0x${string}`,
         abi: KahootGameABI.abi,
         eventName: 'PlayerJoined',
