@@ -24,9 +24,9 @@ export function useJoinGame() {
   const { data: gameData, isLoading: isReading } = useReadContracts({
     contracts: searchedAddress
       ? [
-          { address: searchedAddress, abi: KahootGameABI.abi, functionName: "professor" },
-          { address: searchedAddress, abi: KahootGameABI.abi, functionName: "entryFee" },
-          ...(address ? [{ address: searchedAddress, abi: KahootGameABI.abi, functionName: "hasJoined", args: [address] }] : [])
+          { address: searchedAddress, abi: KahootGameABI.abi as any, functionName: "professor" },
+          { address: searchedAddress, abi: KahootGameABI.abi as any, functionName: "entryFee" },
+          ...(address ? [{ address: searchedAddress, abi: KahootGameABI.abi as any, functionName: "hasJoined", args: [address] }] : [])
         ]
       : [],
   });
