@@ -60,7 +60,7 @@ export function useJoinWaitingRoom() {
             timeLimit: timeLimit,
             options: args.opciones,
           };
-          sessionStorage.setItem("current_question", JSON.stringify(questionData));
+          localStorage.setItem("current_question", JSON.stringify(questionData));
           router.push(`/gameplay?game=${gameAddress}`);
           return;
         }

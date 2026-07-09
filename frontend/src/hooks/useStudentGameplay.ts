@@ -5,6 +5,8 @@ import { keccak256, encodePacked } from "viem";
 import toast from "react-hot-toast";
 import KahootGameABI from "../abi/KahootGame.json";
 import { useDisplayName } from "./useDisplayName";
+import { computeCommitHash } from "../domain/commitReveal";
+import { useRevealAnswers } from "./useRevealAnswers";
 
 export function useStudentGameplay() {
   const [selected, setSelected] = useState<number | null>(null);
@@ -13,12 +15,13 @@ export function useStudentGameplay() {
   const [totalTime, setTotalTime] = useState(30);
   
   const [correctAnswerIdx, setCorrectAnswerIdx] = useState<number | null>(null);
-  const [isRevealing, setIsRevealing] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const gameAddress = searchParams.get("game") as `0x${string}`;
+  
+  const { isRevealing, executeBatchReveal } = useRevealAnswers(gameAddress);
   const { address } = useAccount();
   const { displayName } = useDisplayName(address);
   const publicClient = usePublicClient();
@@ -29,14 +32,14 @@ export function useStudentGameplay() {
     if (!gameAddress) return;
 
     // Safety cleanup if we switched game sessions
-    const lastGame = sessionStorage.getItem("last_game_address");
+    const lastGame = localStorage.getItem("last_game_address");
     if (lastGame && lastGame !== gameAddress) {
-      sessionStorage.removeItem(`game_commits_${lastGame}`);
-      sessionStorage.removeItem("current_question");
+      localStorage.removeItem(`game_commits_${lastGame}`);
+      localStorage.removeItem("current_question");
     }
-    sessionStorage.setItem("last_game_address", gameAddress);
+    localStorage.setItem("last_game_address", gameAddress);
 
-    const qData = sessionStorage.getItem("current_question");
+    const qData = localStorage.getItem("current_question");
     if (qData) {
       const parsed = JSON.parse(qData);
       setQuestionData(parsed);
@@ -45,7 +48,7 @@ export function useStudentGameplay() {
 
       // Restore selected index from Key-Value store
       const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
       const commitInfo = commitsObj[parsed.id];
       if (commitInfo && commitInfo.option !== undefined) {
         setSelected(Number(commitInfo.option));
@@ -63,9 +66,9 @@ export function useStudentGameplay() {
     if (timeLeft <= 0 && selected === null && gameAddress && questionData) {
       setSelected(-1);
       const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
       commitsObj[questionData.id] = { option: -1, salt: "" };
-      sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
+      localStorage.setItem(storageKey, JSON.stringify(commitsObj));
     }
   }, [timeLeft, selected, gameAddress, questionData]);
 
@@ -77,14 +80,12 @@ export function useStudentGameplay() {
     
     // Store in Key-Value store immediately before contract call
     const storageKey = `game_commits_${gameAddress}`;
-    const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+    const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
     commitsObj[questionData.id] = { option: idx, salt: studentSalt };
-    sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
+    localStorage.setItem(storageKey, JSON.stringify(commitsObj));
 
     try {
-      const commitHash = keccak256(
-        encodePacked(['uint8', 'string', 'address'], [idx, studentSalt, address])
-      );
+      const commitHash = computeCommitHash(idx, studentSalt, address as `0x${string}`);
 
       await writeContractAsync({
         address: gameAddress,
@@ -98,9 +99,9 @@ export function useStudentGameplay() {
       // Revert local state and storage on failure
       setSelected(null);
       const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
       delete commitsObj[questionData.id];
-      sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
+      localStorage.setItem(storageKey, JSON.stringify(commitsObj));
     }
   };
 
@@ -126,7 +127,7 @@ export function useStudentGameplay() {
             toBlock: 'latest',
           });
 
-          const qDataStr = sessionStorage.getItem("current_question");
+          const qDataStr = localStorage.getItem("current_question");
           const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
           const matchingLog = currentQId !== null
             ? revealLogs.find((l: any) => Number(l.args.questionId) === currentQId)
@@ -138,7 +139,7 @@ export function useStudentGameplay() {
             
             // Read my index from Key-Value store to calculate correctness
             const storageKey = `game_commits_${gameAddress}`;
-            const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+            const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
             const commitInfo = commitsObj[qId];
             const myIdx = commitInfo && commitInfo.option !== undefined ? commitInfo.option : null;
 
@@ -168,7 +169,7 @@ export function useStudentGameplay() {
             toBlock: 'latest',
           });
 
-          const qDataStr = sessionStorage.getItem("current_question");
+          const qDataStr = localStorage.getItem("current_question");
           const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
           const validNextLog = nextQLogs.find((log: any) => Number(log.args.questionId) > currentQuestionId);
 
@@ -186,7 +187,7 @@ export function useStudentGameplay() {
               timeLimit: timeLimit,
               options: args.opciones,
             };
-            sessionStorage.setItem("current_question", JSON.stringify(newQuestionData));
+            localStorage.setItem("current_question", JSON.stringify(newQuestionData));
 
             setQuestionData(newQuestionData);
             setTimeLeft(timeLimit);
@@ -206,49 +207,11 @@ export function useStudentGameplay() {
 
             if (finished) {
               isRevealingRef = true;
-              setIsRevealing(true);
-              
-              const storageKey = `game_commits_${gameAddress}`;
-              const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
-              
-              // Map dictionary to lists, filtering out any timeouts (option === -1)
-              const qIds: bigint[] = [];
-              const options: number[] = [];
-              const salts: string[] = [];
-
-              Object.keys(commitsObj).forEach((qIdStr) => {
-                const qId = Number(qIdStr);
-                const info = commitsObj[qIdStr];
-                if (info && info.option !== -1 && info.salt) {
-                  qIds.push(BigInt(qId));
-                  options.push(info.option);
-                  salts.push(info.salt);
-                }
-              });
-              
-              if (qIds.length > 0) {
-                try {
-                  const hash = await writeContractAsync({
-                    address: gameAddress as `0x${string}`,
-                    abi: KahootGameABI.abi,
-                    functionName: 'batchRevealAnswers',
-                    args: [qIds, options, salts],
-                  });
-                  
-                  sessionStorage.removeItem(storageKey);
-                  router.push(`/leaderboard?game=${gameAddress}&tx=${hash}`);
-                  return;
-                } catch (e) {
-                  console.error("Batch reveal failed", e);
-                  toast.error("Failed to record answers. Please try again.", { id: "batchReveal" });
-                  setIsRevealing(false);
-                  isRevealingRef = false; // Allow retrying if they stay on page
-                  return;
-                }
-              } else {
-                router.push(`/leaderboard?game=${gameAddress}`);
-                return;
+              const success = await executeBatchReveal();
+              if (!success) {
+                isRevealingRef = false; // Allow retrying if they stay on page
               }
+              return;
             }
           }
         }

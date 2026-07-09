@@ -75,39 +75,20 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
 
   const fetchStats = async () => {
     try {
-      if (!wagmiClient || !gameAddress) return;
-      const currentBlock = await wagmiClient.getBlockNumber();
-      const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
+      if (!gameAddress) return;
 
-      const logs = await wagmiClient.getContractEvents({
-        address: gameAddress as `0x${string}`,
-        abi: KahootGameABI.abi,
-        eventName: 'PlayerJoined',
-        fromBlock: fromBlock,
-        toBlock: 'latest'
-      });
-      const wallets = Array.from(new Set(logs.map(l => (l as any).args?.player as `0x${string}`)));
+      const res = await fetch(`/api/game/${gameAddress}/leaderboard`);
+      if (!res.ok) throw new Error("Failed to fetch leaderboard");
 
-      if (!wagmiClient) return;
-      
-      const scores = await Promise.all(wallets.map(w => wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'scores', args: [w] })));
-      const claims = await Promise.all(wallets.map(w => wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'hasPrizeClaimed', args: [w] })));
-      const diplomaClaims = await Promise.all(wallets.map(w => wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'hasClaimed', args: [w] })));
+      const data = await res.json();
 
-      const p0 = await wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [0] }).catch(() => 0n);
-      const p1 = await wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [1] }).catch(() => 0n);
-      const p2 = await wagmiClient.readContract({ address: gameAddress as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [2] }).catch(() => 0n);
+      setPrizes([
+        BigInt(data.prizes[0]),
+        BigInt(data.prizes[1]),
+        BigInt(data.prizes[2])
+      ]);
 
-      setPrizes([p0 as bigint, p1 as bigint, p2 as bigint]);
-
-      const p = wallets.map((w, i) => ({
-        wallet: w,
-        score: Number(scores[i]),
-        claimed: Boolean(claims[i]),
-        diplomaClaimed: Boolean(diplomaClaims[i])
-      })).sort((a, b) => b.score - a.score);
-
-      setParticipants(p);
+      setParticipants(data.players);
       setLoading(false);
     } catch (e) {
       console.error(e);

@@ -26,35 +26,35 @@ const KEY_PENDING_COMMIT = "enki_pendingCommit";
 const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
-  // Hydrate from sessionStorage so F5 doesn't lose state
+  // Hydrate from localStorage so F5 doesn't lose state
   const [gameAddress, setGameAddressState] = useState<string | null>(
-    () => sessionStorage.getItem(KEY_GAME_ADDRESS)
+    () => localStorage.getItem(KEY_GAME_ADDRESS)
   );
 
   const [pendingCommit, setPendingCommitState] = useState<QuestionCommit | null>(() => {
-    const raw = sessionStorage.getItem(KEY_PENDING_COMMIT);
+    const raw = localStorage.getItem(KEY_PENDING_COMMIT);
     return raw ? (JSON.parse(raw) as QuestionCommit) : null;
   });
 
   const setGameAddress = useCallback((addr: string) => {
-    sessionStorage.setItem(KEY_GAME_ADDRESS, addr);
+    localStorage.setItem(KEY_GAME_ADDRESS, addr);
     setGameAddressState(addr);
   }, []);
 
   const clearGame = useCallback(() => {
-    sessionStorage.removeItem(KEY_GAME_ADDRESS);
-    sessionStorage.removeItem(KEY_PENDING_COMMIT);
+    localStorage.removeItem(KEY_GAME_ADDRESS);
+    localStorage.removeItem(KEY_PENDING_COMMIT);
     setGameAddressState(null);
     setPendingCommitState(null);
   }, []);
 
   const savePendingCommit = useCallback((commit: QuestionCommit) => {
-    sessionStorage.setItem(KEY_PENDING_COMMIT, JSON.stringify(commit));
+    localStorage.setItem(KEY_PENDING_COMMIT, JSON.stringify(commit));
     setPendingCommitState(commit);
   }, []);
 
   const clearPendingCommit = useCallback(() => {
-    sessionStorage.removeItem(KEY_PENDING_COMMIT);
+    localStorage.removeItem(KEY_PENDING_COMMIT);
     setPendingCommitState(null);
   }, []);
 
