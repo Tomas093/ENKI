@@ -11,18 +11,22 @@ export function useLeaderboardClaims() {
   const { address } = useAccount();
   const searchParams = useSearchParams();
   const gameAddress = searchParams.get("game");
+  const txHash = searchParams.get("tx");
   const { writeContractAsync, isPending } = useWriteContract();
   const [confettiFired, setConfettiFired] = useState(false);
 
   const {
     loading,
+    isConfirmingTx,
+    isRefetching,
     participants,
     prizes,
     prizesCalculated,
     PASS_THRESHOLD,
     markPrizeClaimed,
     markDiplomaClaimed,
-  } = useFinalLeaderboard(gameAddress);
+    refetchStats,
+  } = useFinalLeaderboard(gameAddress, txHash);
 
   // Build rank tiers
   const uniqueScores = Array.from(new Set(participants.map((p) => p.score))).sort(
@@ -108,6 +112,9 @@ export function useLeaderboardClaims() {
     myPrize,
     myPrizeFormatted: myPrize > 0n ? formatEther(myPrize) : null,
     isPending,
+    isConfirmingTx,
+    isRefetching,
+    refetchStats,
     handleClaim,
     handleClaimDiploma,
     address,

@@ -20,10 +20,30 @@ export default function FinalLeaderboard() {
     myPrizeFormatted,
     PASS_THRESHOLD,
     isPending,
+    isConfirmingTx,
+    isRefetching,
+    refetchStats,
     handleClaim,
     handleClaimDiploma,
     address,
   } = useLeaderboardClaims();
+
+  if (isConfirmingTx) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <div className="relative">
+          <Loader2 className="animate-spin text-emerald-500 relative z-10" size={54} strokeWidth={2} />
+          <div className="absolute inset-0 bg-emerald-200 rounded-full blur-xl opacity-50 animate-pulse"></div>
+        </div>
+        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          Syncing your answers...
+        </h2>
+        <p className="text-slate-500 font-medium text-lg text-center max-w-sm">
+          Writing your final results to the blockchain. This usually takes just a few seconds.
+        </p>
+      </div>
+    );
+  }
 
   // Loading state
   if (!prizesCalculated || loading) {
@@ -132,6 +152,27 @@ export default function FinalLeaderboard() {
               Did not meet the passing score threshold for a diploma.
             </p>
           ) : null}
+
+          {/* Recovery Sync Button */}
+          {myData && myData.score === 0 && (
+             <button
+               onClick={refetchStats}
+               disabled={isRefetching}
+               className={`mt-4 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border ${
+                 isRefetching 
+                   ? "text-purple-600 bg-purple-50 border-purple-200" 
+                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-transparent hover:border-slate-200"
+               }`}
+             >
+               {isRefetching ? (
+                 <>
+                   <Loader2 size={14} className="animate-spin" /> Sincronizando...
+                 </>
+               ) : (
+                 "Score looks wrong? Force sync"
+               )}
+             </button>
+          )}
 
         </div>
       </div>

@@ -187,8 +187,8 @@ export function useStudentGameplay() {
                   const qIds = pendingReveals.map((r: any) => BigInt(r.qId));
                   const options = pendingReveals.map((r: any) => r.myIdx);
                   const salts = pendingReveals.map((r: any) => r.mySalt);
-
-                  await writeContractAsync({
+                  
+                  const hash = await writeContractAsync({
                     address: gameAddress as `0x${string}`,
                     abi: KahootGameABI.abi,
                     functionName: 'batchRevealAnswers',
@@ -196,12 +196,13 @@ export function useStudentGameplay() {
                   });
                   
                   sessionStorage.removeItem("pending_reveals");
-                  router.push(`/leaderboard?game=${gameAddress}`);
+                  router.push(`/leaderboard?game=${gameAddress}&tx=${hash}`);
                   return;
                 } catch (e) {
                   console.error("Batch reveal failed", e);
+                  toast.error("Failed to record answers. Please try again.", { id: "batchReveal" });
                   setIsRevealing(false);
-                  router.push(`/leaderboard?game=${gameAddress}`);
+                  isRevealingRef = false; // Allow retrying if they stay on page
                   return;
                 }
               } else {
