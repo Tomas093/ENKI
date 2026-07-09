@@ -32,6 +32,15 @@ export function useStudentGameplay() {
       setQuestionData(parsed);
       setTimeLeft(parsed.timeLimit || 30);
       setTotalTime(parsed.timeLimit || 30);
+
+      // Restore selected index if it belongs to this question
+      const savedQId = sessionStorage.getItem("my_answer_qId");
+      if (savedQId && Number(savedQId) === parsed.id) {
+        const savedIdx = sessionStorage.getItem("my_answer_idx");
+        if (savedIdx !== null) {
+          setSelected(Number(savedIdx));
+        }
+      }
     }
   }, []);
 
@@ -42,20 +51,22 @@ export function useStudentGameplay() {
   }, [selected, timeLeft, questionData]);
 
   useEffect(() => {
-    if (timeLeft <= 0 && selected === null && gameAddress) {
+    if (timeLeft <= 0 && selected === null && gameAddress && questionData) {
       setSelected(-1);
-      sessionStorage.removeItem("my_answer_idx");
+      sessionStorage.setItem("my_answer_idx", "-1");
+      sessionStorage.setItem("my_answer_qId", questionData.id.toString());
       sessionStorage.removeItem("my_answer_salt");
     }
-  }, [timeLeft, selected, gameAddress]);
+  }, [timeLeft, selected, gameAddress, questionData]);
 
   const handlePick = async (idx: number) => {
-    if (selected !== null || !gameAddress || !address) return;
+    if (selected !== null || !gameAddress || !address || !questionData) return;
     setSelected(idx);
 
     const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
     sessionStorage.setItem("my_answer_salt", studentSalt);
     sessionStorage.setItem("my_answer_idx", idx.toString());
+    sessionStorage.setItem("my_answer_qId", questionData.id.toString());
 
     try {
       const commitHash = keccak256(
@@ -108,9 +119,12 @@ export function useStudentGameplay() {
             const qId = Number(log.args.questionId);
             const myIdx = sessionStorage.getItem("my_answer_idx");
             const mySalt = sessionStorage.getItem("my_answer_salt");
+            const savedQId = sessionStorage.getItem("my_answer_qId");
             
-            if (myIdx !== null && mySalt) {
-              const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+            if (myIdx !== null && mySalt && savedQId && Number(savedQId) === qId) {
+              let pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+              // Deduplicate to only keep the latest record for this question
+              pendingReveals = pendingReveals.filter((r: any) => Number(r.qId) !== qId);
               pendingReveals.push({ qId, myIdx: Number(myIdx), mySalt });
               sessionStorage.setItem("pending_reveals", JSON.stringify(pendingReveals));
             }
@@ -161,6 +175,11 @@ export function useStudentGameplay() {
             };
             sessionStorage.setItem("current_question", JSON.stringify(newQuestionData));
             
+            // Clear current question's temporary answer storage
+            sessionStorage.removeItem("my_answer_idx");
+            sessionStorage.removeItem("my_answer_salt");
+            sessionStorage.removeItem("my_answer_qId");
+
             setQuestionData(newQuestionData);
             setTimeLeft(timeLimit);
             setTotalTime(timeLimit);
