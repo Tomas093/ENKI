@@ -66,7 +66,15 @@ export function JoinGameTerminal() {
           ) : isGameFound ? (
             <div className="flex flex-col gap-6">
               {/* Game Stats */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <div className="text-xs font-semibold text-slate-500 mb-2">
+                    Game Contract
+                  </div>
+                  <div className="font-mono text-slate-700 text-sm break-all leading-relaxed">
+                    {searchedAddress?.slice(0, 10)}...{searchedAddress?.slice(-8)}
+                  </div>
+                </div>
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                   <div className="text-xs font-semibold text-slate-500 mb-2">
                     Teacher Address

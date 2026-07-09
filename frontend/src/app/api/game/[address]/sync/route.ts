@@ -24,7 +24,7 @@ export async function GET(
     const [qRevealedLogs, rPhaseLogs, endLogs] = await Promise.all([
       publicClient.getLogs({
         address: gameAddress,
-        event: parseAbiItem('event QuestionRevealed(uint256 indexed questionId, string enunciado, string[] opciones)'),
+        event: parseAbiItem('event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones)'),
         fromBlock: DEPLOYMENT_BLOCK,
         toBlock: latestBlock
       }),
