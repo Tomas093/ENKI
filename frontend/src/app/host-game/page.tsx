@@ -24,10 +24,10 @@ const makeQuestion = (id: number): Question => ({
 });
 
 const ANSWER_COLORS = [
-  { bg: "bg-red-500", light: "bg-red-50 border-red-200", label: "A" },
-  { bg: "bg-blue-500", light: "bg-blue-50 border-blue-200", label: "B" },
-  { bg: "bg-amber-400", light: "bg-amber-50 border-amber-200", label: "C" },
-  { bg: "bg-emerald-500", light: "bg-emerald-50 border-emerald-200", label: "D" },
+  { bg: "bg-[#FF3366]", label: "A" },
+  { bg: "bg-[#33CCFF]", label: "B" },
+  { bg: "bg-[#FFCC00]", label: "C" },
+  { bg: "bg-[#39FF14]", label: "D" },
 ];
 
 export default function CreateSession() {
@@ -78,13 +78,9 @@ export default function CreateSession() {
               gameAddr = (decoded.args as any).gameAddress;
               break;
             }
-          } catch (e) {
-            // Not the GameCreated event
-          }
+          } catch (e) {}
         }
-      } catch (err) {
-        console.error("Error decoding logs:", err);
-      }
+      } catch (err) {}
       
       const param = gameAddr ? `&contract=${gameAddr}` : "";
       router.push(`/host/dashboard/${gameAddr}`);
@@ -134,20 +130,16 @@ export default function CreateSession() {
     const gameData = {
       title,
       stakeAmount,
-      questions: questions.map(q => ({
-        ...q
-      }))
+      questions: questions.map(q => ({ ...q }))
     };
     localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
-
     localStorage.removeItem("draft_session");
     
     let diplomaURI = localStorage.getItem("saved_diploma_uri");
     if (!diplomaURI) {
-      // Default basic ENKI diploma if none created
-      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#f1f5f9"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#7c3aed" stroke-width="8"/><text x="400" y="300" font-family="sans-serif" font-size="40" font-weight="bold" fill="#1e293b" text-anchor="middle">ENKI Diploma</text><text x="400" y="360" font-family="sans-serif" font-size="14" fill="#64748b" text-anchor="middle">Awarded for completing ${title}</text></svg>`;
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#F4F4F0"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#000" stroke-width="12"/><text x="400" y="300" font-family="sans-serif" font-size="60" font-weight="900" fill="#000" text-anchor="middle" text-transform="uppercase">ENKI DIPLOMA</text><text x="400" y="360" font-family="monospace" font-size="20" fill="#000" text-anchor="middle">AWARDED FOR: ${title.toUpperCase()}</text></svg>`;
       const svgBase64 = btoa(unescape(encodeURIComponent(svgStr)));
-      const metadata = { name: `ENKI Diploma: ${title}`, description: "Basic ENKI Diploma", image: `data:image/svg+xml;base64,${svgBase64}` };
+      const metadata = { name: `ENKI Diploma: ${title}`, description: "Neo-Brutalist ENKI Diploma", image: `data:image/svg+xml;base64,${svgBase64}` };
       diplomaURI = `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(metadata))))}`;
     }
 
@@ -198,80 +190,82 @@ export default function CreateSession() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-3xl mx-auto pt-8 pb-20 gap-6 relative z-10">
+    <div className="flex flex-col w-full max-w-4xl mx-auto px-4 md:px-8 py-10 gap-8 relative z-10">
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="font-black text-slate-800 text-4xl tracking-tight">New Session</h1>
-          <p className="text-slate-400 font-semibold mt-1">Build your trivia and set the stake</p>
+          <h1 className="font-black text-[48px] uppercase tracking-[-0.03em] leading-[0.88] text-black mb-2">New Session</h1>
+          <p className="font-mono text-[12px] uppercase tracking-[0.05em] text-gray-500">
+            // Build your trivia and set the stake
+          </p>
         </div>
         <button
           onClick={() => router.push("/host/dashboard")}
-          className="font-bold text-slate-400 hover:text-slate-600 px-4 py-2 rounded-[12px] hover:bg-slate-100 transition-colors cursor-pointer"
+          className="bg-white border-2 border-black text-black shadow-[4px_4px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest font-black text-[11px] px-6 py-4 cursor-pointer"
         >
           Cancel
         </button>
       </motion.div>
 
-      {/* Session meta */}
+      {/* Session Meta */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-[24px] border-[3px] border-slate-100 shadow-sm p-6 flex flex-col gap-4"
+        className="bg-white border-2 border-black shadow-[8px_8px_0px_#000] p-8 flex flex-col gap-6"
       >
-        <div className="flex flex-col gap-1.5">
-          <label className="font-black text-slate-600 text-sm">Session Title</label>
+        <div className="flex flex-col gap-2">
+          <label className="font-black text-black text-[12px] uppercase tracking-widest">Session Title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Blockchain Basics"
-            className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 placeholder:text-slate-300 outline-none transition-colors"
+            placeholder="E.G. BLOCKCHAIN BASICS"
+            className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none placeholder:text-gray-300 uppercase"
           />
         </div>
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label className="font-black text-slate-600 text-sm">Stake per player (ETH)</label>
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col gap-2 flex-1">
+            <label className="font-black text-black text-[12px] uppercase tracking-widest">Stake per player (ETH)</label>
             <input
               type="number"
               min="0"
               step="0.001"
               value={stakeAmount}
               onChange={(e) => setStakeAmount(e.target.value)}
-              className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
+              className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none"
             />
           </div>
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label className="font-black text-slate-600 text-sm">Correct answers to earn Diploma</label>
+          <div className="flex flex-col gap-2 flex-1">
+            <label className="font-black text-black text-[12px] uppercase tracking-widest">Correct answers to earn Diploma</label>
             <input
               type="number"
               min="1"
               max={questions.length}
               value={passingScore}
               onChange={(e) => setPassingScore(e.target.value)}
-              className="w-full bg-slate-50 border-2 border-slate-200 focus:border-emerald-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 outline-none transition-colors"
+              className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none"
             />
           </div>
         </div>
         
         {/* Diploma Studio Button */}
-        <div className="pt-2 border-t-2 border-slate-100 flex items-center justify-between mt-2">
-          <div className="flex flex-col">
-            <span className="font-bold text-slate-700 text-sm">NFT Diploma Design</span>
-            <span className="text-slate-400 text-xs font-medium">Customize the certificate your students will earn</span>
+        <div className="pt-6 border-t-2 border-black flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="font-black text-black text-[13px] uppercase tracking-widest">NFT Diploma Design</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-gray-500">// Customize the on-chain certificate</span>
           </div>
           <button
             onClick={handleCustomizeDiploma}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-purple-600 font-bold px-4 py-2 rounded-[10px] transition-colors"
+            className="flex items-center gap-2 bg-neo-accent border-2 border-black text-black font-black uppercase text-[11px] tracking-widest px-5 py-3 shadow-[4px_4px_0px_#000] hover:bg-white active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
-            <Palette size={16} /> Customize Diploma
+            <Palette size={16} strokeWidth={2.5} /> Customize Diploma
           </button>
         </div>
       </motion.div>
 
       {/* Questions */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-6">
         <AnimatePresence initial={false}>
           {questions.map((q, qi) => {
             const isOpen = expanded === q.id;
@@ -281,32 +275,32 @@ export default function CreateSession() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
-                className="bg-white rounded-[24px] border-[3px] border-slate-100 shadow-sm overflow-hidden"
+                className="bg-white border-2 border-black shadow-[8px_8px_0px_#000] overflow-hidden"
               >
                 {/* Question header row */}
                 <button
                   onClick={() => setExpanded(isOpen ? -1 : q.id)}
-                  className="w-full flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-neo-bg transition-colors border-b-2 border-black last:border-b-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-[10px] bg-purple-100 text-purple-600 font-black text-sm flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4">
+                    <span className="w-10 h-10 border-2 border-black bg-black text-white font-black text-[16px] flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#000]">
                       {qi + 1}
                     </span>
-                    <span className="font-bold text-slate-700 text-left truncate max-w-xs">
-                      {q.question || <span className="text-slate-300">Question {qi + 1}</span>}
+                    <span className="font-black uppercase tracking-[-0.01em] text-black text-left truncate max-w-sm sm:max-w-md text-lg">
+                      {q.question || <span className="text-gray-300">QUESTION {qi + 1}</span>}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {questions.length > 1 && (
                       <span
                         role="button"
                         onClick={(e) => { e.stopPropagation(); removeQuestion(q.id); }}
-                        className="w-7 h-7 flex items-center justify-center rounded-[8px] hover:bg-red-100 text-slate-300 hover:text-red-500 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center border-2 border-black bg-white hover:bg-[#FF3366] text-black shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} strokeWidth={2.5} />
                       </span>
                     )}
-                    {isOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+                    {isOpen ? <ChevronUp size={24} strokeWidth={2.5} className="text-black" /> : <ChevronDown size={24} strokeWidth={2.5} className="text-black" />}
                   </div>
                 </button>
 
@@ -320,45 +314,45 @@ export default function CreateSession() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 flex flex-col gap-5 border-t-2 border-slate-50 pt-4">
+                      <div className="p-6 flex flex-col gap-8 bg-white border-t-2 border-black">
 
                         {/* Question text */}
-                        <div className="flex flex-col gap-1.5">
-                          <label className="font-black text-slate-500 text-xs uppercase tracking-wide">Question</label>
+                        <div className="flex flex-col gap-2">
+                          <label className="font-black text-black text-[12px] uppercase tracking-widest">Question Text</label>
                           <textarea
                             rows={2}
                             value={q.question}
                             onChange={(e) => updateQuestion(q.id, "question", e.target.value)}
-                            placeholder="Write your question here..."
-                            className="w-full bg-slate-50 border-2 border-slate-200 focus:border-purple-400 rounded-[14px] px-4 py-3 font-bold text-slate-800 placeholder:text-slate-300 outline-none transition-colors resize-none"
+                            placeholder="WRITE YOUR QUESTION HERE..."
+                            className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none placeholder:text-gray-300 uppercase resize-none"
                           />
                         </div>
 
                         {/* Answers */}
-                        <div className="flex flex-col gap-2">
-                          <label className="font-black text-slate-500 text-xs uppercase tracking-wide">Answers — tap the check to mark correct</label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-3">
+                          <label className="font-black text-black text-[12px] uppercase tracking-widest">Answers <span className="text-gray-400">— Tap check to mark correct</span></label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {q.answers.map((ans, ai) => {
                               const col = ANSWER_COLORS[ai];
                               return (
                                 <div
                                   key={ai}
-                                  className={`flex items-center gap-2 rounded-[14px] border-2 px-3 py-2.5 transition-colors ${ans.correct ? col.light : "bg-slate-50 border-slate-200"}`}
+                                  className={`flex items-center bg-white border-2 border-black shadow-[4px_4px_0px_#000] transition-colors ${ans.correct ? "bg-neo-bg" : ""}`}
                                 >
-                                  <span className={`w-6 h-6 rounded-[7px] ${col.bg} text-white font-black text-xs flex items-center justify-center shrink-0`}>
+                                  <span className={`w-12 h-12 border-r-2 border-black ${col.bg} text-black font-black text-[16px] flex items-center justify-center shrink-0`}>
                                     {col.label}
                                   </span>
                                   <input
                                     value={ans.text}
                                     onChange={(e) => updateAnswer(q.id, ai, "text", e.target.value)}
-                                    placeholder={`Answer ${col.label}`}
-                                    className="flex-1 bg-transparent font-bold text-slate-700 placeholder:text-slate-300 outline-none text-sm"
+                                    placeholder={`ANSWER ${col.label}`}
+                                    className="flex-1 bg-transparent font-black text-black placeholder:text-gray-300 outline-none px-3 uppercase text-sm"
                                   />
                                   <button
                                     onClick={() => updateAnswer(q.id, ai, "correct", true)}
-                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${ans.correct ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 text-transparent hover:border-emerald-400"}`}
+                                    className={`w-12 h-12 border-l-2 border-black flex items-center justify-center shrink-0 transition-all cursor-pointer ${ans.correct ? "bg-[#39FF14] text-black" : "bg-white text-gray-300 hover:bg-neo-accent hover:text-black"}`}
                                   >
-                                    <Check size={12} />
+                                    <Check size={20} strokeWidth={3} />
                                   </button>
                                 </div>
                               );
@@ -367,13 +361,13 @@ export default function CreateSession() {
                         </div>
 
                         {/* Time limit */}
-                        <div className="flex items-center gap-4">
-                          <label className="font-black text-slate-500 text-xs uppercase tracking-wide shrink-0">Time limit</label>
+                        <div className="flex items-center flex-wrap gap-4 pt-4 border-t-2 border-black">
+                          <label className="font-black text-black text-[12px] uppercase tracking-widest shrink-0">Time limit</label>
                           {[15, 30, 60, 90].map((t) => (
                             <button
                               key={t}
                               onClick={() => updateQuestion(q.id, "timeLimit", t)}
-                              className={`px-3 py-1 rounded-[10px] font-black text-sm transition-colors cursor-pointer ${q.timeLimit === t ? "bg-purple-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-purple-100 hover:text-purple-700"}`}
+                              className={`border-2 border-black font-black text-[11px] uppercase tracking-widest px-4 py-2 transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${q.timeLimit === t ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
                             >
                               {t}s
                             </button>
@@ -391,9 +385,9 @@ export default function CreateSession() {
         {/* Add question */}
         <button
           onClick={addQuestion}
-          className="flex items-center justify-center gap-2 border-[3px] border-dashed border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-slate-400 hover:text-purple-600 font-black rounded-[24px] py-4 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-3 border-[3px] border-dashed border-black bg-neo-bg hover:bg-neo-accent text-black font-black uppercase tracking-widest text-[12px] py-6 shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
         >
-          <Plus size={18} />
+          <Plus size={20} strokeWidth={3} />
           Add Question
         </button>
       </div>
@@ -403,17 +397,21 @@ export default function CreateSession() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex justify-end"
+        className="flex justify-end mt-4"
       >
         <button
           disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
           onClick={handleLaunch}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-8 py-3.5 rounded-[16px] shadow-lg shadow-purple-200 disabled:shadow-none transition-all hover:-translate-y-0.5 disabled:hover:translate-y-0 cursor-pointer disabled:cursor-not-allowed"
+          className={`flex items-center gap-2 border-2 border-black font-black uppercase tracking-[0.1em] px-8 py-5 transition-all text-[13px] ${
+            (!title.trim() || questions.some((q) => !q.question.trim()) || isPending)
+              ? "bg-gray-200 text-gray-400 shadow-none translate-x-1 translate-y-1 cursor-not-allowed"
+              : "bg-black text-white shadow-[8px_8px_0px_#000] hover:bg-neo-accent hover:text-black active:translate-x-2 active:translate-y-2 active:shadow-none cursor-pointer"
+          }`}
         >
-          {isPending ? "Creating on Blockchain..." : "Launch Session"}
+          {isPending ? "CREATING ON CHAIN..." : "LAUNCH SESSION"}
         </button>
       </motion.div>
 
     </div>
   );
-};
+}

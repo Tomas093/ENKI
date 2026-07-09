@@ -39,7 +39,7 @@ export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`
           {isFinished ? (
             <div className="w-3.5 h-3.5 bg-black border border-black" />
           ) : (
-            <div className="w-3.5 h-3.5 bg-[#4AF626] border border-black animate-pulse shadow-[0_0_8px_rgba(74,246,38,0.6)]" />
+            <div className="w-3.5 h-3.5 bg-[#39FF14] border border-black animate-pulse shadow-[0_0_14px_#39FF14]" />
           )}
         </div>
 
@@ -58,9 +58,13 @@ export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`
               {players} players
             </span>
             <span className="w-1.5 h-1.5 bg-black" />
-            <span className={isFinished ? "text-gray-500" : "text-[#4AF626] drop-shadow-[0_0_2px_#000] font-black"}>
-              {isFinished ? "Ended" : "Live Now"}
-            </span>
+            {isFinished ? (
+              <span className="text-gray-500 font-bold">Ended</span>
+            ) : (
+              <span className="bg-[#4AF626] text-black border-2 border-black px-2 py-0.5 font-black shadow-[2px_2px_0px_#000] leading-none">
+                Live Now
+              </span>
+            )}
           </div>
         </div>
       </div>
