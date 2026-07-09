@@ -4,7 +4,7 @@ import { ArrowLeft, Play, Users } from "lucide-react";
 import { PageBlobs } from "../../../../components/ui/PageBlobs";
 import { Button } from "../../../../components/ui/Button";
 import { use, useEffect, useState } from "react";
-import { useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
 import KahootGameABI from "../../../../../abi/KahootGame.json";
 
@@ -14,34 +14,43 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
   const { data: contractData } = useReadContracts({
     contracts: [
-      {
-        address: address as `0x${string}`,
-        abi: KahootGameABI.abi,
-        functionName: 'prizePool',
-      },
-      {
-        address: address as `0x${string}`,
-        abi: KahootGameABI.abi,
-        functionName: 'entryFee',
-      },
-      {
-        address: address as `0x${string}`,
-        abi: KahootGameABI.abi,
-        functionName: 'gameName',
-      }
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePool' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'entryFee' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'gameName' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'currentQuestionId' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'isFinished' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' }
     ],
-    query: { refetchInterval: 2000 } // Refetch every 2 seconds to update player count
+    query: { refetchInterval: 2000 }
   });
 
   const prizePool = contractData?.[0]?.result as bigint | undefined;
   const entryFee = contractData?.[1]?.result as bigint | undefined;
   const gameName = contractData?.[2]?.result as string | undefined;
+  const currentQuestionId = contractData?.[3]?.result as bigint | undefined;
+  const isFinished = contractData?.[4]?.result as boolean | undefined;
+  const prizesCalculated = contractData?.[5]?.result as boolean | undefined;
+  const totalQuestions = contractData?.[6]?.result as bigint | undefined;
 
   const connectedPlayers = (prizePool !== undefined && entryFee !== undefined && entryFee > 0n) 
     ? Number(prizePool / entryFee) 
     : 0;
-
   const prizePoolEth = prizePool ? formatEther(prizePool) : "0.00";
+
+  const { data: roundData } = useReadContract({
+    address: address as `0x${string}`,
+    abi: KahootGameABI.abi,
+    functionName: 'listaDeRondas',
+    args: currentQuestionId !== undefined ? [currentQuestionId] : undefined,
+    query: { 
+      enabled: currentQuestionId !== undefined && totalQuestions !== undefined && currentQuestionId < totalQuestions,
+      refetchInterval: 2000 
+    }
+  });
+
+  const commitPhaseOpen = roundData ? (roundData as any)[2] : false;
+  const revealPhaseOpen = roundData ? (roundData as any)[3] : false;
 
   const [gameData, setGameData] = useState<any>(null);
   useEffect(() => {
@@ -51,17 +60,15 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
   const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
   const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
+  const isStarting = isWritePending || isWaiting;
 
-  const handleStartGame = () => {
-    if (!gameData || !gameData.questions || gameData.questions.length === 0) return;
-    const q = gameData.questions[0];
+  const handleStartNextQuestion = () => {
+    if (!gameData || currentQuestionId === undefined) return;
+    const qIndex = Number(currentQuestionId);
+    if (qIndex >= gameData.questions.length) return;
+    const q = gameData.questions[qIndex];
     const enunciado = `${q.question}||${q.timeLimit || 30}`;
-    const opciones = [
-      q.answers[0].text,
-      q.answers[1].text,
-      q.answers[2].text,
-      q.answers[3].text
-    ];
+    const opciones = [q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text];
     
     writeContract({
       address: address as `0x${string}`,
@@ -71,7 +78,62 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     });
   };
 
-  const isStarting = isWritePending || isWaiting;
+  const handleCloseAndReveal = () => {
+    if (!gameData || currentQuestionId === undefined) return;
+    const qIndex = Number(currentQuestionId);
+    const q = gameData.questions[qIndex];
+    const correctOption = q.answers.findIndex((a: any) => a.correct);
+    
+    writeContract({
+      address: address as `0x${string}`,
+      abi: KahootGameABI.abi,
+      functionName: 'closeQuestionAndStartReveal',
+      args: [correctOption, q.saltRespuesta]
+    });
+  };
+
+  const handleAdvance = () => {
+    writeContract({
+      address: address as `0x${string}`,
+      abi: KahootGameABI.abi,
+      functionName: 'advanceToNextQuestion'
+    });
+  };
+
+  const handleCalculatePrizes = () => {
+    writeContract({
+      address: address as `0x${string}`,
+      abi: KahootGameABI.abi,
+      functionName: 'calculatePrizes'
+    });
+  };
+
+  let hostAction = null;
+  let statusText = "Loading...";
+
+  if (prizesCalculated) {
+    statusText = "Game Over - Prizes Distributed!";
+    hostAction = <Button variant="secondary" size="md" disabled>Finished</Button>;
+  } else if (isFinished) {
+    statusText = "All questions finished. Calculate prizes!";
+    hostAction = <Button variant="primary" size="md" onClick={handleCalculatePrizes} disabled={isStarting}>{isStarting ? "Processing..." : "Calculate Prizes"}</Button>;
+  } else if (revealPhaseOpen) {
+    statusText = `Question ${Number(currentQuestionId) + 1} - Reveal Phase Active. Students can see results.`;
+    hostAction = <Button variant="primary" size="md" onClick={handleAdvance} disabled={isStarting}>{isStarting ? "Processing..." : "Advance to Next Question"}</Button>;
+  } else if (commitPhaseOpen) {
+    statusText = `Question ${Number(currentQuestionId) + 1} - Commit Phase Active. Students are answering!`;
+    hostAction = <Button variant="primary" size="md" onClick={handleCloseAndReveal} disabled={isStarting}>{isStarting ? "Processing..." : "Close Question & Start Reveal"}</Button>;
+  } else if (currentQuestionId !== undefined) {
+    // Neither is open -> ready to start next question (or first question)
+    const isFirst = currentQuestionId === 0n;
+    statusText = isFirst ? "Ready to start the game." : `Ready for Question ${Number(currentQuestionId) + 1}.`;
+    const btnText = isFirst ? "Start Game" : "Start Next Question";
+    hostAction = (
+      <Button variant="primary" size="md" leftIcon={<Play size={18} />} onClick={handleStartNextQuestion} disabled={isStarting}>
+        {isStarting ? "Processing..." : btnText}
+      </Button>
+    );
+  }
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col px-4 md:px-8 lg:px-12 py-10 relative bg-slate-50">
@@ -95,16 +157,15 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               {address}
             </p>
           </div>
-          <Button 
-            variant="primary" 
-            size="md" 
-            leftIcon={<Play size={18} />}
-            onClick={handleStartGame}
-            disabled={isStarting}
-          >
-            {isStarting ? "Starting..." : "Start Game"}
-          </Button>
+          {hostAction}
         </header>
+        
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 text-slate-700 font-semibold flex items-center justify-between">
+           <span>Status: <span className="text-purple-600">{statusText}</span></span>
+           {totalQuestions && currentQuestionId !== undefined && (
+             <span>Progress: {Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))} / {Number(totalQuestions)}</span>
+           )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
@@ -113,7 +174,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               <h3 className="font-bold text-lg">Connected Players</h3>
             </div>
             <p className="text-4xl font-black text-slate-800">{connectedPlayers}</p>
-            <p className="text-sm text-slate-500 font-medium">Waiting for players to join...</p>
+            <p className="text-sm text-slate-500 font-medium">Updated live based on stakes</p>
           </div>
           
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
