@@ -53,7 +53,7 @@ export async function GET() {
       const newGameLogs = await getLogsInChunks(
         {
           address: FACTORY_ADDRESS,
-          event: parseAbiItem('event GameCreated(address indexed gameAddress, address indexed professor)'),
+          event: parseAbiItem('event GameCreated(uint256 indexed gameId, address indexed gameAddress, address indexed professor)'),
         },
         fromBlock,
         latestBlock

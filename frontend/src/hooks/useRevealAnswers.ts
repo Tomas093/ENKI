@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useWriteContract } from "wagmi";
 import toast from "react-hot-toast";
@@ -10,7 +10,7 @@ export function useRevealAnswers(gameAddress: string | null) {
   const router = useRouter();
   const { writeContractAsync } = useWriteContract();
 
-  const executeBatchReveal = async () => {
+  const executeBatchReveal = useCallback(async () => {
     if (!gameAddress) return false;
     
     setIsRevealing(true);
@@ -42,7 +42,7 @@ export function useRevealAnswers(gameAddress: string | null) {
       router.push(`/leaderboard?game=${gameAddress}`);
       return true;
     }
-  };
+  }, [gameAddress, router, writeContractAsync]);
 
   return {
     isRevealing,
