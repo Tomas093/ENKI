@@ -45,7 +45,7 @@ async function getLogsInChunks(
   return allLogs;
 }
 
-const DEPLOYMENT_BLOCK = 11094381n; // UPDATE THIS WHEN REDEPLOYING
+const DEPLOYMENT_BLOCK = 11236783n; // UPDATE THIS WHEN REDEPLOYING
 
 export function useGlobalRanking() {
   const publicClient = usePublicClient();
@@ -55,7 +55,7 @@ export function useGlobalRanking() {
     queryFn: async () => {
       if (!publicClient) return [];
 
-      const CACHE_KEY = `enki_ranking_cache_${FACTORY_ADDRESS}`;
+      const CACHE_KEY = `enki_ranking_cache_v2_${FACTORY_ADDRESS}`;
       
       let cachedLastSyncBlock = DEPLOYMENT_BLOCK - 1n;
       let cachedGameAddresses: string[] = [];
