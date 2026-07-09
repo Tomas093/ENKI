@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem } from 'viem';
+import { createPublicClient, http, parseAbiItem, parseAbi } from 'viem';
 import { sepolia } from 'viem/chains';
 
 const DEPLOYMENT_BLOCK = 11236783n;
@@ -21,7 +21,7 @@ export async function GET(
 
     // Fetch all events at once. 
     // This allows us to reconstruct the exact state of the game without calling multiple readContracts.
-    const [qRevealedLogs, rPhaseLogs, endLogs] = await Promise.all([
+    const [qRevealedLogs, rPhaseLogs, endLogs, isFinished] = await Promise.all([
       publicClient.getLogs({
         address: gameAddress,
         event: parseAbiItem('event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones)'),
@@ -39,7 +39,12 @@ export async function GET(
         event: parseAbiItem('event PrizesCalculated()'),
         fromBlock: DEPLOYMENT_BLOCK,
         toBlock: latestBlock
-      })
+      }),
+      publicClient.readContract({
+        address: gameAddress,
+        abi: parseAbi(['function isFinished() view returns (bool)']),
+        functionName: 'isFinished'
+      }).catch(() => false)
     ]);
 
     // 1. Is Game Over?
@@ -77,6 +82,7 @@ export async function GET(
       {
         syncedToBlock: latestBlock.toString(),
         isGameOver,
+        isFinished,
         latestQuestion,
         isRevealPhaseActive,
       },

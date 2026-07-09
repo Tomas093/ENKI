@@ -162,21 +162,13 @@ export function useStudentGameplay() {
           }
 
           // 3. Game finished?
-          if (!isRevealingRef && data.isGameOver) {
-            const finished = await publicClient.readContract({
-              address: gameAddress as `0x${string}`,
-              abi: KahootGameABI.abi,
-              functionName: 'isFinished'
-            });
-
-            if (finished) {
-              isRevealingRef = true;
-              const success = await executeBatchReveal();
-              if (!success) {
-                isRevealingRef = false; // Allow retrying
-              }
-              return;
+          if (!isRevealingRef && data.isFinished) {
+            isRevealingRef = true;
+            const success = await executeBatchReveal();
+            if (!success) {
+              isRevealingRef = false; // Allow retrying
             }
+            return;
           }
         }
       } catch (err) {
