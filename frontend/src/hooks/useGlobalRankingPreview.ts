@@ -3,15 +3,17 @@ import { useGlobalRanking } from "./useGlobalRanking";
 
 export function useGlobalRankingPreview() {
   const { address, isConnected } = useAccount();
-  const { data: players } = useGlobalRanking();
+  const { data: players = [], isLoading } = useGlobalRanking();
 
-  const playerRow = players?.find(
-    (p) => p.address.toLowerCase() === address?.toLowerCase()
-  );
-  const diplomasWon = playerRow ? playerRow.diplomas : 0;
+  const diplomasWon = address
+    ? (players.find(
+        (p) => p.address.toLowerCase() === address.toLowerCase()
+      )?.diplomas ?? 0)
+    : 0;
 
   return {
     diplomasWon,
     isConnected,
+    isLoading,
   };
 }

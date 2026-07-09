@@ -1,14 +1,52 @@
 "use client";
-import { Trophy, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Trophy, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGlobalRankingPreview } from "../../hooks/useGlobalRankingPreview";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
 
 export function GlobalRankingPreview() {
   const router = useRouter();
-  const { diplomasWon, isConnected } = useGlobalRankingPreview();
+  const { diplomasWon, isConnected, isLoading } = useGlobalRankingPreview();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const renderStats = () => {
+    // Before hydration: always show the neutral state to match SSR
+    if (!mounted) {
+      return (
+        <p className="text-sm text-slate-400 font-medium">
+          Connect wallet to see your stats
+        </p>
+      );
+    }
+
+    if (!isConnected) {
+      return (
+        <p className="text-sm text-slate-400 font-medium">
+          Connect wallet to see your stats
+        </p>
+      );
+    }
+
+    // Wallet connected but ranking data is still loading from chain
+    if (isLoading) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-slate-400 font-medium">
+          <Loader2 size={14} className="animate-spin text-purple-400" />
+          <span>Syncing chain data…</span>
+        </div>
+      );
+    }
+
+    return (
+      <Badge variant="purple">
+        <Trophy size={12} />
+        {diplomasWon} {diplomasWon === 1 ? "Diploma" : "Diplomas"}
+      </Badge>
+    );
+  };
 
   return (
     <Card
@@ -28,16 +66,7 @@ export function GlobalRankingPreview() {
           Top performers across all sessions.
         </p>
 
-        {isConnected ? (
-          <Badge variant="purple">
-            <Trophy size={12} />
-            {diplomasWon} {diplomasWon === 1 ? "Diploma" : "Diplomas"}
-          </Badge>
-        ) : (
-          <p className="text-sm text-slate-400 font-medium">
-            Connect wallet to see your stats
-          </p>
-        )}
+        {renderStats()}
       </div>
 
       {/* CTA */}
