@@ -17,11 +17,13 @@ export function useChainGuard() {
       toast.error(`Please switch to Sepolia network`, {
         id: "wrong-network",
       });
+      // Automatically prompt to switch network
+      switchChain({ chainId: TARGET_CHAIN_ID });
     } else {
       setIsWrongNetwork(false);
       toast.dismiss("wrong-network");
     }
-  }, [isConnected, chainId]);
+  }, [isConnected, chainId, switchChain]);
 
   const switchToCorrectNetwork = () => {
     switchChain({ chainId: TARGET_CHAIN_ID });
