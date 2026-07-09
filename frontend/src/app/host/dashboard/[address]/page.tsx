@@ -3,8 +3,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Play, Users } from "lucide-react";
 import { PageBlobs } from "../../../../components/ui/PageBlobs";
 import { Button } from "../../../../components/ui/Button";
-import { use } from "react";
-import { useReadContracts } from "wagmi";
+import { use, useEffect, useState } from "react";
+import { useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
 import KahootGameABI from "../../../../../abi/KahootGame.json";
 
@@ -43,6 +43,36 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
   const prizePoolEth = prizePool ? formatEther(prizePool) : "0.00";
 
+  const [gameData, setGameData] = useState<any>(null);
+  useEffect(() => {
+    const data = localStorage.getItem("current_kahoot_session");
+    if (data) setGameData(JSON.parse(data));
+  }, []);
+
+  const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
+  const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
+
+  const handleStartGame = () => {
+    if (!gameData || !gameData.questions || gameData.questions.length === 0) return;
+    const q = gameData.questions[0];
+    const enunciado = `${q.question}||${q.timeLimit || 30}`;
+    const opciones = [
+      q.answers[0].text,
+      q.answers[1].text,
+      q.answers[2].text,
+      q.answers[3].text
+    ];
+    
+    writeContract({
+      address: address as `0x${string}`,
+      abi: KahootGameABI.abi,
+      functionName: 'startNextQuestion',
+      args: [enunciado, opciones, q.saltPregunta]
+    });
+  };
+
+  const isStarting = isWritePending || isWaiting;
+
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col px-4 md:px-8 lg:px-12 py-10 relative bg-slate-50">
       <PageBlobs primary="purple" secondary="blue" />
@@ -65,8 +95,14 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               {address}
             </p>
           </div>
-          <Button variant="primary" size="md" leftIcon={<Play size={18} />}>
-            Start Game
+          <Button 
+            variant="primary" 
+            size="md" 
+            leftIcon={<Play size={18} />}
+            onClick={handleStartGame}
+            disabled={isStarting}
+          >
+            {isStarting ? "Starting..." : "Start Game"}
           </Button>
         </header>
 
