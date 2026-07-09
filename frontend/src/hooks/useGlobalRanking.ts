@@ -18,7 +18,6 @@ export function useGlobalRanking() {
       const res = await fetch('/api/ranking');
       if (!res.ok) throw new Error(`Ranking API error: ${res.status}`);
       const json = await res.json();
-      console.log('[ENKI Ranking] API response:', json.gameCount, 'games |', json.players.length, 'players | synced to block', json.syncedToBlock);
       return json.players as GlobalPlayer[];
     },
     refetchInterval: 30_000,

@@ -20,7 +20,8 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'currentQuestionId' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'isFinished' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated' },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' }
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor' }
     ],
     query: { refetchInterval: 2000 }
   });
@@ -32,6 +33,28 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   const isFinished = contractData?.[4]?.result as boolean | undefined;
   const prizesCalculated = contractData?.[5]?.result as boolean | undefined;
   const totalQuestions = contractData?.[6]?.result as bigint | undefined;
+  const professor = contractData?.[7]?.result as `0x${string}` | undefined;
+
+  const [gameId, setGameId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!professor) return;
+    const fetchId = async () => {
+      try {
+        const res = await fetch(`/api/professor/${professor}/games`);
+        if (res.ok) {
+          const data = await res.json();
+          const match = data.games?.find((g: any) => g.address.toLowerCase() === address.toLowerCase());
+          if (match) {
+            setGameId(match.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch gameId", err);
+      }
+    };
+    fetchId();
+  }, [professor, address]);
 
   const connectedPlayers = (prizePool !== undefined && entryFee !== undefined && entryFee > 0n) 
     ? Number(prizePool / entryFee) 
@@ -191,9 +214,16 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-800 mb-2">
-              {gameName ? gameName : "Session Dashboard"}
-            </h1>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-800">
+                {gameName ? gameName : "Session Dashboard"}
+              </h1>
+              {gameId !== null && (
+                <span className="bg-purple-100 text-purple-700 text-sm font-extrabold px-3 py-1 rounded-lg font-mono">
+                  Game ID: {gameId}
+                </span>
+              )}
+            </div>
             <p className="text-slate-600 font-medium text-base font-mono">
               {address}
             </p>

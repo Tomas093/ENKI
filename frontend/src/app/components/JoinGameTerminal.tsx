@@ -27,13 +27,13 @@ export function JoinGameTerminal() {
         Join a Game
       </h2>
       <p className="text-slate-600 font-medium mb-8">
-        Enter the Game ID provided by your teacher.
+        Enter the Game ID or Contract Address provided by your teacher.
       </p>
 
       {/* Address Search Form */}
       <form onSubmit={handleSearch} className="flex flex-col gap-3">
         <label htmlFor="game-id-input" className="text-sm font-bold text-slate-600 ml-1">
-          Game ID
+          Game ID or Address
         </label>
         <div className="flex gap-2.5">
           <div className="relative flex-1">
@@ -45,7 +45,7 @@ export function JoinGameTerminal() {
               type="text"
               value={gameIdInput}
               onChange={(e) => setGameIdInput(e.target.value)}
-              placeholder="e.g. 42"
+              placeholder="e.g. 1 or 0x26C38A81..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-slate-700 font-mono text-sm outline-none focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100 transition-all duration-200 shadow-inner"
             />
           </div>

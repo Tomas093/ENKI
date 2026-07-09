@@ -40,10 +40,16 @@ export function useJoinGame() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const id = parseInt(gameIdInput.trim(), 10);
+    const input = gameIdInput.trim();
+
+    if (/^0x[a-fA-F0-9]{40}$/.test(input)) {
+      setSearchedAddress(input as `0x${string}`);
+      return;
+    }
     
+    const id = parseInt(input, 10);
     if (isNaN(id) || id < 0) {
-      toast.error("Invalid Game ID. Must be a valid number.");
+      toast.error("Invalid entry. Must be a valid Game ID or Contract Address.");
       return;
     }
 

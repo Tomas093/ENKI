@@ -9,7 +9,7 @@ import { PageBlobs } from "../../../components/ui/PageBlobs";
 
 export default function TeacherDashboard() {
   const router = useRouter();
-  const { gameAddresses, hasGames } = useHostDashboard();
+  const { gameAddresses, games, hasGames } = useHostDashboard();
 
   return (
     <div className="w-full min-h-full flex flex-col px-4 md:px-8 lg:px-12 py-10 relative">
@@ -67,8 +67,8 @@ export default function TeacherDashboard() {
                 </p>
               </div>
             ) : (
-              gameAddresses.slice().reverse().map((addr) => (
-                <SessionRow key={addr} gameAddress={addr} />
+              games.slice().reverse().map((game) => (
+                <SessionRow key={game.address} gameAddress={game.address} gameId={game.id} />
               ))
             )}
           </div>

@@ -5,7 +5,7 @@ import { Users, Copy } from "lucide-react";
 import { useReadContract } from "wagmi";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
-export function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
+export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`; gameId?: number }) {
   const router = useRouter();
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -23,7 +23,8 @@ export function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(gameAddress);
+    const copyValue = gameId !== undefined ? gameId.toString() : gameAddress;
+    navigator.clipboard.writeText(copyValue);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
@@ -47,8 +48,13 @@ export function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
         </div>
 
         <div>
-          <div className="font-extrabold text-slate-800 text-lg group-hover:text-purple-700 transition-colors">
+          <div className="font-extrabold text-slate-800 text-lg group-hover:text-purple-700 transition-colors flex items-center gap-2">
             {name}
+            {gameId !== undefined && (
+              <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-md font-bold font-mono">
+                ID: {gameId}
+              </span>
+            )}
           </div>
           <div className="text-slate-500 font-medium text-sm flex items-center gap-3 mt-1">
             <span className="flex items-center gap-1.5">
@@ -69,7 +75,12 @@ export function SessionRow({ gameAddress }: { gameAddress: `0x${string}` }) {
           className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-purple-100 text-slate-600 hover:text-purple-700 font-bold text-sm px-4 py-2.5 rounded-xl transition-colors border border-slate-200 hover:border-purple-200 shadow-sm"
         >
           <Copy size={16} />
-          {copied ? "Copied ID!" : `${gameAddress.slice(0, 6)}...${gameAddress.slice(-4)}`}
+          {copied 
+            ? "Copied ID!" 
+            : gameId !== undefined 
+              ? `Game ID: ${gameId}` 
+              : `${gameAddress.slice(0, 6)}...${gameAddress.slice(-4)}`
+          }
         </button>
       </div>
     </div>
