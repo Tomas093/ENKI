@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { usePublicClient } from 'wagmi';
-import { formatEther, parseAbiItem } from 'viem';
+import { createPublicClient, http, formatEther, parseAbiItem } from 'viem';
+import { sepolia } from 'viem/chains';
 import { FACTORY_ADDRESS } from '../lib/contracts';
+
+const rpcUrl = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL;
+const globalPublicClient = createPublicClient({
+  chain: sepolia,
+  transport: http(rpcUrl),
+});
 
 export interface GlobalPlayer {
   rank: number;
@@ -44,13 +50,9 @@ async function getLogsInChunks(
 const DEPLOYMENT_BLOCK = 11236783n; // UPDATE THIS WHEN REDEPLOYING
 
 export function useGlobalRanking() {
-  const publicClient = usePublicClient();
-
   return useQuery({
     queryKey: ['globalRanking', FACTORY_ADDRESS],
     queryFn: async () => {
-      if (!publicClient) return [];
-
       const CACHE_KEY = `enki_ranking_cache_v3_${FACTORY_ADDRESS}`;
       
       let cachedLastSyncBlock = DEPLOYMENT_BLOCK - 1n;
@@ -76,13 +78,13 @@ export function useGlobalRanking() {
         localStorage.removeItem(CACHE_KEY);
       }
 
-      const latestBlock = await publicClient.getBlockNumber();
+      const latestBlock = await globalPublicClient.getBlockNumber();
       const fromBlock = cachedLastSyncBlock + 1n;
 
       if (fromBlock <= latestBlock) {
         // 1. Fetch NEW GameCreated logs
         const newGameCreatedLogs = await getLogsInChunks(
-          publicClient,
+          globalPublicClient,
           {
             address: FACTORY_ADDRESS,
             event: parseAbiItem('event GameCreated(address indexed gameAddress, address indexed professor)'),
@@ -100,7 +102,7 @@ export function useGlobalRanking() {
         if (allGameAddresses.length > 0) {
           // 2. Fetch NEW game events for ALL known games in the NEW block range
           const newGameEventsLogs = await getLogsInChunks(
-            publicClient,
+            globalPublicClient,
             {
               address: allGameAddresses,
               events: [
@@ -179,7 +181,7 @@ export function useGlobalRanking() {
 
       return players;
     },
-    enabled: !!publicClient,
+    enabled: !!globalPublicClient,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 }
