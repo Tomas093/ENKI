@@ -9,12 +9,7 @@ export default function TeacherDashboard() {
   const { gameAddresses, games, hasGames } = useHostDashboard();
 
   return (
-    <div className="w-full min-h-full flex flex-col px-4 md:px-8 lg:px-12 py-10 relative bg-neo-bg overflow-hidden">
-      {/* Scanline texture */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.035] z-0"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, #000 3px, #000 4px)" }}
-      />
+    <div className="w-full min-h-full flex flex-col px-4 md:px-8 lg:px-12 py-10 relative">
 
       <div className="max-w-4xl mx-auto w-full relative z-10 flex flex-col gap-8">
 

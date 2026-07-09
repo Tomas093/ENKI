@@ -4,12 +4,7 @@ import { HostGameModule } from "./components/HostGameModule";
 
 export default function Home() {
   return (
-    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-4 relative bg-neo-bg overflow-hidden">
-      {/* Scanline texture */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.035] z-0"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, #000 3px, #000 4px)" }}
-      />
+    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-4 relative">
       <main className="max-w-6xl mx-auto w-full relative z-10">
 
         {/* Hero Header */}

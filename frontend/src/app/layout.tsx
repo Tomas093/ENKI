@@ -31,11 +31,16 @@ export default function RootLayout({
       lang="en"
       className={`${dmSans.variable} ${nunito.variable} min-h-screen antialiased`}
     >
-      <body className="min-h-screen flex flex-col bg-slate-50">
+      <body className="min-h-screen flex flex-col bg-neo-bg relative">
+        {/* Global scanline texture */}
+        <div
+          className="fixed inset-0 pointer-events-none opacity-[0.035] z-0"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, #000 3px, #000 4px)" }}
+        />
         <Toaster position="top-center" reverseOrder={false} />
         <Providers>
           <Navbar />
-          <main className="flex-1 flex flex-col w-full relative overflow-x-hidden">
+          <main className="flex-1 flex flex-col w-full relative z-10 overflow-x-hidden">
             <Suspense fallback={<div className="p-8 text-center font-bold text-slate-500">Loading...</div>}>
               {children}
             </Suspense>

@@ -188,15 +188,7 @@ export default function JoinWaitingRoom() {
 
   return (
     /* Swiss industrial background: matte paper */
-    <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-8 bg-neo-bg relative">
-
-      {/* Background texture: horizontal rule stripes — subtle */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, #000 3px, #000 4px)",
-        }}
-      />
+    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-6 md:pt-10 pb-8 relative">
 
       <div className="w-full max-w-sm flex flex-col gap-5 relative z-10">
 
