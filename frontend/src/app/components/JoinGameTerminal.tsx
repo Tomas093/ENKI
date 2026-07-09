@@ -6,8 +6,8 @@ import { Card } from "../../components/ui/Card";
 
 export function JoinGameTerminal() {
   const {
-    addressInput,
-    setAddressInput,
+    gameIdInput,
+    setGameIdInput,
     searchedAddress,
     isReading,
     isGameFound,
@@ -27,13 +27,13 @@ export function JoinGameTerminal() {
         Join a Game
       </h2>
       <p className="text-slate-600 font-medium mb-8">
-        Enter the contract address provided by your teacher.
+        Enter the Game ID provided by your teacher.
       </p>
 
       {/* Address Search Form */}
       <form onSubmit={handleSearch} className="flex flex-col gap-3">
-        <label htmlFor="address-input" className="text-sm font-bold text-slate-600 ml-1">
-          Game Contract Address
+        <label htmlFor="game-id-input" className="text-sm font-bold text-slate-600 ml-1">
+          Game ID
         </label>
         <div className="flex gap-2.5">
           <div className="relative flex-1">
@@ -41,11 +41,11 @@ export function JoinGameTerminal() {
               <Search size={18} />
             </div>
             <input
-              id="address-input"
+              id="game-id-input"
               type="text"
-              value={addressInput}
-              onChange={(e) => setAddressInput(e.target.value)}
-              placeholder="0x..."
+              value={gameIdInput}
+              onChange={(e) => setGameIdInput(e.target.value)}
+              placeholder="e.g. 42"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-slate-700 font-mono text-sm outline-none focus:border-purple-400 focus:bg-white focus:ring-2 focus:ring-purple-100 transition-all duration-200 shadow-inner"
             />
           </div>
@@ -115,7 +115,7 @@ export function JoinGameTerminal() {
             </div>
           ) : (
             <div className="bg-red-50 text-red-600 rounded-xl p-4 font-medium border border-red-100 text-center">
-              Could not connect to this game. Please verify the address.
+              Could not find a game with this ID. Please verify.
             </div>
           )}
         </div>

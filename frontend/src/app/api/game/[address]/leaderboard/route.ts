@@ -13,9 +13,10 @@ const publicClient = createPublicClient({
 
 export async function GET(
   request: Request,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
-  const gameAddress = params.address as `0x${string}`;
+  const resolvedParams = await params;
+  const gameAddress = resolvedParams.address as `0x${string}`;
 
   try {
     const latestBlock = await publicClient.getBlockNumber();
@@ -60,7 +61,7 @@ export async function GET(
 
     return NextResponse.json({
       players,
-      prizes: [p0.toString(), p1.toString(), p2.toString()],
+      prizes: [(p0 as bigint).toString(), (p1 as bigint).toString(), (p2 as bigint).toString()],
       syncedToBlock: latestBlock.toString(),
     });
   } catch (error) {

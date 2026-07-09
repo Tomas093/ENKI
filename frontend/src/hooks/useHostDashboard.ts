@@ -1,21 +1,41 @@
-import { useAccount, useReadContract } from "wagmi";
-import KahootFactoryABI from "../abi/KahootFactory.json";
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
+
+export interface ProfessorGame {
+  id: number;
+  address: `0x${string}`;
+}
 
 export function useHostDashboard() {
   const { address } = useAccount();
+  const [games, setGames] = useState<ProfessorGame[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: kahoots } = useReadContract({
-    address: process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`,
-    abi: KahootFactoryABI.abi,
-    functionName: "getKahootsDeProfesor",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  });
+  useEffect(() => {
+    if (!address) return;
 
-  const gameAddresses = (kahoots as `0x${string}`[]) || [];
+    const fetchGames = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/professor/${address}/games`);
+        if (res.ok) {
+          const data = await res.json();
+          setGames(data.games || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch professor games", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGames();
+  }, [address]);
 
   return {
-    gameAddresses,
-    hasGames: gameAddresses.length > 0,
+    gameAddresses: games.map(g => g.address),
+    games,
+    hasGames: games.length > 0,
+    isLoading
   };
 }

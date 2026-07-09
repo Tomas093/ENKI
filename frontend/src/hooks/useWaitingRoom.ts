@@ -8,7 +8,7 @@ export function useWaitingRoom() {
   const [revealed, setRevealed] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
-  const [isRevealing, setIsRevealing] = useState(false);
+
   const [options, setOptions] = useState<string[]>([]);
   const [questionText, setQuestionText] = useState<string>("");
   const [questionNumber, setQuestionNumber] = useState<number>(1);
@@ -46,41 +46,27 @@ export function useWaitingRoom() {
   useEffect(() => {
     if (!publicClient || !gameAddress) return;
 
-    let lastCheckedBlock = 0n;
     let isRevealingRef = false;
     let isRevealedRef = false;
 
     const poll = async () => {
       try {
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = lastCheckedBlock === 0n
-          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
-          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
+        const res = await fetch(`/api/game/${gameAddress}/sync`);
+        if (!res.ok) return;
+        const data = await res.json();
 
-        if (!isRevealingRef && !isRevealedRef) {
-          const revealLogs = await publicClient.getContractEvents({
-            address: gameAddress as `0x${string}`,
-            abi: KahootGameABI.abi,
-            eventName: 'RevealPhaseStarted',
-            fromBlock,
-            toBlock: 'latest',
-          });
-
+        // 1. Is Reveal Phase Active for our current question?
+        if (!isRevealingRef && !isRevealedRef && data.isRevealPhaseActive) {
+          isRevealingRef = true;
           const qDataStr = localStorage.getItem("current_question");
           const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
-          const matchingLog = currentQId !== null
-            ? revealLogs.find((l: any) => Number(l.args.questionId) === currentQId)
-            : revealLogs[0];
-
-          if (matchingLog) {
-            isRevealingRef = true;
-            const log = matchingLog as any;
-            const qId = Number(log.args.questionId);
+          
+          if (currentQId !== null && data.latestQuestion?.id === currentQId) {
+            const qId = currentQId;
             const storageKey = `game_commits_${gameAddress}`;
             const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
             const myCommit = commitsObj[qId];
             const myIdx = myCommit && myCommit.option !== undefined ? myCommit.option : null;
-            const mySalt = myCommit && myCommit.salt ? myCommit.salt : null;
 
             try {
               const correctAns = await publicClient.readContract({
@@ -102,38 +88,20 @@ export function useWaitingRoom() {
           }
         }
 
-        if (isRevealedRef) {
-          const nextQLogs = await publicClient.getContractEvents({
-            address: gameAddress as `0x${string}`,
-            abi: KahootGameABI.abi,
-            eventName: 'QuestionRevealed',
-            fromBlock,
-            toBlock: 'latest',
-          });
-
+        // 2. Are we ready for the next question?
+        if (isRevealedRef && data.latestQuestion) {
           const qDataStr = localStorage.getItem("current_question");
           const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
-          const validNextLog = nextQLogs.find((log: any) => Number(log.args.questionId) > currentQuestionId);
-
-          if (validNextLog) {
-            const log = validNextLog as any;
-            const args = log.args;
-            const rawQuestion = args.enunciado;
-            const parts = rawQuestion.split("||");
-            const actualQuestion = parts[0];
-            const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
-
-            const questionData = {
-              id: Number(args.questionId),
-              question: actualQuestion,
-              timeLimit: timeLimit,
-              options: args.opciones,
-            };
-            localStorage.setItem("current_question", JSON.stringify(questionData));
+          
+          if (data.latestQuestion.id > currentQuestionId) {
+            localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
             router.push(`/gameplay?game=${gameAddress}`);
             return;
           }
+        }
 
+        // 3. Is the game completely finished?
+        if (data.isGameOver || data.latestQuestion === null /* handle fallback if needed */) {
           const finished = await publicClient.readContract({
             address: gameAddress as `0x${string}`,
             abi: KahootGameABI.abi,
@@ -143,13 +111,11 @@ export function useWaitingRoom() {
           if (finished) {
             const success = await executeBatchReveal();
             if (!success) {
-              // Retry state handled by hook (returns false)
+              // Retry handled by hook
             }
             return;
           }
         }
-
-        lastCheckedBlock = currentBlock;
       } catch (err) {
         console.error("Polling error:", err);
       }
@@ -158,7 +124,7 @@ export function useWaitingRoom() {
     const interval = setInterval(poll, 3500);
     poll();
     return () => clearInterval(interval);
-  }, [publicClient, gameAddress, router, writeContractAsync]);
+  }, [publicClient, gameAddress, router, executeBatchReveal]);
 
   return {
     revealed,

@@ -108,36 +108,21 @@ export function useStudentGameplay() {
   useEffect(() => {
     if (!publicClient || !gameAddress) return;
 
-    let lastCheckedBlock = 0n;
     let isRevealingRef = false;
 
     const poll = async () => {
       try {
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = lastCheckedBlock === 0n
-          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
-          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
+        const res = await fetch(`/api/game/${gameAddress}/sync`);
+        if (!res.ok) return;
+        const data = await res.json();
 
-        if (correctAnswerIdx === null) {
-          const revealLogs = await publicClient.getContractEvents({
-            address: gameAddress as `0x${string}`,
-            abi: KahootGameABI.abi,
-            eventName: 'RevealPhaseStarted',
-            fromBlock,
-            toBlock: 'latest',
-          });
-
+        // 1. Check Reveal Phase for current question
+        if (correctAnswerIdx === null && data.isRevealPhaseActive) {
           const qDataStr = localStorage.getItem("current_question");
           const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
-          const matchingLog = currentQId !== null
-            ? revealLogs.find((l: any) => Number(l.args.questionId) === currentQId)
-            : revealLogs[0];
-
-          if (matchingLog) {
-            const log = matchingLog as any;
-            const qId = Number(log.args.questionId);
-            
-            // Read my index from Key-Value store to calculate correctness
+          
+          if (currentQId !== null && data.latestQuestion?.id === currentQId) {
+            const qId = currentQId;
             const storageKey = `game_commits_${gameAddress}`;
             const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
             const commitInfo = commitsObj[qId];
@@ -160,45 +145,24 @@ export function useStudentGameplay() {
           }
         }
 
-        if (correctAnswerIdx !== null) {
-          const nextQLogs = await publicClient.getContractEvents({
-            address: gameAddress as `0x${string}`,
-            abi: KahootGameABI.abi,
-            eventName: 'QuestionRevealed',
-            fromBlock,
-            toBlock: 'latest',
-          });
-
+        // 2. Are we ready for the next question?
+        if (correctAnswerIdx !== null && data.latestQuestion) {
           const qDataStr = localStorage.getItem("current_question");
           const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
-          const validNextLog = nextQLogs.find((log: any) => Number(log.args.questionId) > currentQuestionId);
 
-          if (validNextLog) {
-            const log = validNextLog as any;
-            const args = log.args;
-            const rawQuestion = args.enunciado;
-            const parts = rawQuestion.split("||");
-            const actualQuestion = parts[0];
-            const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
-
-            const newQuestionData = {
-              id: Number(args.questionId),
-              question: actualQuestion,
-              timeLimit: timeLimit,
-              options: args.opciones,
-            };
-            localStorage.setItem("current_question", JSON.stringify(newQuestionData));
-
-            setQuestionData(newQuestionData);
-            setTimeLeft(timeLimit);
-            setTotalTime(timeLimit);
+          if (data.latestQuestion.id > currentQuestionId) {
+            localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
+            setQuestionData(data.latestQuestion);
+            setTimeLeft(data.latestQuestion.timeLimit);
+            setTotalTime(data.latestQuestion.timeLimit);
             setSelected(null);
             setCorrectAnswerIdx(null);
             setIsCorrect(false);
             return;
           }
 
-          if (!isRevealingRef) {
+          // 3. Game finished?
+          if (!isRevealingRef && data.isGameOver) {
             const finished = await publicClient.readContract({
               address: gameAddress as `0x${string}`,
               abi: KahootGameABI.abi,
@@ -209,14 +173,12 @@ export function useStudentGameplay() {
               isRevealingRef = true;
               const success = await executeBatchReveal();
               if (!success) {
-                isRevealingRef = false; // Allow retrying if they stay on page
+                isRevealingRef = false; // Allow retrying
               }
               return;
             }
           }
         }
-
-        lastCheckedBlock = currentBlock;
       } catch (err) {
         console.error("Polling error:", err);
       }
@@ -225,7 +187,7 @@ export function useStudentGameplay() {
     const interval = setInterval(poll, 3500);
     poll();
     return () => clearInterval(interval);
-  }, [publicClient, gameAddress, correctAnswerIdx, writeContractAsync, router]);
+  }, [publicClient, gameAddress, correctAnswerIdx, executeBatchReveal]);
 
   return {
     selected,

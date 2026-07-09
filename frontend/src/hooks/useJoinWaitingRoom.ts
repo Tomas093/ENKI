@@ -27,58 +27,25 @@ export function useJoinWaitingRoom() {
   const prizePoolStr = prizePoolVal !== undefined ? formatEther(prizePoolVal) : "0.0";
 
   useEffect(() => {
-    if (!publicClient || !gameAddress) return;
-
-    let lastCheckedBlock = 0n;
+    if (!gameAddress) return;
 
     const poll = async () => {
       try {
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = lastCheckedBlock === 0n
-          ? (currentBlock > 9000n ? currentBlock - 9000n : 0n)
-          : lastCheckedBlock + 1n > currentBlock ? currentBlock : lastCheckedBlock + 1n;
+        const res = await fetch(`/api/game/${gameAddress}/sync`);
+        if (!res.ok) return;
+        const data = await res.json();
 
-        const questionLogs = await publicClient.getContractEvents({
-          address: gameAddress as `0x${string}`,
-          abi: KahootGameABI.abi,
-          eventName: 'QuestionRevealed',
-          fromBlock,
-          toBlock: 'latest',
-        });
-        
-        if (questionLogs.length > 0) {
-          const log = questionLogs[0] as any;
-          const args = log.args;
-          const rawQuestion = args.enunciado;
-          const parts = rawQuestion.split("||");
-          const actualQuestion = parts[0];
-          const timeLimit = parts.length > 1 ? Number(parts[1]) : 30;
-
-          const questionData = {
-            id: Number(args.questionId),
-            question: actualQuestion,
-            timeLimit: timeLimit,
-            options: args.opciones,
-          };
-          localStorage.setItem("current_question", JSON.stringify(questionData));
+        if (data.latestQuestion) {
+          localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
           router.push(`/gameplay?game=${gameAddress}`);
           return;
         }
 
-        const endLogs = await publicClient.getContractEvents({
-          address: gameAddress as `0x${string}`,
-          abi: KahootGameABI.abi,
-          eventName: 'PrizesCalculated',
-          fromBlock,
-          toBlock: 'latest',
-        });
-        
-        if (endLogs.length > 0) {
+        if (data.isGameOver) {
           router.push(`/leaderboard?game=${gameAddress}`);
           return;
         }
 
-        lastCheckedBlock = currentBlock;
       } catch (err) {
         console.error("Polling error:", err);
       }
@@ -87,7 +54,7 @@ export function useJoinWaitingRoom() {
     const interval = setInterval(poll, 3500);
     poll();
     return () => clearInterval(interval);
-  }, [publicClient, gameAddress, router]);
+  }, [gameAddress, router]);
 
   return {
     totalPlayers,

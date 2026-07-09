@@ -12,8 +12,9 @@ export type GamePreviewData = {
 };
 
 export function useJoinGame() {
-  const [addressInput, setAddressInput] = useState("");
+  const [gameIdInput, setGameIdInput] = useState("");
   const [searchedAddress, setSearchedAddress] = useState<`0x${string}` | undefined>(undefined);
+  const [isResolving, setIsResolving] = useState(false);
 
   const router = useRouter();
   const { address } = useAccount();
@@ -37,13 +38,29 @@ export function useJoinGame() {
   const hasJoined = isGameFound && address ? (gameData![2]?.result as boolean) : false;
   const entryFeeFormatted = entryFee !== null ? formatEther(entryFee || 0n) : null;
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = addressInput.trim();
-    if (trimmed.length === 42 && trimmed.startsWith("0x")) {
-      setSearchedAddress(trimmed as `0x${string}`);
-    } else {
-      toast.error("Invalid contract address. Must be a valid 0x… address.");
+    const id = parseInt(gameIdInput.trim(), 10);
+    
+    if (isNaN(id) || id < 0) {
+      toast.error("Invalid Game ID. Must be a valid number.");
+      return;
+    }
+
+    setIsResolving(true);
+    setSearchedAddress(undefined);
+
+    try {
+      const res = await fetch(`/api/factory/resolve/${id}`);
+      if (!res.ok) throw new Error("Game not found");
+      const data = await res.json();
+      setSearchedAddress(data.gameAddress as `0x${string}`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Game ID not found.");
+      setSearchedAddress(undefined);
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -69,10 +86,10 @@ export function useJoinGame() {
   };
 
   return {
-    addressInput,
-    setAddressInput,
+    gameIdInput,
+    setGameIdInput,
     searchedAddress,
-    isReading,
+    isReading: isReading || isResolving,
     isGameFound,
     professor,
     entryFee,
