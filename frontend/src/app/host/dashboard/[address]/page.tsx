@@ -58,6 +58,24 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     if (data) setGameData(JSON.parse(data));
   }, []);
 
+  const [countdown, setCountdown] = useState(20);
+
+  useEffect(() => {
+    if (!isFinished || prizesCalculated) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isFinished, prizesCalculated]);
+
   const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
   const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
   const isStarting = isWritePending || isWaiting;
@@ -115,8 +133,31 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     statusText = "Game Over - Prizes Distributed!";
     hostAction = <Button variant="secondary" size="md" disabled>Finished</Button>;
   } else if (isFinished) {
-    statusText = "All questions finished. Calculate prizes!";
-    hostAction = <Button variant="primary" size="md" onClick={handleCalculatePrizes} disabled={isStarting}>{isStarting ? "Processing..." : "Calculate Prizes"}</Button>;
+    if (countdown > 0) {
+      statusText = `Waiting for students to reveal answers... (${countdown}s)`;
+      hostAction = (
+        <Button variant="secondary" size="md" disabled className="relative overflow-hidden w-full md:w-auto">
+          <div 
+            className="absolute left-0 top-0 bottom-0 bg-slate-200/50 transition-all duration-1000 ease-linear"
+            style={{ width: `${((20 - countdown) / 20) * 100}%` }}
+          />
+          <span className="relative z-10 tabular-nums">Processing Answers... {countdown}s</span>
+        </Button>
+      );
+    } else {
+      statusText = "All questions finished. Calculate prizes!";
+      hostAction = (
+        <Button 
+          variant="primary" 
+          size="md" 
+          onClick={handleCalculatePrizes} 
+          disabled={isStarting}
+          className="transition-colors duration-200 ease-in-out w-full md:w-auto"
+        >
+          {isStarting ? "Processing..." : "Calculate Prizes"}
+        </Button>
+      );
+    }
   } else if (revealPhaseOpen) {
     statusText = `Question ${Number(currentQuestionId) + 1} - Reveal Phase Active. Students can see results.`;
     hostAction = <Button variant="primary" size="md" onClick={handleAdvance} disabled={isStarting}>{isStarting ? "Processing..." : "Advance to Next Question"}</Button>;
