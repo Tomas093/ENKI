@@ -6,7 +6,7 @@ import { Button } from "../../../../components/ui/Button";
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
-import KahootGameABI from "../../../../../abi/KahootGame.json";
+import KahootGameABI from "../../../../abi/KahootGame.json";
 
 export default function GameDashboardPage({ params }: { params: Promise<{ address: string }> }) {
   const router = useRouter();
