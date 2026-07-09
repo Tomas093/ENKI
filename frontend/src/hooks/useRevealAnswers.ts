@@ -26,6 +26,7 @@ export function useRevealAnswers(gameAddress: string | null) {
           abi: KahootGameABI.abi,
           functionName: 'batchRevealAnswers',
           args: [batch.questionIds, batch.options, batch.salts],
+          gas: 1500000n, // Bypass gas estimation to handle RPC sync lag
         });
         
         localStorage.removeItem(storageKey);
