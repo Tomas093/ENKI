@@ -1,22 +1,32 @@
 import { JoinGameTerminal } from "./components/JoinGameTerminal";
 import { GlobalRankingPreview } from "./components/GlobalRankingPreview";
 import { HostGameModule } from "./components/HostGameModule";
-import { PageBlobs } from "../components/ui/PageBlobs";
 
 export default function Home() {
   return (
-    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-4 relative bg-slate-50">
-      <PageBlobs primary="purple" secondary="blue" />
+    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-4 relative bg-neo-bg overflow-hidden">
+      {/* Scanline texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.035] z-0"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, #000 3px, #000 4px)" }}
+      />
       <main className="max-w-6xl mx-auto w-full relative z-10">
 
         {/* Hero Header */}
-        <header className="mb-4 md:mb-6">
-          <div className="max-w-xl">
-            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-800 mb-3 leading-tight">
-              Learn, compete,<br />and earn on-chain.
+        <header className="mb-6 md:mb-8">
+          <div className="max-w-2xl">
+            {/* Tag */}
+            <div
+              className="inline-flex items-center bg-neo-accent border-2 border-black px-3 py-1 mb-4"
+              style={{ boxShadow: "2px 2px 0px #000" }}
+            >
+              <span className="font-black text-[11px] uppercase tracking-[0.12em]">[ Web3 Game Platform ]</span>
+            </div>
+            <h1 className="font-black text-[48px] md:text-[64px] uppercase tracking-[-0.03em] leading-[0.88] text-black mb-4">
+              Your teacher<br />is live.
             </h1>
-            <p className="text-slate-500 font-medium text-base md:text-lg leading-relaxed">
-              Enter your professor's game address below to join a real-stakes trivia session secured by Ethereum smart contracts.
+            <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-gray-500">
+              // Enter Game ID + Nickname to compete
             </p>
           </div>
         </header>

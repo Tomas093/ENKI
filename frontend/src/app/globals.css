@@ -19,6 +19,9 @@
   --destructive: #EF4444;
   --destructive-foreground: #ffffff;
   --border: #E2E8F0;           /* Slate 200 */
+  /* Neo-Brutalist */
+  --neo-accent: #FFE234;
+  --neo-bg: #F4F4F0;
 
   /* Spacing scale (4px base) */
   --space-1: 4px;
@@ -61,6 +64,10 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  
+  --color-neo-accent: var(--neo-accent);
+  --color-neo-bg: var(--neo-bg);
+  
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);

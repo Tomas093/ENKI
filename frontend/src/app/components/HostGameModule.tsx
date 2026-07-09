@@ -1,36 +1,35 @@
 "use client";
-import { PlusCircle, ArrowRight } from "lucide-react";
+import { Gamepad2, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Card } from "../../components/ui/Card";
 
 export function HostGameModule() {
   const router = useRouter();
 
   return (
-    <Card variant="elevated" padding="md" className="group flex flex-col justify-between min-h-[220px]">
+    <div className="border-2 border-black bg-white shadow-[6px_6px_0px_#000] p-6 flex flex-col justify-between min-h-[220px]">
       <div>
-        <div className="w-11 h-11 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center mb-5 border border-slate-200">
-          <PlusCircle size={22} />
+        <div className="w-11 h-11 border-2 border-black bg-white shadow-[3px_3px_0px_#000] flex items-center justify-center mb-5 text-black">
+          <Gamepad2 size={24} strokeWidth={2.5} />
         </div>
-        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight mb-2">
+        <h2 className="text-2xl font-black uppercase tracking-[-0.03em] leading-[0.88] text-black mb-2">
           Host a Game
         </h2>
-        <p className="text-slate-600 font-medium text-base mb-4 leading-relaxed">
-          Deploy a new session for your students.
+        <p className="font-mono text-[11px] uppercase tracking-[0.05em] text-gray-500 mb-4">
+          // Deploy a new session for your students
         </p>
 
-        <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 text-xs font-semibold px-3 py-1.5 rounded-lg">
+        <span className="inline-flex items-center bg-neo-accent border-2 border-black font-black text-[10px] uppercase px-2 py-1 tracking-[0.1em] shadow-[2px_2px_0px_#000] text-black">
           Requires ETH stake
         </span>
       </div>
 
       <button
         onClick={() => router.push("/host/dashboard")}
-        className="mt-6 w-full py-4 px-5 bg-slate-800 text-white hover:bg-slate-700 font-bold rounded-xl flex items-center justify-between text-base transition-all duration-200 group/btn"
+        className="mt-6 w-full py-4 px-5 bg-black border-2 border-black text-white shadow-[4px_4px_0px_#000] hover:bg-neo-accent hover:text-black active:translate-x-1 active:translate-y-1 active:shadow-none font-black text-[11px] uppercase tracking-[0.1em] transition-all flex items-center justify-between group/btn"
       >
         <span>Initialize Host Panel</span>
-        <ArrowRight size={18} className="transform group-hover/btn:translate-x-1 transition-transform duration-200" />
+        <ArrowRight size={18} strokeWidth={2.5} />
       </button>
-    </Card>
+    </div>
   );
 }

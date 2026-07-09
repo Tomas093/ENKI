@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import { Trophy, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGlobalRankingPreview } from "../../hooks/useGlobalRankingPreview";
-import { Card } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
 
 export function GlobalRankingPreview() {
   const router = useRouter();
@@ -13,57 +11,43 @@ export function GlobalRankingPreview() {
   useEffect(() => { setMounted(true); }, []);
 
   const renderStats = () => {
-    // Before hydration: always show the neutral state to match SSR
-    if (!mounted) {
+    if (!mounted || !isConnected) {
       return (
-        <p className="text-sm text-slate-400 font-medium">
-          Connect wallet to see your stats
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-gray-500">
+          // Connect wallet to see your stats
         </p>
       );
     }
 
-    if (!isConnected) {
-      return (
-        <p className="text-sm text-slate-400 font-medium">
-          Connect wallet to see your stats
-        </p>
-      );
-    }
-
-    // Wallet connected but ranking data is still loading from chain
     if (isLoading) {
       return (
-        <div className="flex items-center gap-2 text-sm text-slate-400 font-medium">
-          <Loader2 size={14} className="animate-spin text-purple-400" />
-          <span>Syncing chain data…</span>
+        <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-gray-500">
+          <Loader2 size={12} className="animate-spin text-black" />
+          <span>// Syncing chain data…</span>
         </div>
       );
     }
 
     return (
-      <Badge variant="purple">
-        <Trophy size={12} />
+      <div className="inline-flex items-center gap-2 border-2 border-black bg-white px-2 py-1 font-black text-[10px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+        <Trophy size={12} strokeWidth={3} />
         {diplomasWon} {diplomasWon === 1 ? "Diploma" : "Diplomas"}
-      </Badge>
+      </div>
     );
   };
 
   return (
-    <Card
-      variant="elevated"
-      padding="md"
-      className="group hover:border-purple-100 transition-colors duration-200 flex flex-col justify-between min-h-[220px]"
-    >
+    <div className="border-2 border-black bg-white shadow-[6px_6px_0px_#000] p-6 flex flex-col justify-between min-h-[220px]">
       {/* Header */}
       <div>
-        <div className="w-11 h-11 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-5 border border-purple-100">
-          <Trophy size={22} />
+        <div className="w-11 h-11 border-2 border-black bg-white shadow-[3px_3px_0px_#000] flex items-center justify-center mb-5 text-black">
+          <Trophy size={20} strokeWidth={2.5} />
         </div>
-        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight mb-2">
+        <h2 className="text-2xl font-black uppercase tracking-[-0.03em] leading-[0.88] text-black mb-2">
           Global Ranking
         </h2>
-        <p className="text-slate-600 font-medium text-base mb-5 leading-relaxed">
-          Top performers across all sessions.
+        <p className="font-mono text-[11px] uppercase tracking-[0.05em] text-gray-500 mb-5">
+          // Top performers across all sessions
         </p>
 
         {renderStats()}
@@ -72,11 +56,11 @@ export function GlobalRankingPreview() {
       {/* CTA */}
       <button
         onClick={() => router.push("/global-ranking")}
-        className="mt-6 w-full py-4 px-5 bg-slate-50 hover:bg-purple-50 border border-slate-100 hover:border-purple-200 rounded-xl flex items-center justify-between text-slate-600 hover:text-purple-700 font-bold text-base transition-all duration-200 group/btn"
+        className="mt-6 w-full py-4 px-5 bg-white border-2 border-black shadow-[4px_4px_0px_#000] hover:bg-neo-accent active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-between text-black font-black text-[11px] uppercase tracking-[0.1em] transition-all group/btn"
       >
         <span>View Leaderboard</span>
-        <ArrowRight size={18} className="transform group-hover/btn:translate-x-1 transition-transform duration-200" />
+        <ArrowRight size={18} strokeWidth={2.5} />
       </button>
-    </Card>
+    </div>
   );
 }

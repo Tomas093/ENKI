@@ -6,6 +6,7 @@ import { config } from '../config/wagmi';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChainGuard } from './components/ChainGuard';
+import { NicknameProvider } from '../context/NicknameContext';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { status } = useAccount();
@@ -28,11 +29,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ChainGuard>
-          <AuthGate>
-            {children}
-          </AuthGate>
-        </ChainGuard>
+        <NicknameProvider>
+          <ChainGuard>
+            <AuthGate>
+              {children}
+            </AuthGate>
+          </ChainGuard>
+        </NicknameProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

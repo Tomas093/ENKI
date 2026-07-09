@@ -70,7 +70,7 @@ export function useJoinGame() {
     }
   };
 
-  const handleJoin = async () => {
+  const handleJoin = async (nickname?: string) => {
     if (!isConnected) {
       if (connectors.length > 0) connect({ connector: connectors[0] });
       return;
@@ -84,7 +84,8 @@ export function useJoinGame() {
         value: entryFee,
         gas: 500000n,
       });
-      router.push(`/transaction-mining?hash=${hash}&game=${searchedAddress}`);
+      const nickParam = nickname ? `&nick=${encodeURIComponent(nickname)}` : "";
+      router.push(`/transaction-mining?hash=${hash}&game=${searchedAddress}${nickParam}`);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.shortMessage || "Transaction failed or rejected.");
