@@ -26,6 +26,16 @@ export function useStudentGameplay() {
   const { writeContractAsync, isPending } = useWriteContract();
 
   useEffect(() => {
+    if (!gameAddress) return;
+
+    // Safety cleanup if we switched game sessions
+    const lastGame = sessionStorage.getItem("last_game_address");
+    if (lastGame && lastGame !== gameAddress) {
+      sessionStorage.removeItem(`game_commits_${lastGame}`);
+      sessionStorage.removeItem("current_question");
+    }
+    sessionStorage.setItem("last_game_address", gameAddress);
+
     const qData = sessionStorage.getItem("current_question");
     if (qData) {
       const parsed = JSON.parse(qData);
@@ -33,16 +43,15 @@ export function useStudentGameplay() {
       setTimeLeft(parsed.timeLimit || 30);
       setTotalTime(parsed.timeLimit || 30);
 
-      // Restore selected index if it belongs to this question
-      const savedQId = sessionStorage.getItem("my_answer_qId");
-      if (savedQId && Number(savedQId) === parsed.id) {
-        const savedIdx = sessionStorage.getItem("my_answer_idx");
-        if (savedIdx !== null) {
-          setSelected(Number(savedIdx));
-        }
+      // Restore selected index from Key-Value store
+      const storageKey = `game_commits_${gameAddress}`;
+      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      const commitInfo = commitsObj[parsed.id];
+      if (commitInfo && commitInfo.option !== undefined) {
+        setSelected(Number(commitInfo.option));
       }
     }
-  }, []);
+  }, [gameAddress]);
 
   useEffect(() => {
     if (selected !== null || timeLeft <= 0 || !questionData) return;
@@ -53,9 +62,10 @@ export function useStudentGameplay() {
   useEffect(() => {
     if (timeLeft <= 0 && selected === null && gameAddress && questionData) {
       setSelected(-1);
-      sessionStorage.setItem("my_answer_idx", "-1");
-      sessionStorage.setItem("my_answer_qId", questionData.id.toString());
-      sessionStorage.removeItem("my_answer_salt");
+      const storageKey = `game_commits_${gameAddress}`;
+      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      commitsObj[questionData.id] = { option: -1, salt: "" };
+      sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
     }
   }, [timeLeft, selected, gameAddress, questionData]);
 
@@ -64,9 +74,12 @@ export function useStudentGameplay() {
     setSelected(idx);
 
     const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
-    sessionStorage.setItem("my_answer_salt", studentSalt);
-    sessionStorage.setItem("my_answer_idx", idx.toString());
-    sessionStorage.setItem("my_answer_qId", questionData.id.toString());
+    
+    // Store in Key-Value store immediately before contract call
+    const storageKey = `game_commits_${gameAddress}`;
+    const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+    commitsObj[questionData.id] = { option: idx, salt: studentSalt };
+    sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
 
     try {
       const commitHash = keccak256(
@@ -82,7 +95,12 @@ export function useStudentGameplay() {
     } catch (e) {
       console.error(e);
       toast.error("Transaction failed. Are you connected?");
+      // Revert local state and storage on failure
       setSelected(null);
+      const storageKey = `game_commits_${gameAddress}`;
+      const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+      delete commitsObj[questionData.id];
+      sessionStorage.setItem(storageKey, JSON.stringify(commitsObj));
     }
   };
 
@@ -117,17 +135,12 @@ export function useStudentGameplay() {
           if (matchingLog) {
             const log = matchingLog as any;
             const qId = Number(log.args.questionId);
-            const myIdx = sessionStorage.getItem("my_answer_idx");
-            const mySalt = sessionStorage.getItem("my_answer_salt");
-            const savedQId = sessionStorage.getItem("my_answer_qId");
             
-            if (myIdx !== null && mySalt && savedQId && Number(savedQId) === qId) {
-              let pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
-              // Deduplicate to only keep the latest record for this question
-              pendingReveals = pendingReveals.filter((r: any) => Number(r.qId) !== qId);
-              pendingReveals.push({ qId, myIdx: Number(myIdx), mySalt });
-              sessionStorage.setItem("pending_reveals", JSON.stringify(pendingReveals));
-            }
+            // Read my index from Key-Value store to calculate correctness
+            const storageKey = `game_commits_${gameAddress}`;
+            const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+            const commitInfo = commitsObj[qId];
+            const myIdx = commitInfo && commitInfo.option !== undefined ? commitInfo.option : null;
 
             try {
               const correctAns = await publicClient.readContract({
@@ -138,7 +151,7 @@ export function useStudentGameplay() {
               });
               
               setCorrectAnswerIdx(Number(correctAns));
-              setIsCorrect(myIdx !== null && Number(correctAns) === Number(myIdx));
+              setIsCorrect(myIdx !== null && myIdx !== -1 && Number(correctAns) === Number(myIdx));
             } catch (e) {
               console.error("Failed to read correct answer", e);
               setIsCorrect(false);
@@ -174,11 +187,6 @@ export function useStudentGameplay() {
               options: args.opciones,
             };
             sessionStorage.setItem("current_question", JSON.stringify(newQuestionData));
-            
-            // Clear current question's temporary answer storage
-            sessionStorage.removeItem("my_answer_idx");
-            sessionStorage.removeItem("my_answer_salt");
-            sessionStorage.removeItem("my_answer_qId");
 
             setQuestionData(newQuestionData);
             setTimeLeft(timeLimit);
@@ -199,14 +207,27 @@ export function useStudentGameplay() {
             if (finished) {
               isRevealingRef = true;
               setIsRevealing(true);
-              const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
               
-              if (pendingReveals.length > 0) {
+              const storageKey = `game_commits_${gameAddress}`;
+              const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+              
+              // Map dictionary to lists, filtering out any timeouts (option === -1)
+              const qIds: bigint[] = [];
+              const options: number[] = [];
+              const salts: string[] = [];
+
+              Object.keys(commitsObj).forEach((qIdStr) => {
+                const qId = Number(qIdStr);
+                const info = commitsObj[qIdStr];
+                if (info && info.option !== -1 && info.salt) {
+                  qIds.push(BigInt(qId));
+                  options.push(info.option);
+                  salts.push(info.salt);
+                }
+              });
+              
+              if (qIds.length > 0) {
                 try {
-                  const qIds = pendingReveals.map((r: any) => BigInt(r.qId));
-                  const options = pendingReveals.map((r: any) => r.myIdx);
-                  const salts = pendingReveals.map((r: any) => r.mySalt);
-                  
                   const hash = await writeContractAsync({
                     address: gameAddress as `0x${string}`,
                     abi: KahootGameABI.abi,
@@ -214,7 +235,7 @@ export function useStudentGameplay() {
                     args: [qIds, options, salts],
                   });
                   
-                  sessionStorage.removeItem("pending_reveals");
+                  sessionStorage.removeItem(storageKey);
                   router.push(`/leaderboard?game=${gameAddress}&tx=${hash}`);
                   return;
                 } catch (e) {

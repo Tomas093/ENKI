@@ -139,23 +139,35 @@ export function useWaitingRoom() {
 
           if (finished) {
             setIsRevealing(true);
-            const pendingReveals = JSON.parse(sessionStorage.getItem("pending_reveals") || "[]");
+            const storageKey = `game_commits_${gameAddress}`;
+            const commitsObj = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
             
-            if (pendingReveals.length > 0) {
-              try {
-                const qIds = pendingReveals.map((r: any) => BigInt(r.qId));
-                const options = pendingReveals.map((r: any) => r.myIdx);
-                const salts = pendingReveals.map((r: any) => r.mySalt);
+            // Map dictionary to lists, filtering out any timeouts (option === -1)
+            const qIds: bigint[] = [];
+            const options: number[] = [];
+            const salts: string[] = [];
 
-                await writeContractAsync({
+            Object.keys(commitsObj).forEach((qIdStr) => {
+              const qId = Number(qIdStr);
+              const info = commitsObj[qIdStr];
+              if (info && info.option !== -1 && info.salt) {
+                qIds.push(BigInt(qId));
+                options.push(info.option);
+                salts.push(info.salt);
+              }
+            });
+            
+            if (qIds.length > 0) {
+              try {
+                const hash = await writeContractAsync({
                   address: gameAddress as `0x${string}`,
                   abi: KahootGameABI.abi,
                   functionName: 'batchRevealAnswers',
                   args: [qIds, options, salts],
                 });
                 
-                sessionStorage.removeItem("pending_reveals");
-                router.push(`/leaderboard?game=${gameAddress}`);
+                sessionStorage.removeItem(storageKey);
+                router.push(`/leaderboard?game=${gameAddress}&tx=${hash}`);
                 return;
               } catch (e) {
                 console.error("Batch reveal failed", e);
