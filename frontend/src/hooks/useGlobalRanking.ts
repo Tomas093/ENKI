@@ -25,7 +25,7 @@ export function useGlobalRanking() {
       const gameCreatedLogs = await publicClient.getLogs({
         address: FACTORY_ADDRESS,
         event: parseAbiItem('event GameCreated(address indexed gameAddress, address indexed professor)'),
-        fromBlock: 'earliest',
+        fromBlock: 11094381n,
         toBlock: 'latest',
       });
 
@@ -39,7 +39,7 @@ export function useGlobalRanking() {
       const playerJoinedLogs = await publicClient.getLogs({
         address: gameAddresses,
         event: parseAbiItem('event PlayerJoined(address indexed player, uint256 feePaid)'),
-        fromBlock: 'earliest',
+        fromBlock: 11094381n,
         toBlock: 'latest',
       });
 
@@ -47,7 +47,7 @@ export function useGlobalRanking() {
       const diplomaClaimedLogs = await publicClient.getLogs({
         address: gameAddresses,
         event: parseAbiItem('event DiplomaClaimed(address indexed student)'),
-        fromBlock: 'earliest',
+        fromBlock: 11094381n,
         toBlock: 'latest',
       });
 
@@ -55,7 +55,7 @@ export function useGlobalRanking() {
       const prizeClaimedLogs = await publicClient.getLogs({
         address: gameAddresses,
         event: parseAbiItem('event PrizeClaimed(address indexed recipient, uint256 amount)'),
-        fromBlock: 'earliest',
+        fromBlock: 11094381n,
         toBlock: 'latest',
       });
 

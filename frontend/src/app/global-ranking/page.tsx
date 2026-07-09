@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Trophy, Medal, Crown, Sparkles, ChevronLeft, Search, Loader2 } from "lucide-react";
+import React from "react";
+import { Medal, Crown, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import Link from "next/link";
 import { useAccount } from "wagmi";
 import { useGlobalRanking, GlobalPlayer } from "../../hooks/useGlobalRanking";
 
@@ -26,15 +25,7 @@ export default function GlobalRankingPage() {
   return (
     <div className="min-h-screen pt-24 pb-12 px-6">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            <ChevronLeft size={20} />
-            <span className="font-semibold text-sm">Back to Home</span>
-          </Link>
-        </div>
+
 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
