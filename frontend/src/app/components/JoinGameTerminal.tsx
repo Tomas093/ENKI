@@ -14,6 +14,7 @@ export function JoinGameTerminal() {
     professor,
     entryFeeFormatted,
     entryFee,
+    hasJoined,
     isConnected,
     isPending,
     handleSearch,
@@ -85,20 +86,32 @@ export function JoinGameTerminal() {
               </div>
 
               {/* CTA Button */}
-              <Button
-                onClick={handleJoin}
-                loading={isPending}
-                fullWidth
-                size="lg"
-                variant={!isConnected ? "secondary" : "primary"}
-                leftIcon={!isConnected ? <Wallet size={20} /> : <Play size={20} />}
-              >
-                {isPending
-                  ? "Broadcasting transaction..."
-                  : !isConnected
-                  ? "Connect Wallet to Join"
-                  : `Stake ${entryFeeFormatted} ETH & Enter Game`}
-              </Button>
+              {hasJoined ? (
+                <Button
+                  onClick={() => window.location.href = `/join-waiting?game=${searchedAddress}`}
+                  fullWidth
+                  size="lg"
+                  variant="primary"
+                  leftIcon={<Play size={20} />}
+                >
+                  Already Joined - Resume Game
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleJoin}
+                  loading={isPending}
+                  fullWidth
+                  size="lg"
+                  variant={!isConnected ? "secondary" : "primary"}
+                  leftIcon={!isConnected ? <Wallet size={20} /> : <Play size={20} />}
+                >
+                  {isPending
+                    ? "Broadcasting transaction..."
+                    : !isConnected
+                    ? "Connect Wallet to Join"
+                    : `Stake ${entryFeeFormatted} ETH & Enter Game`}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="bg-red-50 text-red-600 rounded-xl p-4 font-medium border border-red-100 text-center">

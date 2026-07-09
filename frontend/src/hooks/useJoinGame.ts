@@ -16,6 +16,7 @@ export function useJoinGame() {
   const [searchedAddress, setSearchedAddress] = useState<`0x${string}` | undefined>(undefined);
 
   const router = useRouter();
+  const { address } = useAccount();
   const { isConnected } = useAccount();
   const { connectors, connect } = useConnect();
   const { writeContractAsync, isPending } = useWriteContract();
@@ -25,6 +26,7 @@ export function useJoinGame() {
       ? [
           { address: searchedAddress, abi: KahootGameABI.abi, functionName: "professor" },
           { address: searchedAddress, abi: KahootGameABI.abi, functionName: "entryFee" },
+          ...(address ? [{ address: searchedAddress, abi: KahootGameABI.abi, functionName: "hasJoined", args: [address] }] : [])
         ]
       : [],
   });
@@ -32,6 +34,7 @@ export function useJoinGame() {
   const isGameFound = !!(gameData && gameData[0]?.status === "success");
   const professor = isGameFound ? (gameData![0]?.result as string) : null;
   const entryFee = isGameFound ? (gameData![1]?.result as bigint) : null;
+  const hasJoined = isGameFound && address ? (gameData![2]?.result as boolean) : false;
   const entryFeeFormatted = entryFee !== null ? formatEther(entryFee || 0n) : null;
 
   const handleSearch = (e: React.FormEvent) => {
@@ -74,6 +77,7 @@ export function useJoinGame() {
     professor,
     entryFee,
     entryFeeFormatted,
+    hasJoined,
     isConnected,
     isPending,
     handleSearch,
