@@ -15,7 +15,6 @@ const MEDAL_ICONS: Record<number, React.ReactNode> = {
 
 export default function GlobalRankingPage() {
   const { address } = useAccount();
-  const [search, setSearch] = useState("");
   const { data: players = [], isLoading, isError } = useGlobalRanking();
 
   // Flag the current user
@@ -23,12 +22,6 @@ export default function GlobalRankingPage() {
     ...p,
     isSelf: address && p.address.toLowerCase() === address.toLowerCase()
   }));
-
-  const filteredPlayers = playersWithSelf.filter(
-    (p) =>
-      p.ens.toLowerCase().includes(search.toLowerCase()) ||
-      p.address.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-6">
@@ -41,16 +34,6 @@ export default function GlobalRankingPage() {
             <ChevronLeft size={20} />
             <span className="font-semibold text-sm">Back to Home</span>
           </Link>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search player..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all w-64"
-            />
-          </div>
         </div>
 
         <motion.div
@@ -58,12 +41,6 @@ export default function GlobalRankingPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <div className="inline-flex items-center justify-center gap-3 mb-4 bg-purple-100 px-4 py-1.5 rounded-full border border-purple-200">
-            <Trophy size={16} className="text-purple-600" />
-            <span className="text-purple-700 font-bold text-sm tracking-wide uppercase">
-              Hall of Fame
-            </span>
-          </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">
             Global Ranking
           </h1>
@@ -80,11 +57,9 @@ export default function GlobalRankingPage() {
         >
           {/* Header */}
           <div className="grid grid-cols-12 px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 tracking-wider uppercase">
-            <div className="col-span-2 md:col-span-1 text-center">Rank</div>
-            <div className="col-span-5 md:col-span-4">Player</div>
-            <div className="col-span-5 md:col-span-3 text-center">Diplomas</div>
-            <div className="hidden md:block col-span-2 text-center">Games Played</div>
-            <div className="hidden md:block col-span-2 text-right">Total Prize</div>
+            <div className="col-span-3 md:col-span-2 text-center">Rank</div>
+            <div className="col-span-6 md:col-span-7">Player</div>
+            <div className="col-span-3 md:col-span-3 text-center">Diplomas</div>
           </div>
 
           {/* List or Loading State */}
@@ -98,13 +73,13 @@ export default function GlobalRankingPage() {
               <div className="absolute inset-0 flex items-center justify-center text-red-500">
                 <p>Failed to load global ranking from the network.</p>
               </div>
-            ) : filteredPlayers.length > 0 ? (
-              filteredPlayers.map((player) => (
+            ) : playersWithSelf.length > 0 ? (
+              playersWithSelf.map((player) => (
                 <PlayerRow key={player.rank} player={player} />
               ))
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-slate-500">
-                {search ? `No players found matching "${search}"` : "No ranking data available yet."}
+                <p>No ranking data available yet.</p>
               </div>
             )}
           </div>
@@ -123,7 +98,7 @@ function PlayerRow({ player }: { player: GlobalPlayer }) {
         player.isSelf ? "bg-purple-50/50" : ""
       }`}
     >
-      <div className="col-span-2 md:col-span-1 flex justify-center">
+      <div className="col-span-3 md:col-span-2 flex justify-center">
         {isTop ? (
           <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm">
             {MEDAL_ICONS[player.rank]}
@@ -133,7 +108,7 @@ function PlayerRow({ player }: { player: GlobalPlayer }) {
         )}
       </div>
 
-      <div className="col-span-5 md:col-span-4 flex items-center gap-3">
+      <div className="col-span-6 md:col-span-7 flex items-center gap-3">
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm
             ${player.isSelf ? "bg-purple-500" : isTop ? "bg-slate-800" : "bg-slate-300"}
@@ -154,25 +129,11 @@ function PlayerRow({ player }: { player: GlobalPlayer }) {
         </div>
       </div>
 
-      <div className="col-span-5 md:col-span-3 flex justify-center items-center gap-1.5">
+      <div className="col-span-3 md:col-span-3 flex justify-center items-center gap-1.5">
         <Sparkles size={14} className={isTop ? "text-amber-500" : "text-slate-400"} />
         <span className={`font-bold ${isTop ? "text-amber-600" : "text-slate-600"}`}>
           {player.diplomas}
         </span>
-      </div>
-
-      <div className="hidden md:block col-span-2 text-center">
-        <span className="text-slate-600 font-semibold">{player.gamesPlayed}</span>
-      </div>
-
-      <div className="hidden md:block col-span-2 text-right">
-        {player.totalPrize > 0 ? (
-          <span className="font-mono font-bold text-emerald-600">
-            {player.totalPrize.toFixed(4)} ETH
-          </span>
-        ) : (
-          <span className="text-slate-400 font-mono">—</span>
-        )}
       </div>
     </div>
   );

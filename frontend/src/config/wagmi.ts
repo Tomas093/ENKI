@@ -11,7 +11,7 @@ export const config = createConfig({
     [sepolia.id]: fallback([
       http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL),
       http('https://ethereum-sepolia-rpc.publicnode.com'),
-      http('https://rpc.sepolia.org')
+      http('https://sepolia.drpc.org')
     ]),
   },
 })
