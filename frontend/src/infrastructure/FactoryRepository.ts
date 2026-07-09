@@ -18,7 +18,7 @@ export class FactoryRepository {
       const address = await publicClient.readContract({
         address: FACTORY_ADDRESS,
         abi: KahootFactoryABI.abi as any,
-        functionName: 'games',
+        functionName: 'getGameAddress',
         args: [BigInt(shortId)],
       });
       return address as string;

@@ -25,15 +25,15 @@ export async function GET(
     // In a real production environment with 10k+ games, this would be indexed by The Graph.
     const allLogs = await publicClient.getLogs({
       address: FACTORY_ADDRESS,
-      event: parseAbiItem('event GameCreated(address indexed gameAddress, address indexed professor)'),
+      event: parseAbiItem('event GameCreated(uint256 indexed gameId, address indexed gameAddress, address indexed professor)'),
       fromBlock: DEPLOYMENT_BLOCK,
       toBlock: latestBlock
     });
 
     // Map logs to Game IDs, then filter by professor
     const professorGames = allLogs
-      .map((log, index) => ({
-        id: index,
+      .map((log) => ({
+        id: Number(log.args.gameId),
         address: log.args.gameAddress,
         professor: log.args.professor?.toLowerCase(),
       }))

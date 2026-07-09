@@ -12,9 +12,12 @@ contract KahootFactory {
 
 
 
+    uint256 public nextGameId = 1;
+    mapping(uint256 => address) public gamesById;
+
     mapping(address => KahootGame[]) public kahootsDeProfesor;
 
-    event GameCreated(address indexed gameAddress, address indexed professor);
+    event GameCreated(uint256 indexed gameId, address indexed gameAddress, address indexed professor);
 
     event CreationFeeUpdated(uint256 oldFee, uint256 newFee);
 
@@ -59,12 +62,21 @@ contract KahootFactory {
             _rondas,
             _entryFee
         );
+        uint256 currentId = nextGameId;
+        gamesById[currentId] = address(newGame);
+        nextGameId++;
+
         games.push(newGame);
         kahootsDeProfesor[msg.sender].push(newGame);
 
-        emit GameCreated(address(newGame), msg.sender);
+        emit GameCreated(currentId, address(newGame), msg.sender);
 
         return address(newGame);
+    }
+
+    function getGameAddress(uint256 _gameId) external view returns (address) {
+        require(_gameId > 0 && _gameId < nextGameId, "Game ID no existe");
+        return gamesById[_gameId];
     }
 
     function getKahootsDeProfesor(address _profesor) external view returns (KahootGame[] memory) {
