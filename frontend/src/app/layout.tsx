@@ -29,13 +29,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${nunito.variable} h-dvh antialiased`}
+      className={`${dmSans.variable} ${nunito.variable} min-h-screen antialiased`}
     >
-      <body className="h-dvh flex flex-col overflow-hidden bg-slate-50">
+      <body className="min-h-screen flex flex-col bg-slate-50">
         <Toaster position="top-center" reverseOrder={false} />
         <Providers>
           <Navbar />
-          <main className="flex-1 flex flex-col w-full relative min-h-0 overflow-x-hidden overflow-y-auto">
+          <main className="flex-1 flex flex-col w-full relative overflow-x-hidden">
             <Suspense fallback={<div className="p-8 text-center font-bold text-slate-500">Loading...</div>}>
               {children}
             </Suspense>
