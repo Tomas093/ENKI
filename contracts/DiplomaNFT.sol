@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract DiplomaNFT is ERC721URIStorage {
+contract DiplomaNFT is ERC721 {
     uint256 private _nextTokenId;
     
     address public immutable kahootGame;
@@ -26,6 +26,11 @@ contract DiplomaNFT is ERC721URIStorage {
     function mintDiploma(address to) external onlyGame {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, gameTokenURI);
+        // ponytail: removed _setTokenURI to save 20,000 gas per mint (SSTORE)
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireOwned(tokenId);
+        return gameTokenURI;
     }
 }
