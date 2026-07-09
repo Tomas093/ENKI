@@ -5,12 +5,12 @@ import { PageBlobs } from "../components/ui/PageBlobs";
 
 export default function Home() {
   return (
-    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-3 md:pt-5 lg:pt-6 pb-8 relative bg-slate-50">
+    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-4 relative bg-slate-50">
       <PageBlobs primary="purple" secondary="blue" />
       <main className="max-w-6xl mx-auto w-full relative z-10">
 
         {/* Hero Header */}
-        <header className="mb-6 md:mb-8">
+        <header className="mb-4 md:mb-6">
           <div className="max-w-xl">
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-800 mb-3 leading-tight">
               Learn, compete,<br />and earn on-chain.

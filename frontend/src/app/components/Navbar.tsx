@@ -49,7 +49,7 @@ export const Navbar = () => {
           {mounted && address ? (
             <div className="flex items-center gap-2">
               {/* Address pill */}
-              <div className="h-9 bg-slate-50 border border-slate-200 rounded-xl flex items-center px-3.5 gap-2 shadow-sm">
+              <div className="h-11 bg-slate-50 border border-slate-200 rounded-xl flex items-center px-4 gap-2 shadow-sm">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200" />
                 <span className="font-semibold text-slate-700 text-sm font-mono">
                   {address.slice(0, 6)}...{address.slice(-4)}
@@ -68,13 +68,13 @@ export const Navbar = () => {
           ) : mounted ? (
             <button
               onClick={handleConnectWallet}
-              className="h-9 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl flex items-center gap-2 text-white text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+              className="h-11 px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl flex items-center gap-2 text-white text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
             >
-              <Wallet size={15} strokeWidth={2.5} />
+              <Wallet size={16} strokeWidth={2.5} />
               Connect Wallet
             </button>
           ) : (
-            <div className="h-9 w-32 bg-slate-100 rounded-xl animate-pulse" />
+            <div className="h-11 w-36 bg-slate-100 rounded-xl animate-pulse" />
           )}
         </div>
 

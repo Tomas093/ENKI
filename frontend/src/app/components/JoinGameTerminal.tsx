@@ -25,13 +25,13 @@ export function JoinGameTerminal() {
       <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">
         Join a Game
       </h2>
-      <p className="text-slate-500 font-medium mb-8">
+      <p className="text-slate-600 font-medium mb-8">
         Enter the contract address provided by your teacher.
       </p>
 
       {/* Address Search Form */}
       <form onSubmit={handleSearch} className="flex flex-col gap-3">
-        <label className="text-sm font-bold text-slate-600 ml-1">
+        <label htmlFor="address-input" className="text-sm font-bold text-slate-600 ml-1">
           Game Contract Address
         </label>
         <div className="flex gap-2.5">
@@ -40,6 +40,7 @@ export function JoinGameTerminal() {
               <Search size={18} />
             </div>
             <input
+              id="address-input"
               type="text"
               value={addressInput}
               onChange={(e) => setAddressInput(e.target.value)}

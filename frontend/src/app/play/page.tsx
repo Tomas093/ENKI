@@ -58,16 +58,7 @@ export default function StudentGame() {
   // ─── RESULT PHASE ────────────────────────────────────────────────────────────
   if (phase === "result") {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "calc(100vh - 130px)",
-          display: "flex",
-          flexDirection: "column",
-          background: "#1a1a2e",
-          overflow: "hidden",
-        }}
-      >
+      <div className="w-full h-full flex flex-col bg-slate-900 overflow-hidden">
         {/* 4-button result grid */}
         <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
           <div
@@ -192,16 +183,7 @@ export default function StudentGame() {
 
   // ─── PICK PHASE ──────────────────────────────────────────────────────────────
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "calc(100vh - 130px)",
-        display: "flex",
-        flexDirection: "column",
-        background: "#1a1a2e",
-        overflow: "hidden",
-      }}
-    >
+    <div className="w-full h-full flex flex-col bg-slate-900 overflow-hidden">
       {/* Top header bar */}
       <div
         style={{

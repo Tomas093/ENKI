@@ -21,10 +21,10 @@ export function GlobalRankingPreview() {
         <div className="w-11 h-11 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-5 border border-purple-100">
           <Trophy size={22} />
         </div>
-        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight mb-1">
+        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight mb-2">
           Global Ranking
         </h2>
-        <p className="text-slate-500 font-medium text-sm mb-5 leading-relaxed">
+        <p className="text-slate-600 font-medium text-base mb-5 leading-relaxed">
           Top performers across all sessions.
         </p>
 
@@ -43,7 +43,7 @@ export function GlobalRankingPreview() {
       {/* CTA */}
       <button
         onClick={() => router.push("/global-ranking")}
-        className="mt-6 w-full py-3.5 px-5 bg-slate-50 hover:bg-purple-50 border border-slate-100 hover:border-purple-200 rounded-xl flex items-center justify-between text-slate-600 hover:text-purple-700 font-bold text-sm transition-all duration-200 group/btn"
+        className="mt-6 w-full py-4 px-5 bg-slate-50 hover:bg-purple-50 border border-slate-100 hover:border-purple-200 rounded-xl flex items-center justify-between text-slate-600 hover:text-purple-700 font-bold text-base transition-all duration-200 group/btn"
       >
         <span>View Leaderboard</span>
         <ArrowRight size={18} className="transform group-hover/btn:translate-x-1 transition-transform duration-200" />
