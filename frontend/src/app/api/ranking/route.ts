@@ -21,7 +21,7 @@ interface PlayerStats {
 
 let cachedGameAddresses: string[] = [];
 let cachedPlayerStats = new Map<string, PlayerStats>();
-let cachedLastBlock = DEPLOYMENT_BLOCK - 1n;
+let cachedLastBlock = DEPLOYMENT_BLOCK - 1n; // HMR force reset for new factory
 let cacheTimestamp = 0;
 
 const CACHE_TTL_MS = 30_000; // 30 seconds
