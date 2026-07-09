@@ -1,10 +1,12 @@
 "use client";
 import { Search, Wallet, Play } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useJoinGame } from "../../hooks/useJoinGame";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 
 export function JoinGameTerminal() {
+  const router = useRouter();
   const {
     gameIdInput,
     setGameIdInput,
@@ -96,7 +98,7 @@ export function JoinGameTerminal() {
               {/* CTA Button */}
               {hasJoined ? (
                 <Button
-                  onClick={() => window.location.href = `/join-waiting?game=${searchedAddress}`}
+                  onClick={() => router.push(`/join-waiting?game=${searchedAddress}`)}
                   fullWidth
                   size="lg"
                   variant="primary"

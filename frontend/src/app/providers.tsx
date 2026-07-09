@@ -8,16 +8,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ChainGuard } from './components/ChainGuard';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isConnected, isReconnecting } = useAccount();
+  const { status } = useAccount();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     const isMockRoute = pathname.startsWith('/mock-');
-    if (!isReconnecting && !isConnected && pathname !== "/" && !isMockRoute) {
+    if (status === 'disconnected' && pathname !== "/" && !isMockRoute) {
       router.push("/");
     }
-  }, [isConnected, isReconnecting, pathname, router]);
+  }, [status, pathname, router]);
 
   return <>{children}</>;
 }
