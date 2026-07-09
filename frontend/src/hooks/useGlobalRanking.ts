@@ -24,23 +24,19 @@ async function getLogsInChunks(
   params: any,
   fromBlock: bigint,
   toBlock: bigint,
-  chunkSize = 10000n
+  chunkSize = 100000n
 ) {
   let allLogs: any[] = [];
   for (let start = fromBlock; start <= toBlock; start += chunkSize) {
     let end = start + chunkSize - 1n;
     if (end > toBlock) end = toBlock;
 
-    try {
-      const logs = await publicClient.getLogs({
-        ...params,
-        fromBlock: start,
-        toBlock: end,
-      });
-      allLogs = allLogs.concat(logs);
-    } catch (error) {
-      console.warn(`Failed chunk ${start}-${end}`, error);
-    }
+    const logs = await publicClient.getLogs({
+      ...params,
+      fromBlock: start,
+      toBlock: end,
+    });
+    allLogs = allLogs.concat(logs);
   }
   return allLogs;
 }
@@ -55,7 +51,7 @@ export function useGlobalRanking() {
     queryFn: async () => {
       if (!publicClient) return [];
 
-      const CACHE_KEY = `enki_ranking_cache_v2_${FACTORY_ADDRESS}`;
+      const CACHE_KEY = `enki_ranking_cache_v3_${FACTORY_ADDRESS}`;
       
       let cachedLastSyncBlock = DEPLOYMENT_BLOCK - 1n;
       let cachedGameAddresses: string[] = [];
