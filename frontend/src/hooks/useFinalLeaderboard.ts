@@ -23,6 +23,20 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
     }
   });
 
+  const { data: isFinishedData } = useReadContract({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    functionName: 'isFinished',
+    query: { enabled: !!gameAddress }
+  });
+
+  const { data: prizePoolData } = useReadContract({
+    address: gameAddress as `0x${string}`,
+    abi: KahootGameABI.abi,
+    functionName: 'prizePool',
+    query: { enabled: !!gameAddress }
+  });
+
   const { data: passingScoreData } = useReadContract({
     address: gameAddress as `0x${string}`,
     abi: KahootGameABI.abi,
@@ -33,6 +47,12 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
   });
 
   const PASS_THRESHOLD = Number(passingScoreData) || 1;
+  
+  const isFinished = Boolean(isFinishedData);
+  const prizePool = prizePoolData as bigint | undefined;
+  
+  // Si el juego terminó y no hay pozo, consideramos que los premios ya se "calcularon"
+  const effectivelyPrizesCalculated = Boolean(prizesCalculated) || (isFinished && prizePool === 0n);
 
   useEffect(() => {
     if (!gameAddress || !wagmiClient) return;
@@ -56,7 +76,7 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
 
       if (!isMounted) return;
 
-      if (!prizesCalculated) {
+      if (!effectivelyPrizesCalculated) {
         intervalId = setInterval(() => {
           if (isMounted) refetchPrizesCalculated();
         }, 3000);
@@ -71,7 +91,7 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
       isMounted = false;
       if (intervalId) clearInterval(intervalId);
     };
-  }, [gameAddress, prizesCalculated, wagmiClient, txHash, txConfirmed]);
+  }, [gameAddress, effectivelyPrizesCalculated, wagmiClient, txHash, txConfirmed]);
 
   const fetchStats = async () => {
     try {
@@ -116,7 +136,7 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
     isRefetching,
     participants,
     prizes,
-    prizesCalculated: Boolean(prizesCalculated),
+    prizesCalculated: effectivelyPrizesCalculated,
     PASS_THRESHOLD,
     markPrizeClaimed,
     markDiplomaClaimed,

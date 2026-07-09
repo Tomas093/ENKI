@@ -306,7 +306,6 @@ function joinGame() external payable notCancelled {
     function calculatePrizes() external {
         require(isFinished, "El juego no ha terminado");
         require(!prizesCalculated, "Los premios ya fueron calculados");
-        require(prizePool > 0, "No hay pozo de premios para distribuir");
 
         prizesCalculated = true;
 

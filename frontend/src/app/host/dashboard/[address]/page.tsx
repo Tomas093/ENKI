@@ -1,8 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, Users } from "lucide-react";
-import { PageBlobs } from "../../../../components/ui/PageBlobs";
-import { Button } from "../../../../components/ui/Button";
+import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
@@ -21,7 +19,8 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'isFinished' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor' }
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'lastActionTime' }
     ],
     query: { refetchInterval: 2000 }
   });
@@ -34,6 +33,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   const prizesCalculated = contractData?.[5]?.result as boolean | undefined;
   const totalQuestions = contractData?.[6]?.result as bigint | undefined;
   const professor = contractData?.[7]?.result as `0x${string}` | undefined;
+  const lastActionTime = contractData?.[8]?.result as bigint | undefined;
 
   const [gameId, setGameId] = useState<number | null>(null);
 
@@ -81,55 +81,55 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     if (data) setGameData(JSON.parse(data));
   }, []);
 
-  const [countdown, setCountdown] = useState(20);
+  const qIndex = currentQuestionId !== undefined ? Number(currentQuestionId) : -1;
+  const activeQuestion = gameData && qIndex >= 0 && qIndex < gameData.questions.length ? gameData.questions[qIndex] : null;
+  const timeLimit = activeQuestion ? (activeQuestion.timeLimit || 30) : 30;
 
+  // Real-time countdown for the question phase
+  const [timeLeft, setTimeLeft] = useState<number>(timeLimit);
+  
   useEffect(() => {
-    if (!isFinished || prizesCalculated) return;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+    if (!commitPhaseOpen || !lastActionTime) {
+      setTimeLeft(timeLimit);
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      const now = Math.floor(Date.now() / 1000);
+      const elapsed = now - Number(lastActionTime);
+      const remaining = Math.max(0, timeLimit - elapsed);
+      setTimeLeft(remaining);
     }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isFinished, prizesCalculated]);
+    
+    return () => clearInterval(interval);
+  }, [commitPhaseOpen, lastActionTime, timeLimit]);
 
   const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
   const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
   const isStarting = isWritePending || isWaiting;
 
   const handleStartNextQuestion = () => {
-    if (!gameData || currentQuestionId === undefined) return;
-    const qIndex = Number(currentQuestionId);
-    if (qIndex >= gameData.questions.length) return;
-    const q = gameData.questions[qIndex];
-    const enunciado = `${q.question}||${q.timeLimit || 30}`;
-    const opciones = [q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text];
+    if (!activeQuestion) return;
+    const enunciado = `${activeQuestion.question}||${timeLimit}`;
+    const opciones = [activeQuestion.answers[0].text, activeQuestion.answers[1].text, activeQuestion.answers[2].text, activeQuestion.answers[3].text];
     
     writeContract({
       address: address as `0x${string}`,
       abi: KahootGameABI.abi,
       functionName: 'startNextQuestion',
-      args: [enunciado, opciones, q.saltPregunta]
+      args: [enunciado, opciones, activeQuestion.saltPregunta]
     });
   };
 
   const handleCloseAndReveal = () => {
-    if (!gameData || currentQuestionId === undefined) return;
-    const qIndex = Number(currentQuestionId);
-    const q = gameData.questions[qIndex];
-    const correctOption = q.answers.findIndex((a: any) => a.correct);
+    if (!activeQuestion) return;
+    const correctOption = activeQuestion.answers.findIndex((a: any) => a.correct);
     
     writeContract({
       address: address as `0x${string}`,
       abi: KahootGameABI.abi,
       functionName: 'closeQuestionAndStartReveal',
-      args: [correctOption, q.saltRespuesta]
+      args: [correctOption, activeQuestion.saltRespuesta]
     });
   };
 
@@ -149,116 +149,172 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     });
   };
 
-  let hostAction = null;
-  let statusText = "Loading...";
+  let phaseLabel = "WAITING";
+  let hostActionBtn = null;
+  let statusBanner = null;
 
-  if (prizesCalculated) {
-    statusText = "Game Over - Prizes Distributed!";
-    hostAction = <Button variant="secondary" size="md" disabled>Finished</Button>;
+  if (prizesCalculated || (isFinished && prizePool === 0n)) {
+    phaseLabel = "FINISHED";
+    statusBanner = <div className="bg-black text-white p-4 font-black uppercase text-center border-2 border-black">Game Over - {prizePool === 0n ? 'No Prizes to distribute' : 'Prizes Distributed!'}</div>;
   } else if (isFinished) {
-    if (countdown > 0) {
-      statusText = `Waiting for students to reveal answers... (${countdown}s)`;
-      hostAction = (
-        <Button variant="secondary" size="md" disabled className="relative overflow-hidden w-full md:w-auto">
-          <div 
-            className="absolute left-0 top-0 bottom-0 bg-slate-200/50 transition-all duration-1000 ease-linear"
-            style={{ width: `${((20 - countdown) / 20) * 100}%` }}
-          />
-          <span className="relative z-10 tabular-nums">Processing Answers... {countdown}s</span>
-        </Button>
-      );
-    } else {
-      statusText = "All questions finished. Calculate prizes!";
-      hostAction = (
-        <Button 
-          variant="primary" 
-          size="md" 
-          onClick={handleCalculatePrizes} 
-          disabled={isStarting}
-          className="transition-colors duration-200 ease-in-out w-full md:w-auto"
-        >
-          {isStarting ? "Processing..." : "Calculate Prizes"}
-        </Button>
-      );
-    }
+    phaseLabel = "CALCULATE";
+    statusBanner = <div className="bg-[#FF3366] text-black p-4 font-black uppercase text-center border-2 border-black shadow-[4px_4px_0px_#000] mb-6">All questions finished.</div>;
+    
+    hostActionBtn = (
+      <button 
+        onClick={handleCalculatePrizes} 
+        disabled={isStarting}
+        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+      >
+        <AlertTriangle size={24} strokeWidth={3} />
+        {isStarting ? "Processing..." : "Calculate Prizes"}
+      </button>
+    );
   } else if (revealPhaseOpen) {
-    statusText = `Question ${Number(currentQuestionId) + 1} - Reveal Phase Active. Students can see results.`;
-    hostAction = <Button variant="primary" size="md" onClick={handleAdvance} disabled={isStarting}>{isStarting ? "Processing..." : "Advance to Next Question"}</Button>;
+    const isLastQuestion = totalQuestions !== undefined && currentQuestionId !== undefined && Number(currentQuestionId) === Number(totalQuestions) - 1;
+    phaseLabel = "REVEAL";
+    statusBanner = <div className="bg-[#39FF14] text-black p-4 font-black uppercase text-center border-2 border-black shadow-[4px_4px_0px_#000] mb-6 flex items-center justify-center gap-2"><Eye size={20}/> Students can see results</div>;
+    hostActionBtn = (
+      <button 
+        onClick={handleAdvance} 
+        disabled={isStarting}
+        className="w-full bg-black text-white border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-gray-800 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+      >
+        <ArrowLeft size={24} strokeWidth={3} className="rotate-180" />
+        {isStarting ? "Processing..." : (isLastQuestion ? "FINISH GAME" : "Advance to Next Question")}
+      </button>
+    );
   } else if (commitPhaseOpen) {
-    statusText = `Question ${Number(currentQuestionId) + 1} - Commit Phase Active. Students are answering!`;
-    hostAction = <Button variant="primary" size="md" onClick={handleCloseAndReveal} disabled={isStarting}>{isStarting ? "Processing..." : "Close Question & Start Reveal"}</Button>;
+    phaseLabel = "COMMIT";
+    const timeIsUp = timeLeft === 0;
+    
+    statusBanner = (
+      <div className={`p-4 font-black uppercase text-center border-2 border-black shadow-[4px_4px_0px_#000] mb-6 flex items-center justify-center gap-2 ${timeIsUp ? 'bg-[#FF3366] text-white animate-pulse' : 'bg-white text-black'}`}>
+        <Clock size={20}/> 
+        {timeIsUp ? "TIME IS UP! Close the question." : `Students are answering...`}
+      </div>
+    );
+    hostActionBtn = (
+      <button 
+        onClick={handleCloseAndReveal} 
+        disabled={isStarting}
+        className={`w-full border-2 border-black shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-3 ${timeIsUp ? 'bg-[#FF3366] text-black hover:bg-red-500' : 'bg-black text-white hover:bg-gray-800'}`}
+      >
+        <CheckSquare size={24} strokeWidth={3} />
+        {isStarting ? "Processing..." : "Close Question & Reveal"}
+      </button>
+    );
   } else if (currentQuestionId !== undefined) {
-    // Neither is open -> ready to start next question (or first question)
     const isFirst = currentQuestionId === 0n;
-    statusText = isFirst ? "Ready to start the game." : `Ready for Question ${Number(currentQuestionId) + 1}.`;
-    const btnText = isFirst ? "Start Game" : "Start Next Question";
-    hostAction = (
-      <Button variant="primary" size="md" leftIcon={<Play size={18} />} onClick={handleStartNextQuestion} disabled={isStarting}>
-        {isStarting ? "Processing..." : btnText}
-      </Button>
+    phaseLabel = "READY";
+    statusBanner = <div className="bg-[#33CCFF] text-black p-4 font-black uppercase text-center border-2 border-black shadow-[4px_4px_0px_#000] mb-6">Ready to launch {isFirst ? "the game" : `Question ${Number(currentQuestionId) + 1}`}</div>;
+    hostActionBtn = (
+      <button 
+        onClick={handleStartNextQuestion} 
+        disabled={isStarting}
+        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+      >
+        <Play size={24} fill="currentColor" strokeWidth={3} />
+        {isStarting ? "Processing..." : (isFirst ? "START GAME" : "LAUNCH NEXT QUESTION")}
+      </button>
     );
   }
 
-  return (
-    <div className="w-full min-h-[calc(100vh-80px)] flex flex-col px-4 md:px-8 lg:px-12 py-10 relative bg-slate-50">
-      <PageBlobs primary="purple" secondary="blue" />
-      <div className="max-w-4xl mx-auto w-full relative z-10 flex flex-col gap-8">
-        
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors duration-200 self-start font-medium text-sm"
-        >
-          <ArrowLeft size={16} />
-          Back to Sessions
-        </button>
+  const progressPercent = totalQuestions ? ((Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))) / Number(totalQuestions)) * 100 : 0;
 
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-800">
-                {gameName ? gameName : "Session Dashboard"}
-              </h1>
+  return (
+    <div className="w-full min-h-screen bg-[#F4F4F0] flex flex-col relative">
+      
+      {/* Background pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '32px 32px' }}></div>
+
+      <div className="max-w-5xl mx-auto w-full relative z-10 px-4 md:px-8 py-10 flex flex-col gap-8">
+        
+        {/* Top Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => router.back()}
+              className="bg-white border-2 border-black text-black shadow-[2px_2px_0px_#000] hover:bg-gray-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all uppercase tracking-widest font-black text-[10px] px-4 py-2 flex items-center gap-2 w-max"
+            >
+              <ArrowLeft size={14} strokeWidth={3} /> BACK TO LIST
+            </button>
+            <h1 className="text-[40px] md:text-[56px] font-black uppercase tracking-[-0.03em] leading-none text-black">
+              {gameName || "SESSION"}
+            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
               {gameId !== null && (
-                <span className="bg-purple-100 text-purple-700 text-sm font-extrabold px-3 py-1 rounded-lg font-mono">
-                  Game ID: {gameId}
-                </span>
+                <div className="bg-[#FFE234] border-2 border-black text-black font-black px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+                  ID: {gameId}
+                </div>
+              )}
+              <div className="bg-black text-[#39FF14] border-2 border-black font-mono font-bold px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+                {phaseLabel} PHASE
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
+              <Users size={24} className="text-[#FF3366] mb-1" strokeWidth={2.5} />
+              <span className="text-[28px] font-black text-black leading-none">{connectedPlayers}</span>
+              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">PLAYERS</span>
+            </div>
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
+              <div className="text-[#39FF14] bg-black border-2 border-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs mb-1">Ξ</div>
+              <span className="text-[28px] font-black text-black leading-none">{prizePoolEth}</span>
+              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">POOL (ETH)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Question & Timer Area */}
+        {activeQuestion && !isFinished && (
+          <div className="bg-white border-4 border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] flex flex-col gap-6 relative mt-4">
+            <div className="absolute -top-4 -left-4 bg-[#FF3366] text-white border-2 border-black px-4 py-1 font-black text-[14px] uppercase tracking-widest shadow-[4px_4px_0px_#000]">
+              Q. {Number(currentQuestionId) + 1} / {Number(totalQuestions)}
+            </div>
+            
+            <div className="flex flex-col md:flex-row justify-between items-start gap-8 mt-4">
+              <div className="flex-1">
+                <h2 className="text-[28px] md:text-[36px] font-black leading-[1.1] text-black">
+                  {activeQuestion.question}
+                </h2>
+              </div>
+              
+              {commitPhaseOpen && (
+                <div className="flex flex-col items-center justify-center bg-black text-white p-4 border-4 border-black min-w-[140px] shrink-0 shadow-[8px_8px_0px_rgba(0,0,0,0.2)]">
+                  <span className="text-[48px] font-black leading-none" style={{ color: timeLeft <= 5 ? '#FF3366' : '#39FF14' }}>
+                    {timeLeft}s
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest mt-2 font-bold text-gray-400">Time Left</span>
+                </div>
               )}
             </div>
-            <p className="text-slate-600 font-medium text-base font-mono">
-              {address}
-            </p>
           </div>
-          {hostAction}
-        </header>
-        
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 text-slate-700 font-semibold flex items-center justify-between">
-           <span>Status: <span className="text-purple-600">{statusText}</span></span>
-           {totalQuestions && currentQuestionId !== undefined && (
-             <span>Progress: {Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))} / {Number(totalQuestions)}</span>
-           )}
+        )}
+
+        {/* Host Actions */}
+        <div className="mt-8 flex flex-col gap-4">
+          {statusBanner}
+          {hostActionBtn}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-slate-700">
-              <Users size={20} className="text-purple-600" />
-              <h3 className="font-bold text-lg">Connected Players</h3>
+        {/* Global Progress */}
+        {totalQuestions && (
+          <div className="mt-12 mb-20 flex flex-col gap-2">
+            <div className="flex justify-between font-black text-[12px] uppercase tracking-widest text-black">
+              <span>Game Progress</span>
+              <span>{Math.floor(progressPercent)}%</span>
             </div>
-            <p className="text-4xl font-black text-slate-800">{connectedPlayers}</p>
-            <p className="text-sm text-slate-500 font-medium">Updated live based on stakes</p>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-slate-700">
-              <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">
-                Ξ
-              </div>
-              <h3 className="font-bold text-lg">Prize Pool</h3>
+            <div className="w-full h-6 bg-white border-2 border-black shadow-[4px_4px_0px_#000] overflow-hidden">
+              <div 
+                className="h-full bg-black transition-all duration-500 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
-            <p className="text-4xl font-black text-emerald-600">{prizePoolEth} ETH</p>
-            <p className="text-sm text-slate-500 font-medium">Total stakes accumulated</p>
           </div>
-        </div>
+        )}
 
       </div>
     </div>
