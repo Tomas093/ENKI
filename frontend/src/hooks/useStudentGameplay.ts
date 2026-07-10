@@ -43,7 +43,16 @@ export function useStudentGameplay() {
     if (qData) {
       const parsed = JSON.parse(qData);
       setQuestionData(parsed);
-      setTimeLeft(parsed.timeLimit || 30);
+
+      const startTimeStr = localStorage.getItem("current_question_start_time");
+      let initialTime = parsed.timeLimit || 30;
+      if (startTimeStr) {
+        const startTime = Number(startTimeStr);
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        initialTime = Math.max(0, initialTime - elapsed);
+      }
+
+      setTimeLeft(initialTime);
       setTotalTime(parsed.timeLimit || 30);
 
       // Restore selected index from Key-Value store
@@ -152,6 +161,7 @@ export function useStudentGameplay() {
 
           if (data.latestQuestion.id > currentQuestionId) {
             localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
+            localStorage.setItem("current_question_start_time", Date.now().toString());
             setQuestionData(data.latestQuestion);
             setTimeLeft(data.latestQuestion.timeLimit);
             setTotalTime(data.latestQuestion.timeLimit);

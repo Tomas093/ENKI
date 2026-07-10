@@ -1,8 +1,9 @@
 "use client";
-import { Wallet, Award, Gift, Frown, Loader2 } from "lucide-react";
+import { Wallet, Award, Gift, Frown, Loader2, Hourglass } from "lucide-react";
 import { motion } from "motion/react";
 import { useLeaderboardClaims } from "../../hooks/useLeaderboardClaims";
 import { LeaderboardPodium } from "./components/LeaderboardPodium";
+import { GlobalLoadingOverlay } from "../../components/GlobalLoadingOverlay";
 import { Button } from "../../components/ui/Button";
 import { PageBlobs } from "../../components/ui/PageBlobs";
 
@@ -30,33 +31,22 @@ export default function FinalLeaderboard() {
 
   if (isConfirmingTx) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] gap-5">
-        <div className="relative">
-          <Loader2 className="animate-spin text-emerald-500 relative z-10" size={54} strokeWidth={2} />
-          <div className="absolute inset-0 bg-emerald-200 rounded-full blur-xl opacity-50 animate-pulse"></div>
-        </div>
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
-          Syncing your answers...
-        </h2>
-        <p className="text-slate-500 font-medium text-lg text-center max-w-sm">
-          Writing your final results to the blockchain. This usually takes just a few seconds.
-        </p>
-      </div>
+      <GlobalLoadingOverlay 
+        isVisible={true} 
+        message="Syncing your answers" 
+        subMessage="Writing final results to the blockchain" 
+      />
     );
   }
 
   // Loading state
   if (!prizesCalculated || loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] gap-5">
-        <Loader2 className="animate-spin text-purple-500" size={44} strokeWidth={2} />
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
-          Calculating Results...
-        </h2>
-        <p className="text-slate-500 font-medium text-lg">
-          Waiting for the host to finalize the session.
-        </p>
-      </div>
+      <GlobalLoadingOverlay 
+        isVisible={true} 
+        message="Calculating Results" 
+        subMessage="Waiting for the host to finalize the session" 
+      />
     );
   }
 

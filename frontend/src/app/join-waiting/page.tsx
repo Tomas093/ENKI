@@ -188,6 +188,7 @@ export default function JoinWaitingRoom() {
       if (data.latestQuestion) {
         localStorage.setItem("last_game_address", gameAddress as string);
         localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
+        localStorage.setItem("current_question_start_time", Date.now().toString());
         router.push(`/gameplay?game=${gameAddress}`);
         return;
       }
