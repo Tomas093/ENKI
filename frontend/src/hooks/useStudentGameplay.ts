@@ -1,23 +1,16 @@
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useWriteContract, useAccount, usePublicClient } from "wagmi";
-import { keccak256, encodePacked } from "viem";
 import toast from "react-hot-toast";
 import KahootGameABI from "../abi/KahootGame.json";
 import { useDisplayName } from "./useDisplayName";
 import { computeCommitHash } from "../domain/commitReveal";
 import { useRevealAnswers } from "./useRevealAnswers";
+import { useGameTimer } from "./gameplay/useGameTimer";
+import { useGameStorage } from "./gameplay/useGameStorage";
+import { useGameSync } from "./gameplay/useGameSync";
 
 export function useStudentGameplay() {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [questionData, setQuestionData] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [totalTime, setTotalTime] = useState(30);
-  
-  const [correctAnswerIdx, setCorrectAnswerIdx] = useState<number | null>(null);
-  const [isCorrect, setIsCorrect] = useState(false);
-
-  const router = useRouter();
   const searchParams = useSearchParams();
   const gameAddress = searchParams.get("game") as `0x${string}`;
   
@@ -25,73 +18,56 @@ export function useStudentGameplay() {
   const { address } = useAccount();
   const { displayName } = useDisplayName(address);
   const publicClient = usePublicClient();
-
   const { writeContractAsync, isPending } = useWriteContract();
 
-  useEffect(() => {
-    if (!gameAddress) return;
+  const [correctAnswerIdx, setCorrectAnswerIdx] = useState<number | null>(null);
+  const [isCorrect, setIsCorrect] = useState(false);
 
-    // We only clean up if we switch game sessions
-    const lastGame = localStorage.getItem("last_game_address");
-    if (lastGame && lastGame !== gameAddress) {
-      localStorage.removeItem(`game_commits_${lastGame}`);
-      localStorage.removeItem("current_question");
+  const {
+    questionData,
+    selected,
+    setSelected,
+    initStorage,
+    saveCommit,
+    removeCommit,
+    getCommit,
+    syncNewQuestion
+  } = useGameStorage(gameAddress);
+
+  const handleTimeout = () => {
+    if (gameAddress && questionData && selected === null) {
+      saveCommit(questionData.id, -1, "");
     }
-    localStorage.setItem("last_game_address", gameAddress);
+  };
 
-    const qData = localStorage.getItem("current_question");
-    if (qData) {
-      const parsed = JSON.parse(qData);
-      setQuestionData(parsed);
+  const { timeLeft, setTimeLeft, totalTime, setTotalTime } = useGameTimer(questionData, selected, handleTimeout);
 
-      const startTimeStr = localStorage.getItem("current_question_start_time");
-      let initialTime = parsed.timeLimit || 30;
-      if (startTimeStr) {
-        const startTime = Number(startTimeStr);
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        initialTime = Math.max(0, initialTime - elapsed);
-      }
-
+  useEffect(() => {
+    const { initialTime, totalTime: tTotal } = initStorage();
+    if (initialTime !== undefined && tTotal !== undefined) {
       setTimeLeft(initialTime);
-      setTotalTime(parsed.timeLimit || 30);
-
-      // Restore selected index from Key-Value store
-      const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      const commitInfo = commitsObj[parsed.id];
-      if (commitInfo && commitInfo.option !== undefined) {
-        setSelected(Number(commitInfo.option));
-      }
+      setTotalTime(tTotal);
     }
-  }, [gameAddress]);
+  }, [initStorage, setTimeLeft, setTotalTime]);
 
-  useEffect(() => {
-    if (selected !== null || timeLeft <= 0 || !questionData) return;
-    const t = setInterval(() => setTimeLeft((n) => Math.max(0, n - 1)), 1000);
-    return () => clearInterval(t);
-  }, [selected, timeLeft, questionData]);
-
-  useEffect(() => {
-    if (timeLeft <= 0 && selected === null && gameAddress && questionData) {
-      setSelected(-1);
-      const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      commitsObj[questionData.id] = { option: -1, salt: "" };
-      localStorage.setItem(storageKey, JSON.stringify(commitsObj));
-    }
-  }, [timeLeft, selected, gameAddress, questionData]);
+  useGameSync(
+    gameAddress,
+    publicClient,
+    correctAnswerIdx,
+    setCorrectAnswerIdx,
+    setIsCorrect,
+    executeBatchReveal,
+    syncNewQuestion,
+    getCommit,
+    setTimeLeft,
+    setTotalTime
+  );
 
   const handlePick = async (idx: number) => {
     if (selected !== null || !gameAddress || !address || !questionData) return;
-    setSelected(idx);
-
-    const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
     
-    // Store in Key-Value store immediately before contract call
-    const storageKey = `game_commits_${gameAddress}`;
-    const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    commitsObj[questionData.id] = { option: idx, salt: studentSalt };
-    localStorage.setItem(storageKey, JSON.stringify(commitsObj));
+    const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
+    saveCommit(questionData.id, idx, studentSalt);
 
     try {
       const commitHash = computeCommitHash(idx, studentSalt, address as `0x${string}`);
@@ -105,91 +81,9 @@ export function useStudentGameplay() {
     } catch (e) {
       console.error(e);
       toast.error("Transaction failed. Are you connected?");
-      // Revert local state and storage on failure
-      setSelected(null);
-      const storageKey = `game_commits_${gameAddress}`;
-      const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      delete commitsObj[questionData.id];
-      localStorage.setItem(storageKey, JSON.stringify(commitsObj));
+      removeCommit(questionData.id);
     }
   };
-
-  useEffect(() => {
-    if (!publicClient || !gameAddress) return;
-
-    let isRevealingRef = false;
-
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/game/${gameAddress}/sync`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        // 1. Check Reveal Phase for current question
-        if (correctAnswerIdx === null && data.isRevealPhaseActive) {
-          const qDataStr = localStorage.getItem("current_question");
-          const currentQId = qDataStr ? JSON.parse(qDataStr).id : null;
-          
-          if (currentQId !== null && data.latestQuestion?.id === currentQId) {
-            const qId = currentQId;
-            const storageKey = `game_commits_${gameAddress}`;
-            const commitsObj = JSON.parse(localStorage.getItem(storageKey) || "{}");
-            const commitInfo = commitsObj[qId];
-            const myIdx = commitInfo && commitInfo.option !== undefined ? commitInfo.option : null;
-
-            try {
-              const correctAns = await publicClient.readContract({
-                address: gameAddress as `0x${string}`,
-                abi: KahootGameABI.abi,
-                functionName: 'revealedAnswers',
-                args: [BigInt(qId)],
-              });
-              
-              setCorrectAnswerIdx(Number(correctAns));
-              setIsCorrect(myIdx !== null && myIdx !== -1 && Number(correctAns) === Number(myIdx));
-            } catch (e) {
-              console.error("Failed to read correct answer", e);
-              setIsCorrect(false);
-            }
-          }
-        }
-
-        // 2. Are we ready for the next question? (or we just joined and need to sync)
-        if (data.latestQuestion) {
-          const qDataStr = localStorage.getItem("current_question");
-          const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
-
-          if (data.latestQuestion.id > currentQuestionId) {
-            localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
-            localStorage.setItem("current_question_start_time", Date.now().toString());
-            setQuestionData(data.latestQuestion);
-            setTimeLeft(data.latestQuestion.timeLimit);
-            setTotalTime(data.latestQuestion.timeLimit);
-            setSelected(null);
-            setCorrectAnswerIdx(null);
-            setIsCorrect(false);
-            return;
-          }
-        }
-
-        // 3. Game finished?
-        if (!isRevealingRef && data.isFinished) {
-            isRevealingRef = true;
-            const success = await executeBatchReveal();
-            if (!success) {
-              isRevealingRef = false; // Allow retrying
-            }
-            return;
-        }
-      } catch (err) {
-        console.error("Polling error:", err);
-      }
-    };
-
-    const interval = setInterval(poll, 3500);
-    poll();
-    return () => clearInterval(interval);
-  }, [publicClient, gameAddress, correctAnswerIdx, executeBatchReveal]);
 
   return {
     selected,

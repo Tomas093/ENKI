@@ -8,6 +8,7 @@ import { Users, Zap, Check, Copy } from "lucide-react";
 import KahootGameABI from "../../abi/KahootGame.json";
 import { useNickname } from "../../context/NicknameContext";
 import { useAudio } from "../../contexts/AudioContext";
+import { STORAGE_KEYS } from "../../constants/storage";
 
 // ─── Neo-Brutalist copy button with microinteraction ─────────────────────────
 function CopyButton({ value }: { value: string }) {
@@ -192,9 +193,9 @@ export default function JoinWaitingRoom() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.latestQuestion) {
-        localStorage.setItem("last_game_address", gameAddress as string);
-        localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
-        localStorage.setItem("current_question_start_time", Date.now().toString());
+        localStorage.setItem(STORAGE_KEYS.LAST_GAME_ADDRESS, gameAddress as string);
+        localStorage.setItem(STORAGE_KEYS.CURRENT_QUESTION, JSON.stringify(data.latestQuestion));
+        localStorage.setItem(STORAGE_KEYS.CURRENT_QUESTION_START_TIME, Date.now().toString());
         router.push(`/gameplay?game=${gameAddress}`);
         return;
       }

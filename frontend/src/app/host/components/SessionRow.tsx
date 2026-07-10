@@ -2,18 +2,27 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Copy } from "lucide-react";
-import { useReadContract } from "wagmi";
+import { useReadContracts } from "wagmi";
 import KahootGameABI from "../../../abi/KahootGame.json";
 
 export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`; gameId?: number }) {
   const router = useRouter();
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Clean Architecture: Isolated Use Cases for reading game properties
-  const { data: nameData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'gameName' });
-  const { data: finishedData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'isFinished' });
-  const { data: prizePoolData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePool' });
-  const { data: entryFeeData } = useReadContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'entryFee' });
+  // Clean Architecture: Isolated Use Cases for reading game properties (Multicall)
+  const { data } = useReadContracts({
+    contracts: [
+      { address: gameAddress, abi: KahootGameABI.abi, functionName: 'gameName' },
+      { address: gameAddress, abi: KahootGameABI.abi, functionName: 'isFinished' },
+      { address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePool' },
+      { address: gameAddress, abi: KahootGameABI.abi, functionName: 'entryFee' }
+    ]
+  });
+
+  const nameData = data?.[0]?.result;
+  const finishedData = data?.[1]?.result;
+  const prizePoolData = data?.[2]?.result;
+  const entryFeeData = data?.[3]?.result;
 
   const isLoading = nameData === undefined;
   const name = (nameData as string) || "Unknown Session";

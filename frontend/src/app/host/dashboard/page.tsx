@@ -4,7 +4,7 @@ import { Plus, Layers } from "lucide-react";
 import { useHostDashboard } from "../../../hooks/useHostDashboard";
 import { SessionRow } from "../components/SessionRow";
 
-export default function TeacherDashboard() {
+export default function HostDashboard() {
   const router = useRouter();
   const { gameAddresses, games, hasGames } = useHostDashboard();
 
@@ -62,7 +62,7 @@ export default function TeacherDashboard() {
                 </p>
               </div>
             ) : (
-              games.slice().reverse().map((game) => (
+              games.map((game) => (
                 <SessionRow key={game.address} gameAddress={game.address} gameId={game.id} />
               ))
             )}

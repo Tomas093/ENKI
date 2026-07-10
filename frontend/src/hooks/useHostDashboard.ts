@@ -20,7 +20,8 @@ export function useHostDashboard() {
         const res = await fetch(`/api/professor/${address}/games`);
         if (res.ok) {
           const data = await res.json();
-          setGames(data.games || []);
+          const reversedGames = (data.games || []).slice().reverse();
+          setGames(reversedGames);
         }
       } catch (err) {
         console.error("Failed to fetch professor games", err);
