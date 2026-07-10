@@ -108,7 +108,7 @@ export function LeaderboardUI({
   // Loading state (Brutalist style)
   if (!prizesCalculated || loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center w-full relative bg-[#F4F4F0] overflow-hidden px-4 min-h-[calc(100vh-80px)]">
+      <div className="flex-1 flex flex-col items-center justify-center w-full relative bg-[#F4F4F0] overflow-hidden px-4 min-h-[100dvh]">
         {/* Dot grid background */}
         <div
           className="absolute inset-0 opacity-25 pointer-events-none"
@@ -123,7 +123,7 @@ export function LeaderboardUI({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="relative z-10 bg-white border-4 border-black shadow-[12px_12px_0px_#000] p-10 md:p-14 flex flex-col items-center gap-10 max-w-md w-full"
+          className="relative z-10 bg-white border-2 border-black shadow-[4px_4px_0px_#000] p-10 md:p-14 flex flex-col items-center gap-10 max-w-md w-full"
         >
           {/* Status tag */}
           <div className="absolute -top-5 left-6 bg-[#FFE234] border-2 border-black px-4 py-1 font-black text-[12px] uppercase tracking-wide shadow-[3px_3px_0px_#000]">
@@ -135,7 +135,7 @@ export function LeaderboardUI({
             <motion.div
               animate={{ rotate: [0, 180, 180, 360, 360] }}
               transition={{ duration: 2.5, repeat: Infinity, times: [0, 0.3, 0.5, 0.8, 1], ease: "easeInOut" }}
-              className="w-24 h-24 bg-[#FFE234] border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_#000]"
+              className="w-24 h-24 bg-[#FFE234] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_#000]"
             >
               <Hourglass size={48} strokeWidth={2.5} className="text-black" />
             </motion.div>
@@ -146,7 +146,7 @@ export function LeaderboardUI({
             <h1 className="font-black text-[28px] md:text-[34px] uppercase tracking-tight leading-[1.1] text-black">
               Calculating<br />Results
             </h1>
-            <p className="font-bold text-[13px] uppercase tracking-wide text-gray-500">
+            <p className="font-bold text-[13px] uppercase tracking-wide text-[#050505]">
               Waiting for the host to finalize the session
             </p>
           </div>
@@ -194,7 +194,7 @@ export function LeaderboardUI({
   }
 
   return (
-    <div className="w-full min-h-[calc(100vh-80px)] flex flex-col justify-center items-center px-4 md:px-8 lg:px-12 py-12 relative bg-[#F4F4F0] overflow-hidden">
+    <div className="w-full min-h-[100dvh] flex flex-col justify-center items-center px-4 md:px-8 lg:px-12 py-12 relative bg-[#F4F4F0] overflow-hidden">
       {/* Brutalist Dot Grid Background */}
       <div
         className="absolute inset-0 opacity-25 pointer-events-none"
@@ -225,17 +225,17 @@ export function LeaderboardUI({
 
         {/* Right: Claim Card (Neo-Brutalist) */}
         <div className="w-full lg:w-[420px] shrink-0 relative z-10 lg:mt-12">
-          <div className="bg-white border-4 border-black p-8 flex flex-col items-center text-center gap-6" style={{ boxShadow: "12px 12px 0px #000" }}>
+          <div className="bg-white border-2 border-black p-8 flex flex-col items-center text-center gap-6" style={{ boxShadow: "4px 4px 0px #000" }}>
 
             {/* Winner or Not */}
             {myRank !== -1 && myPrize > 0n ? (
               <>
-                <div className="w-20 h-20 bg-[#FFE234] border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_#000]">
+                <div className="w-20 h-20 bg-[#FFE234] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_#000]">
                   <Gift size={40} className="text-black" />
                 </div>
                 <div>
                   <h2 className="text-3xl font-black text-black uppercase tracking-tight mb-2">You Won!</h2>
-                  <div className="text-4xl font-black bg-[#A67CFF] border-4 border-black px-4 py-2 mt-2 shadow-[4px_4px_0px_#000] inline-block">
+                  <div className="text-4xl font-black bg-[#A67CFF] border-2 border-black px-4 py-2 mt-2 shadow-[4px_4px_0px_#000] inline-block">
                     {myPrizeFormatted} ETH
                   </div>
                 </div>
@@ -243,24 +243,36 @@ export function LeaderboardUI({
                   <button
                     disabled={isPending}
                     onClick={handleClaim}
-                    className="w-full bg-[#4AF626] border-4 border-black py-4 font-black text-black text-[15px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[6px_6px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_#000] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#4AF626] border-2 border-black py-4 font-black text-black text-[15px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? "CLAIMING..." : "CLAIM PRIZE"} <Wallet size={20} strokeWidth={3} />
                   </button>
                 ) : (
-                  <div className="w-full bg-white border-4 border-black py-4 font-black text-gray-400 text-[15px] uppercase tracking-wide flex items-center justify-center gap-2">
+                  <div className="w-full bg-white border-2 border-black py-4 font-black text-[#050505]/70 text-[15px] uppercase tracking-wide flex items-center justify-center gap-2">
                     PRIZE CLAIMED <Check size={20} strokeWidth={3} />
                   </div>
                 )}
               </>
+            ) : myData && myData.score >= PASS_THRESHOLD ? (
+              <>
+                <div className="w-20 h-20 bg-[#F4F4F0] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_#000]">
+                  <Award size={40} className="text-black" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-2">GOOD EFFORT!</h2>
+                  <p className="font-bold text-[13px] uppercase tracking-wide text-[#050505]">
+                    You didn't win the prize pool, but you passed.
+                  </p>
+                </div>
+              </>
             ) : (
               <>
-                <div className="w-20 h-20 bg-gray-200 border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] grayscale">
+                <div className="w-20 h-20 bg-[#F4F4F0] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_#000]">
                   <Frown size={40} className="text-black" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-2">YOU DIDN'T MAKE IT</h2>
-                  <p className="font-bold text-[13px] uppercase tracking-wide text-gray-500">
+                  <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-2">NOT THIS TIME</h2>
+                  <p className="font-bold text-[13px] uppercase tracking-wide text-[#050505]">
                     Not in the top 3. Try again next time.
                   </p>
                 </div>
@@ -268,7 +280,7 @@ export function LeaderboardUI({
             )}
 
             {/* Thick divider */}
-            <div className="w-full border-t-4 border-black my-2" />
+            <div className="w-full border-t-2 border-black my-2" />
 
             {/* Diploma Section */}
             {myData && myData.score >= PASS_THRESHOLD ? (
@@ -280,18 +292,18 @@ export function LeaderboardUI({
                   <button
                     disabled={isPending}
                     onClick={handleClaimDiploma}
-                    className="w-full bg-[#00E5FF] border-4 border-black py-3 font-black text-black text-[13px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#FFE234] border-2 border-black py-3 font-black text-black text-[13px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? "CLAIMING..." : "CLAIM DIPLOMA NFT"} <Award size={18} strokeWidth={3} />
                   </button>
                 ) : (
-                  <div className="w-full bg-white border-4 border-black py-3 font-black text-gray-400 uppercase tracking-wide flex items-center justify-center gap-2 text-[13px]">
+                  <div className="w-full bg-white border-2 border-black py-3 font-black text-[#050505]/70 uppercase tracking-wide flex items-center justify-center gap-2 text-[13px]">
                     DIPLOMA CLAIMED <Check size={18} strokeWidth={3} />
                   </div>
                 )}
               </div>
             ) : myData && myData.score < PASS_THRESHOLD ? (
-              <div className="bg-gray-100 border-2 border-black p-3 w-full font-bold text-sm uppercase tracking-wide text-gray-500">
+              <div className="bg-[#F4F4F0] border-2 border-black p-3 w-full font-bold text-sm uppercase tracking-wide text-[#050505]">
                 Score too low for a diploma
               </div>
             ) : null}
@@ -312,7 +324,7 @@ export function LeaderboardUI({
                      <Loader2 size={16} className="animate-spin" /> SYNCING...
                    </>
                  ) : (
-                   "SCORE 0? FORCE SYNC"
+                   "Refresh Status"
                  )}
                </button>
             )}

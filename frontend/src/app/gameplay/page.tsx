@@ -3,8 +3,12 @@ import { useStudentGameplay } from "../../hooks/useStudentGameplay";
 import { GameplayUI } from "../components/GameplayUI";
 import { useAudio } from "../../contexts/AudioContext";
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function ActiveGameplay() {
+  const searchParams = useSearchParams();
+  const gameAddress = searchParams.get("game") as string | undefined;
+
   const {
     selected,
     questionData,
@@ -54,6 +58,7 @@ export default function ActiveGameplay() {
       displayName={displayName}
       isPending={isPending}
       handlePick={handlePick}
+      gameAddress={gameAddress}
     />
   );
 }

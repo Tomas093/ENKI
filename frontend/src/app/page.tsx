@@ -4,7 +4,7 @@ import { HostGameModule } from "./components/HostGameModule";
 
 export default function Home() {
   return (
-    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-8 relative">
+    <div className="w-full min-h-[100dvh] flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-2 md:pt-3 lg:pt-4 pb-8 relative">
       <main className="max-w-6xl mx-auto w-full relative z-10">
 
         {/* Hero Header */}

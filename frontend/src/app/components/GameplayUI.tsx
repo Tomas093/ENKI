@@ -1,7 +1,8 @@
 "use client";
 import { motion, AnimatePresence } from "motion/react";
-import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, LifeBuoy } from "lucide-react";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { GlobalLoadingOverlay } from "./GlobalLoadingOverlay";
 
 const OPTION_COLORS = [
@@ -39,7 +40,9 @@ export function GameplayUI({
   displayName,
   isPending = false,
   handlePick,
-}: GameplayUIProps) {
+  gameAddress,
+}: GameplayUIProps & { gameAddress?: string }) {
+  const router = useRouter();
   const hasAnswered = selected !== null && selected !== undefined;
   const isRevealed = correctAnswerIdx !== null;
   const timerPct = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
@@ -272,6 +275,18 @@ export function GameplayUI({
           ) : null}
         </AnimatePresence>
 
+
+        {/* ── EMERGENCY REFUND LINK ── */}
+        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50">
+          <button
+            onClick={() => router.push(gameAddress ? `/emergency-refund?game=${gameAddress}` : "/emergency-refund")}
+            className="flex items-center gap-2 font-black text-[11px] uppercase tracking-widest text-black/40 hover:text-black hover:bg-[#FFE234] border-2 border-transparent hover:border-black hover:shadow-[3px_3px_0px_#000] px-3 py-1.5 transition-all"
+            title="Host Abandoned? Claim Refund"
+          >
+            <LifeBuoy size={14} strokeWidth={3} />
+            <span className="hidden md:inline">Emergency Refund</span>
+          </button>
+        </div>
 
       </div>
     </div>

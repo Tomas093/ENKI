@@ -183,16 +183,12 @@ export function JoinGameTerminal() {
         </h2>
       </div>
 
-      <AnimatePresence mode="wait">
-
+      {/* Form Content */}
+      <div className="flex-1">
         {/* ── Step 1: Form ──────────────────────────────────────────────── */}
         {step === "form" && (
-          <motion.form
+          <form
             key="form"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
             onSubmit={handleFormSubmit}
             className="flex flex-col gap-5"
           >
@@ -215,37 +211,24 @@ export function JoinGameTerminal() {
               error={!!error && nicknameInput.trim().length < 2}
             />
 
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="flex items-start gap-2 bg-red-50 border-2 border-red-500 px-3 py-2.5"
-                    style={{ boxShadow: "2px 2px 0px #E61919" }}>
-                    <AlertTriangle size={14} className="text-red-600 shrink-0 mt-0.5" />
-                    <span className="font-bold text-[13px] text-red-700 uppercase tracking-wide">{error}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border-2 border-red-500 px-3 py-2.5"
+                style={{ boxShadow: "2px 2px 0px #E61919" }}>
+                <AlertTriangle size={14} className="text-red-600 shrink-0 mt-0.5" />
+                <span className="font-bold text-[13px] text-red-700 uppercase tracking-wide">{error}</span>
+              </div>
+            )}
 
             <ArcadeButton type="submit" loading={isReading}>
               {isReading ? "Searching..." : <>Find Game <ArrowRight size={16} /></>}
             </ArcadeButton>
-          </motion.form>
+          </form>
         )}
 
         {/* ── Step 2: Confirm ───────────────────────────────────────────── */}
         {step === "confirm" && (
-          <motion.form
+          <form
             key="confirm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
             onSubmit={(e) => { e.preventDefault(); handleJoinWithNick(); }}
             className="flex flex-col gap-5"
           >
@@ -303,9 +286,7 @@ export function JoinGameTerminal() {
               </>
             ) : (
               /* Not found */
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+              <div
                 className="flex flex-col items-center gap-5 py-6 text-center border-2 border-red-500 p-6"
                 style={{ boxShadow: "4px 4px 0px #E61919" }}
               >
@@ -322,12 +303,11 @@ export function JoinGameTerminal() {
                 >
                   <ChevronLeft size={14} /> Try again
                 </button>
-              </motion.div>
+              </div>
             )}
-          </motion.form>
+          </form>
         )}
-
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

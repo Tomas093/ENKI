@@ -313,14 +313,26 @@ export default function JoinWaitingRoom() {
         </motion.div>
 
         {/* ── Bottom system note ─────────────────────────────────────────── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.18 }}
-          className="font-mono text-sm text-gray-400 uppercase tracking-[0.08em] text-center"
-        >
-          // Game starts when host launches Q1
-        </motion.p>
+        <div className="flex flex-col items-center gap-4">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.18 }}
+            className="font-mono text-sm text-gray-400 uppercase tracking-[0.08em] text-center"
+          >
+            // Game starts when host launches Q1
+          </motion.p>
+
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            onClick={() => router.push(gameAddress ? `/emergency-refund?game=${gameAddress}` : "/emergency-refund")}
+            className="font-black text-xs uppercase tracking-widest text-black/50 hover:text-black hover:bg-[#FFE234] border-2 border-transparent hover:border-black hover:shadow-[3px_3px_0px_#000] px-4 py-2 transition-all"
+          >
+            [ Host Abandoned? Claim Refund ]
+          </motion.button>
+        </div>
 
       </div>
     </div>

@@ -9,7 +9,7 @@ export default function TeacherDashboard() {
   const { gameAddresses, games, hasGames } = useHostDashboard();
 
   return (
-    <div className="w-full min-h-full flex flex-col px-4 md:px-8 lg:px-12 py-10 relative">
+    <div className="w-full min-h-[100dvh] flex flex-col px-4 md:px-8 lg:px-12 py-10 relative">
 
       <div className="max-w-4xl mx-auto w-full relative z-10 flex flex-col gap-8">
 
