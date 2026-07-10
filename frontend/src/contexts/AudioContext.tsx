@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { Howl, Howler } from "howler";
+import { usePathname } from "next/navigation";
 
 type MusicTrack = "elevator" | "tense" | "epic";
 type SfxTrack = "correct" | "incorrect" | "tick";
@@ -19,6 +20,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
+  const pathname = usePathname();
   
   const currentMusicRef = useRef<MusicTrack | null>(null);
   const musicHowls = useRef<Record<MusicTrack, Howl | null>>({
@@ -62,6 +64,41 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       Object.values(sfxHowls.current).forEach(h => h?.unload());
     };
   }, []);
+
+  // Handle route changes to stop music when going to menu/unrelated pages
+  useEffect(() => {
+    // List of routes where music is expected to play/continue playing
+    const musicRoutes = ["/join-waiting", "/gameplay", "/leaderboard", "/play"];
+    const isMusicRoute = musicRoutes.some(route => pathname.startsWith(route));
+    
+    if (!isMusicRoute && currentMusicRef.current) {
+      // Explicitly stop music if we navigate outside the game flow
+      if (musicHowls.current[currentMusicRef.current]) {
+        musicHowls.current[currentMusicRef.current]?.fade(0.5, 0, 500);
+        setTimeout(() => {
+          musicHowls.current[currentMusicRef.current]?.stop();
+          currentMusicRef.current = null;
+        }, 500);
+      }
+    }
+  }, [pathname]);
+
+  // Handle tab visibility (mute when changing tabs)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        Howler.mute(true);
+      } else {
+        // Restore only if it wasn't manually muted by the user
+        if (!isMuted) {
+          Howler.mute(false);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [isMuted]);
 
   // Handle interaction separately
   useEffect(() => {
