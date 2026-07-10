@@ -20,7 +20,7 @@ export interface LeaderboardUIProps {
   myData: { score: number; claimed: boolean; diplomaClaimed: boolean } | null | undefined;
   myRank: number;
   myPrize: bigint;
-  myPrizeFormatted: string;
+  myPrizeFormatted: string | null;
   PASS_THRESHOLD: number;
   isPending: boolean;
   isConfirmingTx: boolean;
