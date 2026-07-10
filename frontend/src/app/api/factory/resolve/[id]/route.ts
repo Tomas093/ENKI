@@ -1,7 +1,16 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
-import { FactoryRepository } from '../../../../../infrastructure/FactoryRepository';
+import { createPublicClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
+import KahootFactoryABI from '../../../../../abi/KahootFactory.json';
+
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
+
+const publicClient = createPublicClient({
+  chain: sepolia,
+  transport: http('https://sepolia.drpc.org'),
+});
 
 export async function GET(
   request: Request,
@@ -15,7 +24,12 @@ export async function GET(
   }
 
   try {
-    const address = await FactoryRepository.resolveGameAddress(shortId);
+    const address = await publicClient.readContract({
+      address: FACTORY_ADDRESS,
+      abi: KahootFactoryABI.abi as any,
+      functionName: 'getGameAddress',
+      args: [BigInt(shortId)],
+    });
     
     // Cache heavily because shortId -> address mapping is immutable.
     // Edge cache for 1 year, stale-while-revalidate for safety.
@@ -29,6 +43,7 @@ export async function GET(
       }
     );
   } catch (error) {
+    console.error(`Failed to resolve Game ID ${shortId}:`, error);
     return NextResponse.json({ error: 'Game not found' }, { status: 404 });
   }
 }
