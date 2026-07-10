@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useReadContracts } from "wagmi";
+import { useReadContracts, useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { motion, AnimatePresence } from "motion/react";
 import { Users, Zap, Check, Copy } from "lucide-react";
@@ -132,6 +132,7 @@ export default function JoinWaitingRoom() {
   const nickParam = searchParams.get("nick");
   const gameIdParam = searchParams.get("id");
   const { nickname, setNickname } = useNickname();
+  const { address } = useAccount();
 
   useEffect(() => {
     if (nickParam && !nickname) setNickname(decodeURIComponent(nickParam));
@@ -153,13 +154,30 @@ export default function JoinWaitingRoom() {
     ? Number(prizePoolVal / entryFeeVal) : 0;
   const prizePoolStr = prizePoolVal !== undefined ? formatEther(prizePoolVal) : "0.0";
 
-  const [playerList, setPlayerList] = useState<string[]>([]);
+  interface LobbyPlayer {
+    wallet: string;
+    nickname?: string;
+  }
+  const [playerList, setPlayerList] = useState<LobbyPlayer[]>([]);
+
   useEffect(() => {
-    setPlayerList(totalPlayers > 0
-      ? [displayName, ...Array.from({ length: totalPlayers - 1 }, (_, i) => `Player ${i + 2}`)]
-      : []
-    );
-  }, [totalPlayers, displayName]);
+    if (!gameAddress) return;
+    const fetchPlayers = async () => {
+      try {
+        const res = await fetch(`/api/game/${gameAddress}/leaderboard`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.players) {
+          setPlayerList(data.players);
+        }
+      } catch (err) {
+        console.error("Lobby players fetch:", err);
+      }
+    };
+    fetchPlayers();
+    const interval = setInterval(fetchPlayers, 4000);
+    return () => clearInterval(interval);
+  }, [gameAddress]);
 
   const poll = useCallback(async () => {
     if (!gameAddress) return;
@@ -274,9 +292,13 @@ export default function JoinWaitingRoom() {
                   Awaiting players...
                 </p>
               ) : (
-                playerList.map((name, i) => (
-                  <PlayerRow key={name + i} name={name} index={i} isYou={i === 0} />
-                ))
+                playerList.map((player, i) => {
+                  const isYou = !!(address && player.wallet.toLowerCase() === address.toLowerCase());
+                  const displayName = player.nickname || `${player.wallet.slice(0, 6)}...${player.wallet.slice(-4)}`;
+                  return (
+                    <PlayerRow key={player.wallet} name={displayName} index={i} isYou={isYou} />
+                  );
+                })
               )}
             </AnimatePresence>
           </div>
