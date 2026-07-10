@@ -9,6 +9,7 @@ import { useAudio } from "../../../contexts/AudioContext";
 
 // Assuming these types are from your hooks
 import { Player } from "../../../hooks/useFinalLeaderboard";
+import { ChampionEffects } from "../../../components/ChampionEffects";
 
 export interface LeaderboardUIProps {
   loading: boolean;
@@ -332,6 +333,7 @@ export function LeaderboardUI({
           </div>
         </div>
       </motion.div>
+      <ChampionEffects isWinner={myRank === 1} />
     </div>
   );
 }
