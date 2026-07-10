@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Users, Zap, Check, Copy } from "lucide-react";
 import KahootGameABI from "../../abi/KahootGame.json";
 import { useNickname } from "../../context/NicknameContext";
+import { useAudio } from "../../contexts/AudioContext";
 
 // ─── Neo-Brutalist copy button with microinteraction ─────────────────────────
 function CopyButton({ value }: { value: string }) {
@@ -133,6 +134,11 @@ export default function JoinWaitingRoom() {
   const gameIdParam = searchParams.get("id");
   const { nickname, setNickname } = useNickname();
   const { address } = useAccount();
+  const { playMusic } = useAudio();
+
+  useEffect(() => {
+    playMusic("elevator");
+  }, [playMusic]);
 
   useEffect(() => {
     if (nickParam && !nickname) setNickname(decodeURIComponent(nickParam));

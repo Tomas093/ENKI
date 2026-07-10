@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Wallet, LogOut, ArrowLeft, User } from "lucide-react";
+import { Wallet, LogOut, ArrowLeft, User, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAccount, useDisconnect, useConnect, useReadContract } from "wagmi";
 import { PROFILES_ADDRESS, enkiProfilesAbi } from "../../lib/contracts";
+import { useAudio } from "../../contexts/AudioContext";
 
 export const Navbar = () => {
   const [mounted, setMounted] = useState(false);
@@ -15,6 +16,7 @@ export const Navbar = () => {
   const { address } = useAccount();
   const { disconnect } = useDisconnect();
   const { connectors, connect } = useConnect();
+  const { isMuted, toggleMute } = useAudio();
   const isHome = pathname === "/";
   const isProfile = pathname === "/profile";
 
@@ -55,8 +57,18 @@ export const Navbar = () => {
           </Link>
         </div>
 
-        {/* Right: Wallet Status */}
+        {/* Right: Wallet Status & Audio */}
         <div className="flex items-center gap-3">
+          {/* Mute Toggle */}
+          <button
+            onClick={toggleMute}
+            className="w-11 h-11 bg-white border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_#000] hover:bg-gray-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+            title={isMuted ? "Unmute" : "Mute"}
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX size={18} strokeWidth={2.5} /> : <Volume2 size={18} strokeWidth={2.5} />}
+          </button>
+
           {mounted && address ? (
             <div className="flex items-center gap-2">
               {/* Nickname/Address chip → links to /profile */}

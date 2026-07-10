@@ -1,6 +1,8 @@
 "use client";
 import { useStudentGameplay } from "../../hooks/useStudentGameplay";
 import { GameplayUI } from "../components/GameplayUI";
+import { useAudio } from "../../contexts/AudioContext";
+import { useEffect, useRef } from "react";
 
 export default function ActiveGameplay() {
   const {
@@ -15,6 +17,30 @@ export default function ActiveGameplay() {
     isPending,
     handlePick,
   } = useStudentGameplay();
+  const { playMusic, playSFX } = useAudio();
+  const prevTimeLeft = useRef(timeLeft);
+  const prevIsRevealing = useRef(isRevealing);
+
+  useEffect(() => {
+    playMusic("tense");
+  }, [playMusic]);
+
+  // SFX for tick
+  useEffect(() => {
+    if (timeLeft > 0 && timeLeft < prevTimeLeft.current && timeLeft <= 5) {
+      playSFX("tick");
+    }
+    prevTimeLeft.current = timeLeft;
+  }, [timeLeft, playSFX]);
+
+  // SFX for correct/incorrect
+  useEffect(() => {
+    if (isRevealing && !prevIsRevealing.current) {
+      if (isCorrect) playSFX("correct");
+      else playSFX("incorrect");
+    }
+    prevIsRevealing.current = isRevealing;
+  }, [isRevealing, isCorrect, playSFX]);
 
   return (
     <GameplayUI

@@ -13,44 +13,33 @@ interface PodiumStepProps {
 
 const podiumConfig = {
   1: {
-    height: "70%",
-    bgClass: "bg-gradient-to-t from-amber-200 to-amber-300",
-    borderClass: "border-amber-400",
-    numberClass: "text-amber-400/40",
-    numberSize: "text-9xl",
-    prizeTextClass: "text-amber-900",
-    scoreClass: "text-amber-600",
+    height: "75%",
+    bgClass: "bg-[#FFE234]", // Yellow
+    numberClass: "text-black",
+    numberSize: "text-[140px]",
     order: "order-2",
   },
   2: {
-    height: "50%",
-    bgClass: "bg-slate-200",
-    borderClass: "border-slate-300",
-    numberClass: "text-slate-300/60",
-    numberSize: "text-7xl",
-    prizeTextClass: "text-slate-700",
-    scoreClass: "text-slate-500",
+    height: "55%",
+    bgClass: "bg-white", // White
+    numberClass: "text-black",
+    numberSize: "text-[100px]",
     order: "order-1",
   },
   3: {
-    height: "38%",
-    bgClass: "bg-orange-200",
-    borderClass: "border-orange-300",
-    numberClass: "text-orange-300/60",
-    numberSize: "text-7xl",
-    prizeTextClass: "text-orange-900",
-    scoreClass: "text-orange-600",
+    height: "40%",
+    bgClass: "bg-[#FF7A00]", // Orange
+    numberClass: "text-black",
+    numberSize: "text-[80px]",
     order: "order-3",
   },
 };
 
 function PodiumAvatars({
   players,
-  scoreClass,
   currentAddress,
 }: {
   players: Player[];
-  scoreClass: string;
   currentAddress?: string;
 }) {
   if (players.length === 0) return null;
@@ -58,22 +47,22 @@ function PodiumAvatars({
   const extra = players.length - 2;
 
   return (
-    <div className="flex flex-col items-center mb-5">
+    <div className="flex flex-col items-center mb-6">
       {players.length > 1 && (
-        <div className="bg-slate-800 text-white text-[9px] font-black px-2.5 py-1 rounded-full mb-2.5 tracking-widest uppercase">
+        <div className="bg-black text-[#4AF626] border-2 border-black text-[11px] font-black px-3 py-1 mb-3 tracking-widest uppercase shadow-[2px_2px_0px_#4AF626]">
           TIE
         </div>
       )}
-      <div className="flex -space-x-2 mb-2.5">
+      <div className="flex gap-2 mb-4">
         {displayPlayers.map((p, i) => {
           const isMe = currentAddress && p.wallet.toLowerCase() === currentAddress.toLowerCase();
           return (
             <div
               key={i}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white ${
+              className={`w-14 h-14 flex items-center justify-center font-black text-[15px] border-4 border-black ${
                 isMe
-                  ? "bg-amber-100 border border-amber-200 text-amber-700"
-                  : "bg-white border border-slate-200 text-slate-600"
+                  ? "bg-[#FFE234] text-black shadow-[4px_4px_0px_#000] z-10"
+                  : "bg-white text-black shadow-[4px_4px_0px_#000]"
               }`}
             >
               {isMe ? "YOU" : p.wallet.slice(2, 4).toUpperCase()}
@@ -81,14 +70,15 @@ function PodiumAvatars({
           );
         })}
         {extra > 0 && (
-          <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-500 text-sm shadow-sm ring-2 ring-white">
+          <div className="w-14 h-14 bg-gray-200 border-4 border-black flex items-center justify-center font-black text-black text-[15px] shadow-[4px_4px_0px_#000]">
             +{extra}
           </div>
         )}
       </div>
-      <span className={`font-black ${scoreClass} text-base`}>
-        {players[0].score} pts
-      </span>
+      {/* Score Badge */}
+      <div className="bg-white border-4 border-black px-3 py-1 font-black text-[14px] uppercase tracking-wider shadow-[4px_4px_0px_#000]">
+        {players[0].score} PTS
+      </div>
     </div>
   );
 }
@@ -115,11 +105,13 @@ export function LeaderboardPodium({
   return (
     <div className="flex flex-col w-full">
       {rank1Players.length > 0 && (
-        <div className="flex justify-center mb-3">
-          <Trophy size={44} className="text-amber-400 drop-shadow-md" fill="currentColor" />
+        <div className="flex justify-center mb-6 relative">
+          <div className="bg-[#FFE234] border-4 border-black p-3 shadow-[6px_6px_0px_#000]">
+            <Trophy size={48} className="text-black" strokeWidth={2.5} />
+          </div>
         </div>
       )}
-      <div className="flex items-end justify-center gap-3 md:gap-5 h-[420px] border-b-2 border-slate-200">
+      <div className="flex items-end justify-center gap-1 md:gap-4 h-[460px] border-b-8 border-black">
         {steps.map(({ rank, players, prize }) => {
           const config = podiumConfig[rank];
           return (
@@ -130,7 +122,6 @@ export function LeaderboardPodium({
               {players.length > 0 && (
                 <PodiumAvatars
                   players={players}
-                  scoreClass={config.scoreClass}
                   currentAddress={currentAddress}
                 />
               )}
@@ -138,15 +129,18 @@ export function LeaderboardPodium({
                 initial={{ height: 0 }}
                 animate={{ height: config.height }}
                 transition={{ duration: 0.7, ease: "easeOut", delay: rank === 1 ? 0.1 : rank === 2 ? 0.3 : 0.5 }}
-                className={`w-full ${config.bgClass} rounded-t-2xl border-t ${config.borderClass} relative overflow-hidden flex justify-center items-start pt-5 shadow-sm`}
+                className={`w-full ${config.bgClass} border-4 border-black border-b-0 relative flex justify-center items-start pt-6 shadow-[8px_0px_0px_#000] z-0`}
               >
+                {/* Huge brutalist number */}
                 <span
-                  className={`${config.numberSize} font-black ${config.numberClass} absolute bottom-[-12px] select-none`}
+                  className={`${config.numberSize} font-black ${config.numberClass} absolute bottom-[-16px] select-none leading-none opacity-20`}
                 >
                   {rank}
                 </span>
+                
+                {/* Prize Badge */}
                 {prize > 0n && (
-                  <div className={`bg-white/70 backdrop-blur-sm px-3 py-1 rounded-full ${config.prizeTextClass} font-bold text-xs shadow-sm relative z-10`}>
+                  <div className={`bg-black text-[#4AF626] border-2 border-black px-4 py-2 font-black text-[13px] tracking-widest uppercase shadow-[4px_4px_0px_#4AF626] relative z-10 -mt-10`}>
                     {formatEther(prize)} ETH
                   </div>
                 )}
