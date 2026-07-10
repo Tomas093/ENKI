@@ -77,7 +77,7 @@ export const Navbar = () => {
                 className={`h-11 bg-white border-2 border-black flex items-center px-4 gap-2.5 shadow-[2px_2px_0px_#000] hover:bg-neo-accent transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${isProfile ? "bg-neo-accent" : ""}`}
               >
                 <div className="w-2.5 h-2.5 bg-[#4AF626] border border-black shrink-0" />
-                <span className="font-black uppercase text-[12px] tracking-widest text-black">
+                <span className="font-black uppercase text-[12px] tracking-wide text-black">
                   {globalNickname && globalNickname.length > 0
                     ? globalNickname
                     : `${address.slice(0, 6)}...${address.slice(-4)}`}
@@ -97,7 +97,7 @@ export const Navbar = () => {
           ) : mounted ? (
             <button
               onClick={handleConnectWallet}
-              className="h-11 px-5 bg-white border-2 border-black shadow-[4px_4px_0px_#000] hover:bg-neo-accent active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center gap-2 text-black text-[11px] font-black uppercase tracking-widest"
+              className="h-11 px-5 bg-white border-2 border-black shadow-[4px_4px_0px_#000] hover:bg-neo-accent active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center gap-2 text-black text-sm font-black uppercase tracking-wide"
             >
               <Wallet size={16} strokeWidth={2.5} />
               Connect Wallet

@@ -39,7 +39,7 @@ export default function GlobalRankingPage() {
               <div className="bg-[#FFE234] border-4 border-black p-2 shadow-[4px_4px_0px_#000]">
                 <Globe size={32} strokeWidth={2.5} className="text-black" />
               </div>
-              <div className="bg-black text-[#4AF626] border-2 border-black px-3 py-1 font-black text-xs uppercase tracking-widest shadow-[2px_2px_0px_#4AF626]">
+              <div className="bg-black text-[#4AF626] border-2 border-black px-3 py-1 font-black text-xs uppercase tracking-wide shadow-[2px_2px_0px_#4AF626]">
                 Hall of Fame
               </div>
             </div>
@@ -63,7 +63,7 @@ export default function GlobalRankingPage() {
           className="bg-white border-4 border-black shadow-[12px_12px_0px_#000] flex flex-col"
         >
           {/* Table Header */}
-          <div className="grid grid-cols-12 px-4 py-4 md:px-8 bg-black text-white font-black text-sm uppercase tracking-widest border-b-4 border-black">
+          <div className="grid grid-cols-12 px-4 py-4 md:px-8 bg-black text-white font-black text-sm uppercase tracking-wide border-b-4 border-black">
             <div className="col-span-3 md:col-span-2 text-center">Rank</div>
             <div className="col-span-6 md:col-span-7">Player Info</div>
             <div className="col-span-3 text-center">Score</div>
@@ -76,7 +76,7 @@ export default function GlobalRankingPage() {
                 <div className="w-16 h-16 border-4 border-black bg-[#00E5FF] shadow-[4px_4px_0px_#000] flex items-center justify-center">
                   <Loader2 className="animate-spin text-black" size={32} strokeWidth={3} />
                 </div>
-                <p className="font-black text-sm uppercase tracking-widest text-black">Syncing On-Chain Data...</p>
+                <p className="font-black text-sm uppercase tracking-wide text-black">Syncing On-Chain Data...</p>
               </div>
             ) : isError ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white z-20">
@@ -90,7 +90,7 @@ export default function GlobalRankingPage() {
               ))
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white z-20">
-                <div className="bg-gray-200 border-4 border-black p-6 font-black text-xl text-gray-500 uppercase tracking-widest text-center shadow-[6px_6px_0px_#000]">
+                <div className="bg-gray-200 border-4 border-black p-6 font-black text-xl text-gray-500 uppercase tracking-wide text-center shadow-[6px_6px_0px_#000]">
                   NO PLAYERS FOUND.<br/>BE THE FIRST.
                 </div>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "motion/react";
 import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { GlobalLoadingOverlay } from "./GlobalLoadingOverlay";
 
 const OPTION_COLORS = [
@@ -46,6 +47,28 @@ export function GameplayUI({
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user has already answered, or is typing in some potential input elsewhere (though unlikely here)
+      if (hasAnswered || isRevealed) return;
+      
+      const key = e.key.toLowerCase();
+      let pickedIdx = -1;
+      
+      if (key === "a" || key === "1") pickedIdx = 0;
+      if (key === "b" || key === "2") pickedIdx = 1;
+      if (key === "c" || key === "3") pickedIdx = 2;
+      if (key === "d" || key === "4") pickedIdx = 3;
+
+      if (pickedIdx >= 0 && questionData?.options && pickedIdx < questionData.options.length) {
+        handlePick(pickedIdx);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasAnswered, isRevealed, questionData, handlePick]);
+
   return (
     <div className="flex-1 flex flex-col w-full bg-[#F4F4F0] min-h-0 relative">
       {/* Dot grid */}
@@ -67,6 +90,8 @@ export function GameplayUI({
         <div className="flex items-center gap-4">
           {/* Timer block */}
           <div
+            aria-live={timerUrgent ? "assertive" : "polite"}
+            aria-atomic="true"
             className={`flex items-center gap-2 border-2 border-black px-4 py-2 font-black text-[22px] tabular-nums shadow-[3px_3px_0px_#000] transition-colors ${
               hasAnswered
                 ? "bg-gray-200 text-gray-400"
@@ -76,7 +101,10 @@ export function GameplayUI({
             }`}
           >
             <Clock size={18} strokeWidth={3} />
-            {hasAnswered ? "—:——" : `${mm}:${ss}`}
+            <span className="sr-only">
+              {hasAnswered ? "Answer submitted" : timerUrgent ? `${timeLeft} seconds left, hurry!` : `${timeLeft} seconds remaining`}
+            </span>
+            <span aria-hidden="true">{hasAnswered ? "—:——" : `${mm}:${ss}`}</span>
           </div>
 
           {/* Progress bar */}
@@ -92,7 +120,7 @@ export function GameplayUI({
           </div>
 
           {/* Q counter */}
-          <div className="bg-black text-white border-2 border-black px-4 py-2 font-black text-[14px] uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,0.3)]">
+          <div className="bg-black text-white border-2 border-black px-4 py-2 font-black text-[14px] uppercase tracking-wide shadow-[3px_3px_0px_rgba(0,0,0,0.3)]">
             Q {questionData ? questionData.id + 1 : "?"}
           </div>
         </div>
@@ -105,7 +133,7 @@ export function GameplayUI({
           transition={{ duration: 0.25 }}
           className="bg-white border-4 border-black shadow-[8px_8px_0px_#000] px-8 py-10 md:py-14 relative mx-auto w-full max-w-5xl"
         >
-          <div className="absolute -top-4 -left-4 bg-[#FFE234] border-2 border-black px-3 py-1 font-black text-[11px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+          <div className="absolute -top-4 -left-4 bg-[#FFE234] border-2 border-black px-3 py-1 font-black text-sm uppercase tracking-wide shadow-[2px_2px_0px_#000]">
             Question
           </div>
           <p className="font-black text-black text-center leading-snug text-2xl md:text-3xl">
@@ -138,7 +166,7 @@ export function GameplayUI({
                   transition={{ delay: 0.05 + idx * 0.06, type: "spring", stiffness: 400, damping: 28 }}
                   whileHover={!isDisabled ? { scale: 1.02, y: -2 } : {}}
                   whileTap={!isDisabled ? { scale: 0.97 } : {}}
-                  className="relative flex items-center gap-6 border-4 border-black px-6 md:px-10 py-6 md:py-10 text-left transition-all h-full min-h-[140px]"
+                  className="relative flex items-center gap-6 border-4 border-black px-6 md:px-10 py-6 md:py-10 text-left transition-all h-full min-h-[140px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3366]"
                   style={{
                     backgroundColor: isCorrectOption
                       ? "#39FF14" // Correct stays bright green

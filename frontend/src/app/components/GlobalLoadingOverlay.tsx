@@ -24,7 +24,7 @@ export function GlobalLoadingOverlay({ isVisible, message, subMessage }: GlobalL
             className="bg-white border-4 border-black p-8 md:p-10 max-w-md w-full text-center shadow-[12px_12px_0px_#000] flex flex-col items-center gap-6 relative"
           >
             {/* Brutalist Warning Tag */}
-            <div className="absolute -top-4 -left-4 bg-[#FFE234] border-2 border-black px-3 py-1 font-black text-[12px] uppercase tracking-widest shadow-[4px_4px_0px_#000]">
+            <div className="absolute -top-4 -left-4 bg-[#FFE234] border-2 border-black px-3 py-1 font-black text-[12px] uppercase tracking-wide shadow-[4px_4px_0px_#000]">
               Working
             </div>
 
@@ -55,7 +55,7 @@ export function GlobalLoadingOverlay({ isVisible, message, subMessage }: GlobalL
                 {message}
               </h2>
               {subMessage && (
-                <p className="text-black/70 font-black text-[13px] md:text-[15px] mt-4 uppercase tracking-widest leading-relaxed">
+                <p className="text-black/70 font-black text-[13px] md:text-[15px] mt-4 uppercase tracking-wide leading-relaxed">
                   {subMessage}
                 </p>
               )}
@@ -67,7 +67,7 @@ export function GlobalLoadingOverlay({ isVisible, message, subMessage }: GlobalL
                 initial={{ x: "-100%" }}
                 animate={{ x: "200%" }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 bg-[#39FF14] border-r-4 border-black w-1/2"
+                className="absolute inset-0 bg-[#39FF14] w-1/2"
               />
               <div className="absolute inset-0 flex items-center justify-center z-10 mix-blend-difference pointer-events-none">
                 <span className="text-white font-black text-xs uppercase tracking-[0.2em]">Please Wait</span>

@@ -76,7 +76,7 @@ export default function WaitingRoom() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             className="bg-white p-10 md:p-14 rounded-2xl border border-slate-200 shadow-sm max-w-2xl w-full text-center flex flex-col items-center relative z-10"
-            style={{ marginTop: showBanner ? 68 : 0, transition: "margin-top 0.3s" }}
+            style={{ transform: `translateY(${showBanner ? 68 : 0}px)`, transition: "transform 0.3s" }}
           >
             <motion.div
               animate={{ rotate: [0, 180, 180, 360] }}

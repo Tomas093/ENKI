@@ -47,12 +47,12 @@ export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`
           <div className="font-black text-xl uppercase tracking-[-0.03em] text-black flex flex-wrap items-center gap-3">
             {name}
             {gameId !== undefined && (
-              <span className="bg-neo-accent border-2 border-black px-2 py-1 font-black text-[10px] shadow-[2px_2px_0px_#000] uppercase tracking-widest no-underline">
+              <span className="bg-neo-accent border-2 border-black px-2 py-1 font-black text-xs shadow-[2px_2px_0px_#000] uppercase tracking-wide no-underline">
                 ID: {gameId}
               </span>
             )}
           </div>
-          <div className="font-mono text-[11px] uppercase tracking-widest flex items-center gap-3 mt-2">
+          <div className="font-mono text-sm uppercase tracking-wide flex items-center gap-3 mt-2">
             <span className="flex items-center gap-1.5 text-black">
               <Users size={14} strokeWidth={2.5} />
               {players} players
@@ -72,7 +72,7 @@ export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`
       <div className="flex items-center gap-3 mt-4 md:mt-0 w-full md:w-auto" onClick={e => e.stopPropagation()}>
         <button 
           onClick={handleCopy} 
-          className={`flex-1 md:flex-none flex items-center justify-center gap-2 border-2 border-black font-black text-[11px] uppercase tracking-[0.1em] px-4 py-3 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all ${
+          className={`flex-1 md:flex-none flex items-center justify-center gap-2 border-2 border-black font-black text-sm uppercase tracking-wider px-4 py-3 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all ${
             copied ? "bg-[#4AF626] text-black" : "bg-white hover:bg-neo-accent text-black"
           }`}
         >

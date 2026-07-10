@@ -94,7 +94,7 @@ export default function ProfilePage() {
             style={{ boxShadow: "2px 2px 0px #000" }}
           >
             <User size={12} strokeWidth={3} />
-            <span className="font-black text-[11px] uppercase tracking-[0.1em]">[ My Profile ]</span>
+            <span className="font-black text-sm uppercase tracking-wider">[ My Profile ]</span>
           </div>
           <h1 className="font-black text-[40px] uppercase tracking-tight leading-[0.9] text-black">
             Your<br />Identity.
@@ -118,7 +118,7 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={() => connectors.length > 0 && connect({ connector: connectors[0] })}
-              className="h-12 px-8 bg-black text-white border-2 border-black font-black uppercase text-[12px] tracking-widest shadow-[4px_4px_0px_rgba(0,0,0,0.3)] hover:bg-gray-800 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center gap-2"
+              className="h-12 px-8 bg-black text-white border-2 border-black font-black uppercase text-[12px] tracking-wide shadow-[4px_4px_0px_rgba(0,0,0,0.3)] hover:bg-gray-800 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center gap-2"
             >
               <Wallet size={16} />
               Connect Wallet
@@ -130,7 +130,7 @@ export default function ProfilePage() {
             {/* Wallet Card */}
             <div className="bg-white border-2 border-black p-5 shadow-[4px_4px_0px_#000] flex items-center justify-between gap-3">
               <div>
-                <span className="font-black text-[10px] uppercase tracking-widest text-gray-400">Wallet Address</span>
+                <span className="font-black text-xs uppercase tracking-wide text-gray-400">Wallet Address</span>
                 <p className="font-mono font-bold text-[15px] text-black mt-0.5 break-all">{address}</p>
               </div>
               <button
@@ -146,11 +146,11 @@ export default function ProfilePage() {
             <div className="bg-white border-2 border-black shadow-[4px_4px_0px_#000] overflow-hidden">
               {/* Card Header */}
               <div className="bg-black text-white px-5 py-3 flex items-center justify-between">
-                <span className="font-black text-[11px] uppercase tracking-widest">Global Nickname</span>
+                <span className="font-black text-sm uppercase tracking-wide">Global Nickname</span>
                 {nickname && !isEditing && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 text-neo-accent hover:text-white transition-colors font-bold text-[11px] uppercase tracking-widest"
+                    className="flex items-center gap-1.5 text-neo-accent hover:text-white transition-colors font-bold text-sm uppercase tracking-wide"
                   >
                     <Pencil size={12} strokeWidth={3} />
                     Edit
@@ -179,7 +179,7 @@ export default function ProfilePage() {
                         <p className="font-black text-[28px] text-black leading-none">{nickname}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <CheckCircle2 size={12} className="text-neo-accent" strokeWidth={3} />
-                          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Registered on-chain</span>
+                          <span className="text-sm font-bold text-gray-400 uppercase tracking-wide">Registered on-chain</span>
                         </div>
                       </div>
                     </motion.div>
@@ -198,7 +198,7 @@ export default function ProfilePage() {
                         </p>
                       )}
                       <div className="flex flex-col gap-1.5">
-                        <label className="font-black text-[11px] uppercase tracking-widest text-gray-500">
+                        <label className="font-black text-sm uppercase tracking-wide text-gray-500">
                           // Your Nickname
                         </label>
                         <input
@@ -212,9 +212,9 @@ export default function ProfilePage() {
                           className="h-14 px-4 border-2 border-black bg-[#F4F4F0] font-bold text-[16px] text-black placeholder:text-gray-400 outline-none focus:border-neo-accent focus:bg-white transition-colors shadow-[2px_2px_0px_#000]"
                         />
                         {inputError && (
-                          <span className="text-[11px] font-bold text-red-500 uppercase tracking-wide">{inputError}</span>
+                          <span className="text-sm font-bold text-red-500 uppercase tracking-wide">{inputError}</span>
                         )}
-                        <span className="text-[10px] font-bold text-gray-400 text-right">
+                        <span className="text-xs font-bold text-gray-400 text-right">
                           {new TextEncoder().encode(input.trim()).length} / 30 bytes
                         </span>
                       </div>
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                         <button
                           onClick={handleSave}
                           disabled={isBusy || !!inputError || input.trim() === ""}
-                          className="flex-1 h-12 border-2 border-black font-black uppercase text-[13px] tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed bg-neo-accent text-black shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none"
+                          className="flex-1 h-12 border-2 border-black font-black uppercase text-[13px] tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed bg-neo-accent text-black shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none"
                         >
                           {isBusy ? (
                             <>
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                           <button
                             onClick={() => { setInput(nickname); setIsEditing(false); }}
                             disabled={isBusy}
-                            className="h-12 px-5 border-2 border-black font-black uppercase text-[12px] tracking-widest text-black bg-white hover:bg-[#F4F4F0] transition-colors shadow-[2px_2px_0px_#000]"
+                            className="h-12 px-5 border-2 border-black font-black uppercase text-[12px] tracking-wide text-black bg-white hover:bg-[#F4F4F0] transition-colors shadow-[2px_2px_0px_#000]"
                           >
                             Cancel
                           </button>
@@ -248,7 +248,7 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Gas cost note */}
-                      <p className="text-[10px] font-medium text-gray-400 leading-relaxed border-t-2 border-dashed border-gray-200 pt-3">
+                      <p className="text-xs font-medium text-gray-400 leading-relaxed border-t-2 border-dashed border-gray-200 pt-3">
                         ⛽ This writes to the Sepolia blockchain — you'll need to sign one transaction. On testnet, gas is free. You only need to do this once (or whenever you want to change your name).
                       </p>
                     </motion.div>

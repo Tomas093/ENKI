@@ -150,7 +150,7 @@ export default function DiplomaStudio() {
     <div className="flex flex-col items-center py-10 px-4 md:px-8 relative z-10 w-full max-w-7xl mx-auto">
       <div className="w-full">
         
-        <button onClick={() => router.back()} className="bg-white border-2 border-black text-black shadow-[4px_4px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest font-black text-[11px] px-6 py-3 mb-8 cursor-pointer flex items-center gap-2 w-max">
+        <button onClick={() => router.back()} className="bg-white border-2 border-black text-black shadow-[4px_4px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase tracking-wide font-black text-sm px-6 py-3 mb-8 cursor-pointer flex items-center gap-2 w-max">
           <ArrowLeft size={16} strokeWidth={3} /> Back
         </button>
 
@@ -166,7 +166,7 @@ export default function DiplomaStudio() {
               // Design the fully decentralized, on-chain NFT certificate
             </p>
           </div>
-          <button onClick={handleSave} className="bg-white text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-neo-accent active:translate-x-1.5 active:translate-y-1.5 active:shadow-none font-black uppercase text-[13px] tracking-[0.1em] px-8 py-4 flex items-center gap-2 transition-all cursor-pointer">
+          <button onClick={handleSave} className="bg-white text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-neo-accent active:translate-x-1.5 active:translate-y-1.5 active:shadow-none font-black uppercase text-[13px] tracking-wider px-8 py-4 flex items-center gap-2 transition-all cursor-pointer">
             <Save size={20} strokeWidth={3} /> Save & Use
           </button>
         </div>
@@ -180,13 +180,13 @@ export default function DiplomaStudio() {
             <div className="flex gap-2">
               <button 
                 onClick={() => setDesignMode("template")} 
-                className={`flex-1 py-3 border-2 border-black font-black uppercase tracking-widest text-[11px] transition-all shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${designMode === "template" ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
+                className={`flex-1 py-3 border-2 border-black font-black uppercase tracking-wide text-sm transition-all shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${designMode === "template" ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
               >
                 Template
               </button>
               <button 
                 onClick={() => setDesignMode("full-image")} 
-                className={`flex-1 py-3 border-2 border-black font-black uppercase tracking-widest text-[11px] transition-all shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${designMode === "full-image" ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
+                className={`flex-1 py-3 border-2 border-black font-black uppercase tracking-wide text-sm transition-all shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${designMode === "full-image" ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
               >
                 URL Link
               </button>
@@ -196,20 +196,20 @@ export default function DiplomaStudio() {
               <>
                 {/* Template Content */}
                 <div>
-                  <h3 className="font-black text-black uppercase tracking-widest text-[13px] flex items-center gap-2 mb-4 border-b-2 border-black pb-2">
+                  <h3 className="font-black text-black uppercase tracking-wide text-[13px] flex items-center gap-2 mb-4 border-b-2 border-black pb-2">
                     <Type size={18} strokeWidth={3} /> Text Content
                   </h3>
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Course Title</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Course Title</label>
                       <input type="text" value={courseTitle} onChange={e => setCourseTitle(e.target.value)} className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none uppercase" />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Subtitle / Description</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Subtitle / Description</label>
                       <input type="text" value={subtitle} onChange={e => setSubtitle(e.target.value)} className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none uppercase" />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Issuer Name</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Issuer Name</label>
                       <input type="text" value={issuerName} onChange={e => setIssuerName(e.target.value)} className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none uppercase" />
                     </div>
                   </div>
@@ -217,12 +217,12 @@ export default function DiplomaStudio() {
 
                 {/* Template Visuals */}
                 <div>
-                  <h3 className="font-black text-black uppercase tracking-widest text-[13px] flex items-center gap-2 mb-4 border-b-2 border-black pb-2 mt-4">
+                  <h3 className="font-black text-black uppercase tracking-wide text-[13px] flex items-center gap-2 mb-4 border-b-2 border-black pb-2 mt-4">
                     <Palette size={18} strokeWidth={3} /> Visuals
                   </h3>
                   
                   <div className="mb-6 flex flex-col gap-1.5">
-                    <label className="font-black text-black text-[11px] uppercase tracking-widest">Background Image URL (Optional)</label>
+                    <label className="font-black text-black text-sm uppercase tracking-wide">Background Image URL (Optional)</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <LinkIcon size={16} className="text-black" strokeWidth={3} />
@@ -240,36 +240,36 @@ export default function DiplomaStudio() {
                         </button>
                       )}
                     </div>
-                    <p className="font-mono text-[10px] uppercase text-gray-500 mt-1">Paste a direct link to an image (Imgur, IPFS).</p>
+                    <p className="font-mono text-xs uppercase text-gray-500 mt-1">Paste a direct link to an image (Imgur, IPFS).</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Background</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Background</label>
                       <div className="flex items-center gap-3 border-2 border-black bg-white p-2 shadow-[2px_2px_0px_#000]">
                         <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-8 h-8 cursor-pointer border-2 border-black p-0 appearance-none bg-transparent" />
-                        <span className="font-mono text-[11px] font-black text-black uppercase">{primaryColor}</span>
+                        <span className="font-mono text-sm font-black text-black uppercase">{primaryColor}</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Accent & Borders</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Accent & Borders</label>
                       <div className="flex items-center gap-3 border-2 border-black bg-white p-2 shadow-[2px_2px_0px_#000]">
                         <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)} className="w-8 h-8 cursor-pointer border-2 border-black p-0 appearance-none bg-transparent" />
-                        <span className="font-mono text-[11px] font-black text-black uppercase">{accentColor}</span>
+                        <span className="font-mono text-sm font-black text-black uppercase">{accentColor}</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Text</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Text</label>
                       <div className="flex items-center gap-3 border-2 border-black bg-white p-2 shadow-[2px_2px_0px_#000]">
                         <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-8 h-8 cursor-pointer border-2 border-black p-0 appearance-none bg-transparent" />
-                        <span className="font-mono text-[11px] font-black text-black uppercase">{textColor}</span>
+                        <span className="font-mono text-sm font-black text-black uppercase">{textColor}</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-black text-black text-[11px] uppercase tracking-widest">Decals</label>
+                      <label className="font-black text-black text-sm uppercase tracking-wide">Decals</label>
                       <div className="flex items-center gap-3 border-2 border-black bg-white p-2 shadow-[2px_2px_0px_#000]">
                         <input type="color" value={decorationColor} onChange={e => setDecorationColor(e.target.value)} className="w-8 h-8 cursor-pointer border-2 border-black p-0 appearance-none bg-transparent" />
-                        <span className="font-mono text-[11px] font-black text-black uppercase">{decorationColor}</span>
+                        <span className="font-mono text-sm font-black text-black uppercase">{decorationColor}</span>
                       </div>
                     </div>
                   </div>
@@ -280,12 +280,12 @@ export default function DiplomaStudio() {
               <div className="flex flex-col gap-6">
                 <div className="bg-neo-accent border-2 border-black p-6 flex flex-col items-center text-center gap-3 shadow-[4px_4px_0px_#000]">
                   <ImageIcon className="text-black" size={32} strokeWidth={2.5} />
-                  <h4 className="font-black text-black uppercase tracking-widest text-[14px]">Provide Image Link</h4>
-                  <p className="font-mono text-[11px] text-black uppercase">Host your diploma design on a site like Imgur or IPFS and paste the direct link below.</p>
+                  <h4 className="font-black text-black uppercase tracking-wide text-[14px]">Provide Image Link</h4>
+                  <p className="font-mono text-sm text-black uppercase">Host your diploma design on a site like Imgur or IPFS and paste the direct link below.</p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-black text-black text-[11px] uppercase tracking-widest">Direct Image URL</label>
+                  <label className="font-black text-black text-sm uppercase tracking-wide">Direct Image URL</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <LinkIcon size={20} className="text-black" strokeWidth={2.5} />
@@ -306,7 +306,7 @@ export default function DiplomaStudio() {
                 </div>
                 
                 {fullImageUrl && (
-                  <div className="bg-[#39FF14] border-2 border-black text-black font-black uppercase text-[12px] tracking-widest px-4 py-4 flex items-center justify-center gap-3 shadow-[4px_4px_0px_#000] mt-2">
+                  <div className="bg-[#39FF14] border-2 border-black text-black font-black uppercase text-[12px] tracking-wide px-4 py-4 flex items-center justify-center gap-3 shadow-[4px_4px_0px_#000] mt-2">
                     <Check size={20} strokeWidth={3} /> Linked image ready
                   </div>
                 )}
@@ -319,7 +319,7 @@ export default function DiplomaStudio() {
                style={{ backgroundImage: "repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #E5E5E5 25%, #E5E5E5 75%, #000 75%, #000)", backgroundPosition: "0 0, 10px 10px", backgroundSize: "20px 20px", opacity: 0.9 }}>
             <div className="absolute inset-0 bg-[#E5E5E5]/90"></div>
             
-            <div className="absolute top-6 left-6 bg-black text-[#FFE234] font-black text-[10px] px-3 py-1.5 uppercase tracking-widest border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] z-50">
+            <div className="absolute top-6 left-6 bg-black text-[#FFE234] font-black text-xs px-3 py-1.5 uppercase tracking-wide border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] z-50">
               Live Preview
             </div>
 

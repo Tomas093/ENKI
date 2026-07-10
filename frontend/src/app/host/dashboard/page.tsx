@@ -25,7 +25,7 @@ export default function TeacherDashboard() {
           </div>
           <button
             onClick={() => router.push("/host-game")}
-            className="flex items-center gap-2 bg-neo-accent border-2 border-black text-black shadow-[4px_4px_0px_#000] font-black uppercase text-[11px] tracking-widest px-6 py-4 hover:bg-white active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+            className="flex items-center gap-2 bg-neo-accent border-2 border-black text-black shadow-[4px_4px_0px_#000] font-black uppercase text-sm tracking-wide px-6 py-4 hover:bg-white active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
           >
             <Plus size={18} strokeWidth={2.5} />
             Deploy New Session
@@ -38,11 +38,11 @@ export default function TeacherDashboard() {
           <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between bg-black text-white">
             <div className="flex items-center gap-3">
               <Layers size={18} strokeWidth={2.5} />
-              <h2 className="font-black uppercase tracking-widest text-[13px]">
+              <h2 className="font-black uppercase tracking-wide text-[13px]">
                 Active Sessions
               </h2>
             </div>
-            <div className="bg-neo-accent text-black px-2 py-1 border-2 border-black font-black text-[10px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+            <div className="bg-neo-accent text-black px-2 py-1 border-2 border-black font-black text-xs uppercase tracking-wide shadow-[2px_2px_0px_#000]">
               {gameAddresses.length} Deployed
             </div>
           </div>
@@ -54,10 +54,10 @@ export default function TeacherDashboard() {
                 <div className="w-14 h-14 border-2 border-black bg-white shadow-[4px_4px_0px_#000] flex items-center justify-center mb-6 text-black">
                   <Plus size={24} strokeWidth={3} />
                 </div>
-                <p className="font-black uppercase tracking-widest text-black text-[14px] mb-2">
+                <p className="font-black uppercase tracking-wide text-black text-[14px] mb-2">
                   No sessions yet
                 </p>
-                <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-gray-500">
+                <p className="font-mono text-sm uppercase tracking-[0.08em] text-gray-500">
                   // Deploy your first game to start hosting
                 </p>
               </div>

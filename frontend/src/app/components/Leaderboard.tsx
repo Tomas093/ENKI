@@ -235,7 +235,7 @@ export function Leaderboard() {
                   <CheckCircle2 size={20} className="text-[#06B6D4]" />
                   <div>
                     <div style={{ color: "#22d3ee" }} className="text-sm font-semibold">Transaction Confirmed</div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#64748b" }} className="text-[10px]">
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#64748b" }} className="text-xs">
                       0x9f3b...a21c · 12 confirmations
                     </div>
                   </div>
@@ -372,7 +372,7 @@ function PlayerRow({ player }: { player: Player }) {
                 </span>
               )}
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#64748b" }} className="text-[10px]">
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#64748b" }} className="text-xs">
               {player.address}
             </div>
           </div>
@@ -450,7 +450,7 @@ function PodiumCard({
         <span style={{ fontFamily: "'Rajdhani', sans-serif", color: glowColor, fontWeight: 700 }} className="text-sm">
           {place}
         </span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", color: glowColor }} className="text-[10px]">
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", color: glowColor }} className="text-xs">
           {prize} Ξ
         </span>
       </div>

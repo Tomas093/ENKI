@@ -48,16 +48,16 @@ export function PlayerRow({ player }: { player: GlobalPlayer }) {
         >
           {player.ens.charAt(0).toUpperCase()}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0 flex-1">
           <div className="font-black text-black text-base md:text-xl uppercase tracking-tight flex items-center gap-2 flex-wrap">
-            {player.ens}
+            <span className="truncate max-w-[140px] sm:max-w-[200px] md:max-w-none">{player.ens}</span>
             {isMe && (
-              <span className="bg-black text-[#4AF626] text-[10px] md:text-xs px-2 py-0.5 uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_#4AF626]">
+              <span className="bg-black text-[#4AF626] text-xs md:text-xs px-2 py-0.5 uppercase tracking-wide border-2 border-black shadow-[2px_2px_0px_#4AF626] shrink-0">
                 YOU
               </span>
             )}
           </div>
-          <div className="text-gray-500 font-mono text-[10px] md:text-xs truncate max-w-[120px] md:max-w-[200px]">
+          <div className="text-gray-500 font-mono text-xs md:text-xs truncate max-w-[120px] md:max-w-[200px]">
             {player.address}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function PlayerRow({ player }: { player: GlobalPlayer }) {
       {/* Diplomas */}
       <div className="col-span-3 flex justify-center items-center gap-2">
         <div className="flex flex-col items-center justify-center bg-white border-4 border-black px-2 py-2 md:px-4 md:py-2 shadow-[4px_4px_0px_#000] min-w-[80px]">
-          <span className="font-black text-[10px] md:text-xs text-gray-400 uppercase tracking-widest leading-none mb-1">
+          <span className="font-black text-xs md:text-xs text-gray-400 uppercase tracking-wide leading-none mb-1">
             Diplomas
           </span>
           <div className="flex items-center gap-1.5">

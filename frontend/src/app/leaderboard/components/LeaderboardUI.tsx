@@ -126,7 +126,7 @@ export function LeaderboardUI({
           className="relative z-10 bg-white border-4 border-black shadow-[12px_12px_0px_#000] p-10 md:p-14 flex flex-col items-center gap-10 max-w-md w-full"
         >
           {/* Status tag */}
-          <div className="absolute -top-5 left-6 bg-[#FFE234] border-2 border-black px-4 py-1 font-black text-[12px] uppercase tracking-widest shadow-[3px_3px_0px_#000]">
+          <div className="absolute -top-5 left-6 bg-[#FFE234] border-2 border-black px-4 py-1 font-black text-[12px] uppercase tracking-wide shadow-[3px_3px_0px_#000]">
             CALCULATING
           </div>
 
@@ -153,7 +153,7 @@ export function LeaderboardUI({
 
           {/* Progress bar */}
           <div className="w-full flex flex-col gap-2">
-            <div className="flex justify-between font-black text-[11px] uppercase tracking-widest text-black">
+            <div className="flex justify-between font-black text-sm uppercase tracking-wide text-black">
               <span>Syncing from Blockchain</span>
               <motion.span
                 animate={{ opacity: [1, 0.3, 1] }}
@@ -243,12 +243,12 @@ export function LeaderboardUI({
                   <button
                     disabled={isPending}
                     onClick={handleClaim}
-                    className="w-full bg-[#4AF626] border-4 border-black py-4 font-black text-black text-[15px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[6px_6px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_#000] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#4AF626] border-4 border-black py-4 font-black text-black text-[15px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[6px_6px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_#000] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? "CLAIMING..." : "CLAIM PRIZE"} <Wallet size={20} strokeWidth={3} />
                   </button>
                 ) : (
-                  <div className="w-full bg-white border-4 border-black py-4 font-black text-gray-400 text-[15px] uppercase tracking-widest flex items-center justify-center gap-2">
+                  <div className="w-full bg-white border-4 border-black py-4 font-black text-gray-400 text-[15px] uppercase tracking-wide flex items-center justify-center gap-2">
                     PRIZE CLAIMED <Check size={20} strokeWidth={3} />
                   </div>
                 )}
@@ -273,25 +273,25 @@ export function LeaderboardUI({
             {/* Diploma Section */}
             {myData && myData.score >= PASS_THRESHOLD ? (
               <div className="w-full flex flex-col gap-3 items-center">
-                <span className="font-black text-[12px] uppercase tracking-widest">
+                <span className="font-black text-[12px] uppercase tracking-wide">
                   Passed the threshold!
                 </span>
                 {!myData.diplomaClaimed ? (
                   <button
                     disabled={isPending}
                     onClick={handleClaimDiploma}
-                    className="w-full bg-[#00E5FF] border-4 border-black py-3 font-black text-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#00E5FF] border-4 border-black py-3 font-black text-black text-[13px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? "CLAIMING..." : "CLAIM DIPLOMA NFT"} <Award size={18} strokeWidth={3} />
                   </button>
                 ) : (
-                  <div className="w-full bg-white border-4 border-black py-3 font-black text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2 text-[13px]">
+                  <div className="w-full bg-white border-4 border-black py-3 font-black text-gray-400 uppercase tracking-wide flex items-center justify-center gap-2 text-[13px]">
                     DIPLOMA CLAIMED <Check size={18} strokeWidth={3} />
                   </div>
                 )}
               </div>
             ) : myData && myData.score < PASS_THRESHOLD ? (
-              <div className="bg-gray-100 border-2 border-black p-3 w-full font-bold text-[11px] uppercase tracking-widest text-gray-500">
+              <div className="bg-gray-100 border-2 border-black p-3 w-full font-bold text-sm uppercase tracking-wide text-gray-500">
                 Score too low for a diploma
               </div>
             ) : null}
@@ -301,7 +301,7 @@ export function LeaderboardUI({
                <button
                  onClick={refetchStats}
                  disabled={isRefetching}
-                 className={`mt-2 font-black uppercase text-[11px] tracking-widest transition-colors flex items-center justify-center gap-2 w-full py-3 border-2 border-black ${
+                 className={`mt-2 font-black uppercase text-sm tracking-wide transition-colors flex items-center justify-center gap-2 w-full py-3 border-2 border-black ${
                    isRefetching 
                      ? "bg-[#FFE234] shadow-[2px_2px_0px_#000]" 
                      : "bg-white hover:bg-gray-100"

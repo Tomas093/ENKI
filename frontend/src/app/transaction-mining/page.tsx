@@ -28,7 +28,7 @@ export default function TransactionMining() {
         className="relative z-10 bg-white border-4 border-black shadow-[12px_12px_0px_#000] p-10 md:p-14 flex flex-col items-center gap-10 max-w-md w-full"
       >
         {/* Status tag */}
-        <div className="absolute -top-5 left-6 bg-[#FFE234] border-2 border-black px-4 py-1 font-black text-[12px] uppercase tracking-widest shadow-[3px_3px_0px_#000]">
+        <div className="absolute -top-5 left-6 bg-[#FFE234] border-2 border-black px-4 py-1 font-black text-[12px] uppercase tracking-wide shadow-[3px_3px_0px_#000]">
           BLOCKCHAIN
         </div>
 
@@ -55,7 +55,7 @@ export default function TransactionMining() {
 
         {/* Progress bar */}
         <div className="w-full flex flex-col gap-2">
-          <div className="flex justify-between font-black text-[11px] uppercase tracking-widest text-black">
+          <div className="flex justify-between font-black text-sm uppercase tracking-wide text-black">
             <span>Confirming on Sepolia</span>
             <motion.span
               animate={{ opacity: [1, 0.3, 1] }}
@@ -97,7 +97,7 @@ export default function TransactionMining() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="mt-8 font-mono text-[11px] text-gray-400 uppercase tracking-widest relative z-10"
+        className="mt-8 font-mono text-sm text-gray-400 uppercase tracking-wide relative z-10"
       >
         // Ethereum Sepolia Testnet
       </motion.p>

@@ -52,6 +52,7 @@ function ArcadeButton({
         "font-black text-[16px] uppercase tracking-wide",
         "px-6 py-4 min-h-[54px]",
         "transition-[box-shadow,transform] duration-75",
+        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3366]",
         disabled || loading
           ? "bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed"
           : `${bg} ${text} cursor-pointer`,
@@ -87,7 +88,7 @@ function BrutalField({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={id}
-        className="font-black text-[11px] uppercase tracking-[0.12em] text-black ml-0.5"
+        className="font-black text-sm uppercase tracking-wider text-black ml-0.5"
       >
         {label}
       </label>
@@ -107,7 +108,7 @@ function BrutalField({
           "w-full bg-white border-2 px-4 py-3.5",
           "text-[16px] font-bold text-black placeholder:text-gray-300 placeholder:font-normal",
           "outline-none transition-all duration-75",
-          "focus:outline-none",
+          "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3366]",
           error ? "border-red-500" : "border-black",
         ].join(" ")}
       />
@@ -175,7 +176,7 @@ export function JoinGameTerminal() {
         {/* Tag */}
         <div className="inline-flex items-center gap-2 bg-neo-accent border-2 border-black px-3 py-1 mb-4"
           style={{ boxShadow: "2px 2px 0px #000" }}>
-          <span className="font-black text-[11px] uppercase tracking-[0.1em]">[ Player Entry ]</span>
+          <span className="font-black text-sm uppercase tracking-wider">[ Player Entry ]</span>
         </div>
         <h2 className="font-black text-[32px] uppercase tracking-tight leading-[0.9] text-black">
           Join<br />a Game.
@@ -239,12 +240,13 @@ export function JoinGameTerminal() {
 
         {/* ── Step 2: Confirm ───────────────────────────────────────────── */}
         {step === "confirm" && (
-          <motion.div
+          <motion.form
             key="confirm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            onSubmit={(e) => { e.preventDefault(); handleJoinWithNick(); }}
             className="flex flex-col gap-5"
           >
             {isReading ? (
@@ -269,7 +271,7 @@ export function JoinGameTerminal() {
                         i === 2 ? "bg-neo-accent" : "bg-white",
                       ].join(" ")}
                     >
-                      <span className="font-black text-[11px] uppercase tracking-[0.1em] text-gray-500">{label}</span>
+                      <span className="font-black text-sm uppercase tracking-wider text-gray-500">{label}</span>
                       <span className="font-black text-[16px] text-black tabular-nums">{value}</span>
                     </div>
                   ))}
@@ -278,13 +280,13 @@ export function JoinGameTerminal() {
                 {nicknameInput && nicknameInput.trim() !== "" && nicknameInput !== globalNickname && (
                   <div className="flex items-start gap-2 bg-[#33CCFF]/10 border-2 border-black px-3 py-2.5 shadow-[2px_2px_0px_#33CCFF]">
                     <Wallet size={14} className="text-black shrink-0 mt-0.5" />
-                    <span className="font-bold text-[11px] text-black uppercase tracking-wide">
+                    <span className="font-bold text-sm text-black uppercase tracking-wide">
                       This will also save your nickname globally on-chain (1 extra transaction).
                     </span>
                   </div>
                 )}
 
-                <ArcadeButton onClick={handleJoinWithNick} loading={isPending}>
+                <ArcadeButton type="submit" loading={isPending}>
                   {isPending ? "Signing..." :
                     hasJoined ? <>Resume Game <ArrowRight size={16} /></> :
                     !isConnected ? <><Wallet size={16} /> Connect Wallet</> :
@@ -292,8 +294,9 @@ export function JoinGameTerminal() {
                 </ArcadeButton>
 
                 <button
+                  type="button"
                   onClick={() => { setStep("form"); setError(null); }}
-                  className="flex items-center justify-center gap-1 font-bold text-[13px] uppercase tracking-wide text-gray-500 hover:text-black transition-colors min-h-[44px]"
+                  className="flex items-center justify-center gap-1 font-bold text-[13px] uppercase tracking-wide text-gray-500 hover:text-black transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF3366]"
                 >
                   <ChevronLeft size={14} strokeWidth={2.5} /> Back
                 </button>
@@ -306,7 +309,7 @@ export function JoinGameTerminal() {
                 className="flex flex-col items-center gap-5 py-6 text-center border-2 border-red-500 p-6"
                 style={{ boxShadow: "4px 4px 0px #E61919" }}
               >
-                <div className="font-black text-[13px] uppercase tracking-[0.1em] text-red-600">
+                <div className="font-black text-[13px] uppercase tracking-wider text-red-600">
                   [ ERROR 404 ]
                 </div>
                 <div>
@@ -315,13 +318,13 @@ export function JoinGameTerminal() {
                 </div>
                 <button
                   onClick={() => { setStep("form"); setError(null); }}
-                  className="flex items-center gap-1 font-black text-[13px] uppercase tracking-wide text-black underline"
+                  className="flex items-center gap-1 font-black text-[13px] uppercase tracking-wide text-black underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF3366]"
                 >
                   <ChevronLeft size={14} /> Try again
                 </button>
               </motion.div>
             )}
-          </motion.div>
+          </motion.form>
         )}
 
       </AnimatePresence>

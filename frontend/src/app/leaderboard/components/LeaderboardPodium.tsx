@@ -49,7 +49,7 @@ function PodiumAvatars({
   return (
     <div className="flex flex-col items-center mb-6">
       {players.length > 1 && (
-        <div className="bg-black text-[#4AF626] border-2 border-black text-[11px] font-black px-3 py-1 mb-3 tracking-widest uppercase shadow-[2px_2px_0px_#4AF626]">
+        <div className="bg-black text-[#4AF626] border-2 border-black text-sm font-black px-3 py-1 mb-3 tracking-wide uppercase shadow-[2px_2px_0px_#4AF626]">
           TIE
         </div>
       )}
@@ -140,7 +140,7 @@ export function LeaderboardPodium({
                 
                 {/* Prize Badge */}
                 {prize > 0n && (
-                  <div className={`bg-black text-[#4AF626] border-2 border-black px-4 py-2 font-black text-[13px] tracking-widest uppercase shadow-[4px_4px_0px_#4AF626] relative z-10 -mt-10`}>
+                  <div className={`bg-black text-[#4AF626] border-2 border-black px-4 py-2 font-black text-[13px] tracking-wide uppercase shadow-[4px_4px_0px_#4AF626] relative z-10 -mt-10`}>
                     {formatEther(prize)} ETH
                   </div>
                 )}

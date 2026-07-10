@@ -212,7 +212,7 @@ export default function CreateSession() {
         </div>
         <button
           onClick={() => router.push("/host/dashboard")}
-          className="bg-white border-2 border-black text-black shadow-[4px_4px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest font-black text-[11px] px-6 py-4 cursor-pointer"
+          className="bg-white border-2 border-black text-black shadow-[4px_4px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase tracking-wide font-black text-sm px-6 py-4 cursor-pointer"
         >
           Cancel
         </button>
@@ -226,7 +226,7 @@ export default function CreateSession() {
         className="bg-white border-2 border-black shadow-[8px_8px_0px_#000] p-8 flex flex-col gap-6"
       >
         <div className="flex flex-col gap-2">
-          <label className="font-black text-black text-[12px] uppercase tracking-widest">Session Title</label>
+          <label className="font-black text-black text-[12px] uppercase tracking-wide">Session Title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -236,7 +236,7 @@ export default function CreateSession() {
         </div>
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex flex-col gap-2 flex-1">
-            <label className="font-black text-black text-[12px] uppercase tracking-widest">Stake per player (ETH)</label>
+            <label className="font-black text-black text-[12px] uppercase tracking-wide">Stake per player (ETH)</label>
             <input
               type="number"
               min="0"
@@ -247,7 +247,7 @@ export default function CreateSession() {
             />
           </div>
           <div className="flex flex-col gap-2 flex-1">
-            <label className="font-black text-black text-[12px] uppercase tracking-widest">Correct answers to earn Diploma</label>
+            <label className="font-black text-black text-[12px] uppercase tracking-wide">Correct answers to earn Diploma</label>
             <input
               type="number"
               min="1"
@@ -262,12 +262,12 @@ export default function CreateSession() {
         {/* Diploma Studio Button */}
         <div className="pt-6 border-t-2 border-black flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <span className="font-black text-black text-[13px] uppercase tracking-widest">NFT Diploma Design</span>
-            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-gray-500">// Customize the on-chain certificate</span>
+            <span className="font-black text-black text-[13px] uppercase tracking-wide">NFT Diploma Design</span>
+            <span className="font-mono text-sm uppercase tracking-[0.08em] text-gray-500">// Customize the on-chain certificate</span>
           </div>
           <button
             onClick={handleCustomizeDiploma}
-            className="flex items-center gap-2 bg-neo-accent border-2 border-black text-black font-black uppercase text-[11px] tracking-widest px-5 py-3 shadow-[4px_4px_0px_#000] hover:bg-white active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="flex items-center gap-2 bg-neo-accent border-2 border-black text-black font-black uppercase text-sm tracking-wide px-5 py-3 shadow-[4px_4px_0px_#000] hover:bg-white active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
             <Palette size={16} strokeWidth={2.5} /> Customize Diploma
           </button>
@@ -328,7 +328,7 @@ export default function CreateSession() {
 
                         {/* Question text */}
                         <div className="flex flex-col gap-2">
-                          <label className="font-black text-black text-[12px] uppercase tracking-widest">Question Text</label>
+                          <label className="font-black text-black text-[12px] uppercase tracking-wide">Question Text</label>
                           <textarea
                             rows={2}
                             value={q.question}
@@ -340,7 +340,7 @@ export default function CreateSession() {
 
                         {/* Answers */}
                         <div className="flex flex-col gap-3">
-                          <label className="font-black text-black text-[12px] uppercase tracking-widest">Answers <span className="text-gray-400">— Tap check to mark correct</span></label>
+                          <label className="font-black text-black text-[12px] uppercase tracking-wide">Answers <span className="text-gray-400">— Tap check to mark correct</span></label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {q.answers.map((ans, ai) => {
                               const col = ANSWER_COLORS[ai];
@@ -372,12 +372,12 @@ export default function CreateSession() {
 
                         {/* Time limit */}
                         <div className="flex items-center flex-wrap gap-4 pt-4 border-t-2 border-black">
-                          <label className="font-black text-black text-[12px] uppercase tracking-widest shrink-0">Time limit</label>
+                          <label className="font-black text-black text-[12px] uppercase tracking-wide shrink-0">Time limit</label>
                           {[15, 30, 60, 90].map((t) => (
                             <button
                               key={t}
                               onClick={() => updateQuestion(q.id, "timeLimit", t)}
-                              className={`border-2 border-black font-black text-[11px] uppercase tracking-widest px-4 py-2 transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${q.timeLimit === t ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
+                              className={`border-2 border-black font-black text-sm uppercase tracking-wide px-4 py-2 transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${q.timeLimit === t ? "bg-black text-white" : "bg-white text-black hover:bg-neo-accent"}`}
                             >
                               {t}s
                             </button>
@@ -395,7 +395,7 @@ export default function CreateSession() {
         {/* Add question */}
         <button
           onClick={addQuestion}
-          className="flex items-center justify-center gap-3 border-[3px] border-dashed border-black bg-neo-bg hover:bg-neo-accent text-black font-black uppercase tracking-widest text-[12px] py-6 shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+          className="flex items-center justify-center gap-3 border-[3px] border-dashed border-black bg-neo-bg hover:bg-neo-accent text-black font-black uppercase tracking-wide text-[12px] py-6 shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
         >
           <Plus size={20} strokeWidth={3} />
           Add Question
@@ -412,7 +412,7 @@ export default function CreateSession() {
         <button
           disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
           onClick={handleLaunch}
-          className={`flex items-center gap-2 border-2 border-black font-black uppercase tracking-[0.1em] px-8 py-5 transition-all text-[13px] ${
+          className={`flex items-center gap-2 border-2 border-black font-black uppercase tracking-wider px-8 py-5 transition-all text-[13px] ${
             (!title.trim() || questions.some((q) => !q.question.trim()) || isPending)
               ? "bg-gray-200 text-gray-400 shadow-none translate-x-1 translate-y-1 cursor-not-allowed"
               : "bg-black text-white shadow-[8px_8px_0px_#000] hover:bg-neo-accent hover:text-black active:translate-x-2 active:translate-y-2 active:shadow-none cursor-pointer"

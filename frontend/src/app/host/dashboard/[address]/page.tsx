@@ -179,7 +179,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       <button 
         onClick={handleCalculatePrizes} 
         disabled={isStarting}
-        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-wide px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
       >
         <AlertTriangle size={24} strokeWidth={3} />
         {isStarting ? "Processing..." : "Calculate Prizes"}
@@ -193,7 +193,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       <button 
         onClick={handleAdvance} 
         disabled={isStarting}
-        className="w-full bg-black text-white border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-gray-800 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        className="w-full bg-black text-white border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-gray-800 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-wide px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
       >
         <ArrowLeft size={24} strokeWidth={3} className="rotate-180" />
         {isStarting ? "Processing..." : (isLastQuestion ? "FINISH GAME" : "Advance to Next Question")}
@@ -213,7 +213,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       <button 
         onClick={handleCloseAndReveal} 
         disabled={isStarting}
-        className={`w-full border-2 border-black shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-3 ${timeIsUp ? 'bg-[#FF3366] text-black hover:bg-red-500' : 'bg-black text-white hover:bg-gray-800'}`}
+        className={`w-full border-2 border-black shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-wide px-8 py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-3 ${timeIsUp ? 'bg-[#FF3366] text-black hover:bg-red-500' : 'bg-black text-white hover:bg-gray-800'}`}
       >
         <CheckSquare size={24} strokeWidth={3} />
         {isStarting ? "Processing..." : "Close Question & Reveal"}
@@ -227,7 +227,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       <button 
         onClick={handleStartNextQuestion} 
         disabled={isStarting}
-        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-widest px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        className="w-full bg-[#FFE234] text-black border-2 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none font-black uppercase text-[16px] tracking-wide px-8 py-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
       >
         <Play size={24} fill="currentColor" strokeWidth={3} />
         {isStarting ? "Processing..." : (isFirst ? "START GAME" : "LAUNCH NEXT QUESTION")}
@@ -256,7 +256,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
           <div className="flex flex-col gap-4">
             <button
               onClick={() => router.back()}
-              className="bg-white border-2 border-black text-black shadow-[2px_2px_0px_#000] hover:bg-gray-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all uppercase tracking-widest font-black text-[10px] px-4 py-2 flex items-center gap-2 w-max"
+              className="bg-white border-2 border-black text-black shadow-[2px_2px_0px_#000] hover:bg-gray-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all uppercase tracking-wide font-black text-xs px-4 py-2 flex items-center gap-2 w-max"
             >
               <ArrowLeft size={14} strokeWidth={3} /> BACK TO LIST
             </button>
@@ -265,11 +265,11 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
               {(gameId !== null || gameData?.gameId !== undefined) && (
-                <div className="bg-[#FFE234] border-2 border-black text-black font-black px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
+                <div className="bg-[#FFE234] border-2 border-black text-black font-black px-3 py-1 text-[12px] uppercase tracking-wide shadow-[2px_2px_0px_#000]">
                   ID: {gameId !== null ? gameId : gameData?.gameId}
                 </div>
               )}
-              <div className={`border-2 border-black font-mono font-bold px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000] ${effectivelyPrizesCalculated ? 'bg-black text-white' : 'bg-black text-[#39FF14]'}`}>
+              <div className={`border-2 border-black font-mono font-bold px-3 py-1 text-[12px] uppercase tracking-wide shadow-[2px_2px_0px_#000] ${effectivelyPrizesCalculated ? 'bg-black text-white' : 'bg-black text-[#39FF14]'}`}>
                 {phaseLabel} {effectivelyPrizesCalculated ? "" : "PHASE"}
               </div>
             </div>
@@ -280,12 +280,12 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
                 <Users size={24} className="text-[#FF3366] mb-1" strokeWidth={2.5} />
                 <span className="text-[28px] font-black text-black leading-none">{connectedPlayers}</span>
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">PLAYERS</span>
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wide mt-1">PLAYERS</span>
               </div>
               <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
                 <div className="text-[#39FF14] bg-black border-2 border-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs mb-1">Ξ</div>
                 <span className="text-[28px] font-black text-black leading-none">{prizePoolEth}</span>
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">POOL (ETH)</span>
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wide mt-1">POOL (ETH)</span>
               </div>
             </div>
           )}
@@ -296,7 +296,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
           <>
             {activeQuestion && !isFinished && (
               <div className="bg-white border-4 border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] flex flex-col gap-6 relative mt-4">
-                <div className="absolute -top-4 -left-4 bg-[#FF3366] text-white border-2 border-black px-4 py-1 font-black text-[14px] uppercase tracking-widest shadow-[4px_4px_0px_#000]">
+                <div className="absolute -top-4 -left-4 bg-[#FF3366] text-white border-2 border-black px-4 py-1 font-black text-[14px] uppercase tracking-wide shadow-[4px_4px_0px_#000]">
                   Q. {Number(currentQuestionId) + 1} / {Number(totalQuestions)}
                 </div>
                 
@@ -312,7 +312,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
                       <span className="text-[48px] font-black leading-none" style={{ color: timeLeft <= 5 ? '#FF3366' : '#39FF14' }}>
                         {timeLeft}s
                       </span>
-                      <span className="text-[10px] uppercase tracking-widest mt-2 font-bold text-gray-400">Time Left</span>
+                      <span className="text-xs uppercase tracking-wide mt-2 font-bold text-gray-400">Time Left</span>
                     </div>
                   )}
                 </div>
@@ -326,7 +326,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
             {totalQuestions && (
               <div className="mt-12 mb-20 flex flex-col gap-2">
-                <div className="flex justify-between font-black text-[12px] uppercase tracking-widest text-black">
+                <div className="flex justify-between font-black text-[12px] uppercase tracking-wide text-black">
                   <span>Game Progress</span>
                   <span>{Math.floor(progressPercent)}%</span>
                 </div>
@@ -350,22 +350,22 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
                 <Users size={32} className="text-[#FF3366] mb-2" />
                 <span className="text-4xl font-black">{participants.length}</span>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Total Players</span>
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wide mt-1">Total Players</span>
               </div>
               <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
                 <Target size={32} className="text-[#33CCFF] mb-2" />
                 <span className="text-4xl font-black">{avgScore}</span>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Average Score</span>
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wide mt-1">Average Score</span>
               </div>
               <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
                 <Award size={32} className="text-[#FFE234] mb-2" />
                 <span className="text-4xl font-black">{passedPlayers}</span>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Passed (Diplomas)</span>
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wide mt-1">Passed (Diplomas)</span>
               </div>
               <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
                 <div className="w-8 h-8 rounded-full bg-black text-[#39FF14] flex items-center justify-center font-bold mb-2">Ξ</div>
                 <span className="text-4xl font-black">{prizePoolEth}</span>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Total Pool (ETH)</span>
+                <span className="text-sm font-bold text-gray-500 uppercase tracking-wide mt-1">Total Pool (ETH)</span>
               </div>
             </div>
 
@@ -380,7 +380,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
                 <button
                   onClick={handleClaimProfessorPrize}
                   disabled={isStarting || professorPrizeClaimed}
-                  className={`px-8 py-4 border-4 border-black font-black uppercase text-[16px] tracking-widest transition-all ${professorPrizeClaimed ? 'bg-white text-gray-500 opacity-50 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none'}`}
+                  className={`px-8 py-4 border-4 border-black font-black uppercase text-[16px] tracking-wide transition-all ${professorPrizeClaimed ? 'bg-white text-gray-500 opacity-50 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none'}`}
                 >
                   {isStarting ? "Processing..." : (professorPrizeClaimed ? "✓ CLAIMED" : "CLAIM REWARD")}
                 </button>
@@ -389,7 +389,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
             {/* Detailed Leaderboard Table */}
             <div className="bg-white border-4 border-black shadow-[8px_8px_0px_#000] overflow-hidden">
-              <div className="bg-black text-white p-4 font-black uppercase tracking-widest flex items-center gap-2">
+              <div className="bg-black text-white p-4 font-black uppercase tracking-wide flex items-center gap-2">
                 <Trophy size={20} className="text-[#FFE234]" /> Final Rankings
               </div>
               <div className="p-0">
@@ -401,11 +401,11 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b-2 border-black bg-gray-50">
-                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500">Rank</th>
-                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500">Player</th>
-                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Score</th>
-                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Diploma</th>
-                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Prize</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-wide text-gray-500">Rank</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-wide text-gray-500">Player</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-wide text-gray-500 text-right">Score</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-wide text-gray-500 text-right">Diploma</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-wide text-gray-500 text-right">Prize</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -432,12 +432,12 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
                             <td className="p-4 text-right">
                               {passed ? (
                                 p.diplomaClaimed ? (
-                                  <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-widest">✓ Claimed</span>
+                                  <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-xs font-black uppercase tracking-wide">✓ Claimed</span>
                                 ) : (
-                                  <span className="inline-block bg-[#33CCFF] text-black border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_#000]">Qualified</span>
+                                  <span className="inline-block bg-[#33CCFF] text-black border-2 border-black px-2 py-1 text-xs font-black uppercase tracking-wide shadow-[2px_2px_0px_#000]">Qualified</span>
                                 )
                               ) : (
-                                <span className="inline-block bg-gray-100 text-gray-400 border-2 border-gray-300 px-2 py-1 text-[10px] font-black uppercase tracking-widest">Failed</span>
+                                <span className="inline-block bg-gray-100 text-gray-400 border-2 border-gray-300 px-2 py-1 text-xs font-black uppercase tracking-wide">Failed</span>
                               )}
                             </td>
                             <td className="p-4 text-right">
@@ -445,9 +445,9 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
                                 <div className="flex flex-col items-end gap-1.5">
                                   <span className="font-black text-black">{formatEther(prizes[index])} ETH</span>
                                   {p.claimed ? (
-                                    <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-widest">✓ Claimed</span>
+                                    <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-wide">✓ Claimed</span>
                                   ) : (
-                                    <span className="inline-block bg-[#FF3366] text-white border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-widest shadow-[2px_2px_0px_#000]">Unclaimed</span>
+                                    <span className="inline-block bg-[#FF3366] text-white border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-wide shadow-[2px_2px_0px_#000]">Unclaimed</span>
                                   )}
                                 </div>
                               ) : (

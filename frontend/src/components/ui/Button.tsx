@@ -13,15 +13,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-md shadow-purple-200/60 hover:shadow-lg hover:shadow-purple-300/50 hover:-translate-y-0.5",
+    "bg-[#FFE234] text-black border-4 border-black shadow-[6px_6px_0px_#000] hover:bg-yellow-400 active:translate-x-1 active:translate-y-1 active:shadow-none",
   secondary:
-    "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm hover:shadow-md",
+    "bg-white text-black border-4 border-black shadow-[6px_6px_0px_#000] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none",
   ghost:
-    "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800",
+    "bg-transparent text-black border-4 border-transparent hover:border-black active:translate-x-1 active:translate-y-1",
   danger:
-    "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md shadow-red-200/50",
+    "bg-[#FF3366] text-black border-4 border-black shadow-[6px_6px_0px_#000] hover:bg-red-500 active:translate-x-1 active:translate-y-1 active:shadow-none",
   success:
-    "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-200/50",
+    "bg-[#39FF14] text-black border-4 border-black shadow-[6px_6px_0px_#000] hover:bg-[#2CE80B] active:translate-x-1 active:translate-y-1 active:shadow-none",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {

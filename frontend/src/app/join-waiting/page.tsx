@@ -39,7 +39,7 @@ function CopyButton({ value }: { value: string }) {
         (e.currentTarget as HTMLElement).style.transform = "translate(0,0)";
       }}
       className={[
-        "flex items-center gap-1.5 px-3 py-1.5 border-2 font-black text-[11px] uppercase tracking-[0.08em]",
+        "flex items-center gap-1.5 px-3 py-1.5 border-2 font-black text-sm uppercase tracking-[0.08em]",
         "transition-all duration-75",
         copied ? "bg-green-50 border-green-600 text-green-700" : "bg-neo-accent border-black text-black",
       ].join(" ")}
@@ -93,7 +93,7 @@ function PlayerRow({ name, index, isYou }: { name: string; index: number; isYou:
 
       <div className="flex items-center gap-2 shrink-0">
         {isYou && (
-          <span className="font-black text-[10px] uppercase tracking-[0.08em] bg-neo-accent border border-black px-1.5 py-0.5">
+          <span className="font-black text-xs uppercase tracking-[0.08em] bg-neo-accent border border-black px-1.5 py-0.5">
             You
           </span>
         )}
@@ -232,9 +232,9 @@ export default function JoinWaitingRoom() {
               style={{ boxShadow: "2px 2px 0px #000" }}
             >
               <BlockBounce />
-              <span className="font-black text-[11px] uppercase tracking-[0.1em]">Standby</span>
+              <span className="font-black text-sm uppercase tracking-wider">Standby</span>
             </div>
-            <span className="font-mono text-[11px] text-gray-400 uppercase tracking-wider">
+            <span className="font-mono text-sm text-gray-400 uppercase tracking-wider">
               REV 2.0
             </span>
           </div>
@@ -253,7 +253,7 @@ export default function JoinWaitingRoom() {
           {/* Stats — brutalist data row */}
           <div className="grid grid-cols-2 gap-0 border-2 border-black">
             <div className="p-4 border-r-2 border-black">
-              <div className="font-black text-[10px] uppercase tracking-[0.12em] text-gray-400 flex items-center gap-1.5 mb-1.5">
+              <div className="font-black text-xs uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-1.5">
                 <Users size={10} /> Players
               </div>
               <motion.div
@@ -265,7 +265,7 @@ export default function JoinWaitingRoom() {
               </motion.div>
             </div>
             <div className="p-4 bg-neo-accent">
-              <div className="font-black text-[10px] uppercase tracking-[0.12em] text-gray-600 flex items-center gap-1.5 mb-1.5">
+              <div className="font-black text-xs uppercase tracking-wider text-gray-600 flex items-center gap-1.5 mb-1.5">
                 <Zap size={10} /> Pool
               </div>
               <div className="font-black text-[32px] text-black tabular-nums leading-none">
@@ -286,7 +286,7 @@ export default function JoinWaitingRoom() {
         >
           {/* Card header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b-2 border-black bg-black">
-            <span className="font-black text-[11px] uppercase tracking-[0.1em] text-white">
+            <span className="font-black text-sm uppercase tracking-wider text-white">
               [ Connected Players ]
             </span>
             {shareId && <CopyButton value={shareId} />}
@@ -317,7 +317,7 @@ export default function JoinWaitingRoom() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.18 }}
-          className="font-mono text-[11px] text-gray-400 uppercase tracking-[0.08em] text-center"
+          className="font-mono text-sm text-gray-400 uppercase tracking-[0.08em] text-center"
         >
           // Game starts when host launches Q1
         </motion.p>
