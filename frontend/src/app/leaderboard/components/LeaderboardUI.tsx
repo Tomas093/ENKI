@@ -17,7 +17,7 @@ export interface LeaderboardUIProps {
   rank2Players: Player[];
   rank3Players: Player[];
   prizes: bigint[];
-  myData: { score: number; claimed: boolean; diplomaClaimed: boolean } | null;
+  myData: { score: number; claimed: boolean; diplomaClaimed: boolean } | null | undefined;
   myRank: number;
   myPrize: bigint;
   myPrizeFormatted: string;
