@@ -187,10 +187,9 @@ export default function JoinWaitingRoom() {
   const shareId = gameIdParam || gameAddress || "";
 
   return (
-    /* Swiss industrial background: matte paper */
-    <div className="w-full min-h-full flex flex-col justify-start px-4 md:px-8 lg:px-12 pt-6 md:pt-10 pb-8 relative">
+    <div className="w-full min-h-[calc(100vh-80px)] flex flex-col justify-center items-center px-4 md:px-8 lg:px-12 py-8 relative">
 
-      <div className="w-full max-w-sm flex flex-col gap-5 relative z-10">
+      <div className="w-full max-w-sm mx-auto flex flex-col gap-5 relative z-10">
 
         {/* ── Status header ─────────────────────────────────────────────── */}
         <motion.div

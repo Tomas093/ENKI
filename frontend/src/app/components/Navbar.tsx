@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Wallet, LogOut, ArrowLeft } from "lucide-react";
+import { Wallet, LogOut, ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAccount, useDisconnect, useConnect } from "wagmi";
+import { useAccount, useDisconnect, useConnect, useReadContract } from "wagmi";
+import { PROFILES_ADDRESS, enkiProfilesAbi } from "../../lib/contracts";
 
 export const Navbar = () => {
   const [mounted, setMounted] = useState(false);
@@ -15,6 +16,16 @@ export const Navbar = () => {
   const { disconnect } = useDisconnect();
   const { connectors, connect } = useConnect();
   const isHome = pathname === "/";
+  const isProfile = pathname === "/profile";
+
+  const { data: nicknameData } = useReadContract({
+    address: PROFILES_ADDRESS,
+    abi: enkiProfilesAbi,
+    functionName: "nicknames",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && mounted },
+  });
+  const globalNickname = nicknameData as string | undefined;
 
   const handleConnectWallet = () => {
     if (connectors.length > 0) connect({ connector: connectors[0] });
@@ -48,13 +59,19 @@ export const Navbar = () => {
         <div className="flex items-center gap-3">
           {mounted && address ? (
             <div className="flex items-center gap-2">
-              {/* Address pill */}
-              <div className="h-11 bg-white border-2 border-black flex items-center px-4 gap-2 shadow-[2px_2px_0px_#000]">
-                <div className="w-2.5 h-2.5 bg-[#4AF626] border border-black" />
+              {/* Nickname/Address chip → links to /profile */}
+              <Link
+                href="/profile"
+                className={`h-11 bg-white border-2 border-black flex items-center px-4 gap-2.5 shadow-[2px_2px_0px_#000] hover:bg-neo-accent transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${isProfile ? "bg-neo-accent" : ""}`}
+              >
+                <div className="w-2.5 h-2.5 bg-[#4AF626] border border-black shrink-0" />
                 <span className="font-black uppercase text-[12px] tracking-widest text-black">
-                  {address.slice(0, 6)}...{address.slice(-4)}
+                  {globalNickname && globalNickname.length > 0
+                    ? globalNickname
+                    : `${address.slice(0, 6)}...${address.slice(-4)}`}
                 </span>
-              </div>
+                <User size={13} strokeWidth={3} className="text-black/50 shrink-0" />
+              </Link>
               {/* Disconnect */}
               <button
                 onClick={() => disconnect()}

@@ -1,10 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye } from "lucide-react";
+import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye, Trophy, Target, Award, Coins } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
+import { motion, AnimatePresence } from "motion/react";
 import KahootGameABI from "../../../../abi/KahootGame.json";
+import { useFinalLeaderboard } from "../../../../hooks/useFinalLeaderboard";
 
 export default function GameDashboardPage({ params }: { params: Promise<{ address: string }> }) {
   const router = useRouter();
@@ -20,7 +22,9 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' },
       { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor' },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'lastActionTime' }
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'lastActionTime' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrize' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrizeClaimed' }
     ],
     query: { refetchInterval: 2000 }
   });
@@ -34,6 +38,10 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   const totalQuestions = contractData?.[6]?.result as bigint | undefined;
   const professor = contractData?.[7]?.result as `0x${string}` | undefined;
   const lastActionTime = contractData?.[8]?.result as bigint | undefined;
+  const professorPrize = contractData?.[9]?.result as bigint | undefined;
+  const professorPrizeClaimed = contractData?.[10]?.result as boolean | undefined;
+
+  const effectivelyPrizesCalculated = Boolean(prizesCalculated) || (isFinished && prizePool === 0n);
 
   const [gameId, setGameId] = useState<number | null>(null);
 
@@ -85,7 +93,6 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   const activeQuestion = gameData && qIndex >= 0 && qIndex < gameData.questions.length ? gameData.questions[qIndex] : null;
   const timeLimit = activeQuestion ? (activeQuestion.timeLimit || 30) : 30;
 
-  // Real-time countdown for the question phase
   const [timeLeft, setTimeLeft] = useState<number>(timeLimit);
   
   useEffect(() => {
@@ -93,20 +100,21 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       setTimeLeft(timeLimit);
       return;
     }
-    
     const interval = setInterval(() => {
       const now = Math.floor(Date.now() / 1000);
       const elapsed = now - Number(lastActionTime);
       const remaining = Math.max(0, timeLimit - elapsed);
       setTimeLeft(remaining);
     }, 1000);
-    
     return () => clearInterval(interval);
   }, [commitPhaseOpen, lastActionTime, timeLimit]);
 
   const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
   const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
   const isStarting = isWritePending || isWaiting;
+
+  // Final Leaderboard Hook (only relevant at the end)
+  const { participants, loading: leaderboardLoading, prizes, PASS_THRESHOLD } = useFinalLeaderboard(address, txHash || null);
 
   const handleStartNextQuestion = () => {
     if (!activeQuestion) return;
@@ -149,17 +157,24 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     });
   };
 
+  const handleClaimProfessorPrize = () => {
+    writeContract({
+      address: address as `0x${string}`,
+      abi: KahootGameABI.abi,
+      functionName: 'claimPrize'
+    });
+  };
+
   let phaseLabel = "WAITING";
   let hostActionBtn = null;
   let statusBanner = null;
 
-  if (prizesCalculated || (isFinished && prizePool === 0n)) {
+  if (effectivelyPrizesCalculated) {
     phaseLabel = "FINISHED";
     statusBanner = <div className="bg-black text-white p-4 font-black uppercase text-center border-2 border-black">Game Over - {prizePool === 0n ? 'No Prizes to distribute' : 'Prizes Distributed!'}</div>;
   } else if (isFinished) {
     phaseLabel = "CALCULATE";
     statusBanner = <div className="bg-[#FF3366] text-black p-4 font-black uppercase text-center border-2 border-black shadow-[4px_4px_0px_#000] mb-6">All questions finished.</div>;
-    
     hostActionBtn = (
       <button 
         onClick={handleCalculatePrizes} 
@@ -221,6 +236,12 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   }
 
   const progressPercent = totalQuestions ? ((Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))) / Number(totalQuestions)) * 100 : 0;
+  
+  const avgScore = participants.length > 0 
+    ? Math.round(participants.reduce((acc, p) => acc + p.score, 0) / participants.length)
+    : 0;
+
+  const passedPlayers = participants.filter(p => p.score >= PASS_THRESHOLD).length;
 
   return (
     <div className="w-full min-h-screen bg-[#F4F4F0] flex flex-col relative">
@@ -243,76 +264,205 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
               {gameName || "SESSION"}
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
-              {gameId !== null && (
+              {(gameId !== null || gameData?.gameId !== undefined) && (
                 <div className="bg-[#FFE234] border-2 border-black text-black font-black px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
-                  ID: {gameId}
+                  ID: {gameId !== null ? gameId : gameData?.gameId}
                 </div>
               )}
-              <div className="bg-black text-[#39FF14] border-2 border-black font-mono font-bold px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000]">
-                {phaseLabel} PHASE
+              <div className={`border-2 border-black font-mono font-bold px-3 py-1 text-[12px] uppercase tracking-widest shadow-[2px_2px_0px_#000] ${effectivelyPrizesCalculated ? 'bg-black text-white' : 'bg-black text-[#39FF14]'}`}>
+                {phaseLabel} {effectivelyPrizesCalculated ? "" : "PHASE"}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
-              <Users size={24} className="text-[#FF3366] mb-1" strokeWidth={2.5} />
-              <span className="text-[28px] font-black text-black leading-none">{connectedPlayers}</span>
-              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">PLAYERS</span>
+          {!effectivelyPrizesCalculated && (
+            <div className="flex gap-4">
+              <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
+                <Users size={24} className="text-[#FF3366] mb-1" strokeWidth={2.5} />
+                <span className="text-[28px] font-black text-black leading-none">{connectedPlayers}</span>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">PLAYERS</span>
+              </div>
+              <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
+                <div className="text-[#39FF14] bg-black border-2 border-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs mb-1">Ξ</div>
+                <span className="text-[28px] font-black text-black leading-none">{prizePoolEth}</span>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">POOL (ETH)</span>
+              </div>
             </div>
-            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center min-w-[120px]">
-              <div className="text-[#39FF14] bg-black border-2 border-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs mb-1">Ξ</div>
-              <span className="text-[28px] font-black text-black leading-none">{prizePoolEth}</span>
-              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">POOL (ETH)</span>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Question & Timer Area */}
-        {activeQuestion && !isFinished && (
-          <div className="bg-white border-4 border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] flex flex-col gap-6 relative mt-4">
-            <div className="absolute -top-4 -left-4 bg-[#FF3366] text-white border-2 border-black px-4 py-1 font-black text-[14px] uppercase tracking-widest shadow-[4px_4px_0px_#000]">
-              Q. {Number(currentQuestionId) + 1} / {Number(totalQuestions)}
-            </div>
-            
-            <div className="flex flex-col md:flex-row justify-between items-start gap-8 mt-4">
-              <div className="flex-1">
-                <h2 className="text-[28px] md:text-[36px] font-black leading-[1.1] text-black">
-                  {activeQuestion.question}
-                </h2>
-              </div>
-              
-              {commitPhaseOpen && (
-                <div className="flex flex-col items-center justify-center bg-black text-white p-4 border-4 border-black min-w-[140px] shrink-0 shadow-[8px_8px_0px_rgba(0,0,0,0.2)]">
-                  <span className="text-[48px] font-black leading-none" style={{ color: timeLeft <= 5 ? '#FF3366' : '#39FF14' }}>
-                    {timeLeft}s
-                  </span>
-                  <span className="text-[10px] uppercase tracking-widest mt-2 font-bold text-gray-400">Time Left</span>
+        {/* ─── ACTIVE GAME UI ───────────────────────────────────────────────────────── */}
+        {!effectivelyPrizesCalculated && (
+          <>
+            {activeQuestion && !isFinished && (
+              <div className="bg-white border-4 border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] flex flex-col gap-6 relative mt-4">
+                <div className="absolute -top-4 -left-4 bg-[#FF3366] text-white border-2 border-black px-4 py-1 font-black text-[14px] uppercase tracking-widest shadow-[4px_4px_0px_#000]">
+                  Q. {Number(currentQuestionId) + 1} / {Number(totalQuestions)}
                 </div>
-              )}
+                
+                <div className="flex flex-col md:flex-row justify-between items-start gap-8 mt-4">
+                  <div className="flex-1">
+                    <h2 className="text-[28px] md:text-[36px] font-black leading-[1.1] text-black">
+                      {activeQuestion.question}
+                    </h2>
+                  </div>
+                  
+                  {commitPhaseOpen && (
+                    <div className="flex flex-col items-center justify-center bg-black text-white p-4 border-4 border-black min-w-[140px] shrink-0 shadow-[8px_8px_0px_rgba(0,0,0,0.2)]">
+                      <span className="text-[48px] font-black leading-none" style={{ color: timeLeft <= 5 ? '#FF3366' : '#39FF14' }}>
+                        {timeLeft}s
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest mt-2 font-bold text-gray-400">Time Left</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8 flex flex-col gap-4">
+              {statusBanner}
+              {hostActionBtn}
             </div>
-          </div>
+
+            {totalQuestions && (
+              <div className="mt-12 mb-20 flex flex-col gap-2">
+                <div className="flex justify-between font-black text-[12px] uppercase tracking-widest text-black">
+                  <span>Game Progress</span>
+                  <span>{Math.floor(progressPercent)}%</span>
+                </div>
+                <div className="w-full h-6 bg-white border-2 border-black shadow-[4px_4px_0px_#000] overflow-hidden">
+                  <div 
+                    className="h-full bg-black transition-all duration-500 ease-out"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Host Actions */}
-        <div className="mt-8 flex flex-col gap-4">
-          {statusBanner}
-          {hostActionBtn}
-        </div>
+        {/* ─── FINAL LEADERBOARD (PROFESSOR VIEW) ─────────────────────────────────── */}
+        {effectivelyPrizesCalculated && (
+          <div className="flex flex-col gap-8 mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            
+            {/* Global Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
+                <Users size={32} className="text-[#FF3366] mb-2" />
+                <span className="text-4xl font-black">{participants.length}</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Total Players</span>
+              </div>
+              <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
+                <Target size={32} className="text-[#33CCFF] mb-2" />
+                <span className="text-4xl font-black">{avgScore}</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Average Score</span>
+              </div>
+              <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
+                <Award size={32} className="text-[#FFE234] mb-2" />
+                <span className="text-4xl font-black">{passedPlayers}</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Passed (Diplomas)</span>
+              </div>
+              <div className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_#000] flex flex-col items-center text-center">
+                <div className="w-8 h-8 rounded-full bg-black text-[#39FF14] flex items-center justify-center font-bold mb-2">Ξ</div>
+                <span className="text-4xl font-black">{prizePoolEth}</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Total Pool (ETH)</span>
+              </div>
+            </div>
 
-        {/* Global Progress */}
-        {totalQuestions && (
-          <div className="mt-12 mb-20 flex flex-col gap-2">
-            <div className="flex justify-between font-black text-[12px] uppercase tracking-widest text-black">
-              <span>Game Progress</span>
-              <span>{Math.floor(progressPercent)}%</span>
+            {/* Professor Reward Section */}
+            {professorPrize !== undefined && professorPrize > 0n && (
+              <div className="bg-[#39FF14] border-4 border-black p-8 shadow-[8px_8px_0px_#000] flex flex-col md:flex-row items-center justify-between gap-6 mt-6">
+                <div>
+                  <h3 className="text-[24px] font-black uppercase tracking-tight text-black mb-1">Host Commission</h3>
+                  <p className="text-black/80 font-bold">You earned a cut of the prize pool for hosting.</p>
+                  <p className="text-4xl font-black text-black mt-2">{formatEther(professorPrize)} ETH</p>
+                </div>
+                <button
+                  onClick={handleClaimProfessorPrize}
+                  disabled={isStarting || professorPrizeClaimed}
+                  className={`px-8 py-4 border-4 border-black font-black uppercase text-[16px] tracking-widest transition-all ${professorPrizeClaimed ? 'bg-white text-gray-500 opacity-50 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none'}`}
+                >
+                  {isStarting ? "Processing..." : (professorPrizeClaimed ? "✓ CLAIMED" : "CLAIM REWARD")}
+                </button>
+              </div>
+            )}
+
+            {/* Detailed Leaderboard Table */}
+            <div className="bg-white border-4 border-black shadow-[8px_8px_0px_#000] overflow-hidden">
+              <div className="bg-black text-white p-4 font-black uppercase tracking-widest flex items-center gap-2">
+                <Trophy size={20} className="text-[#FFE234]" /> Final Rankings
+              </div>
+              <div className="p-0">
+                {leaderboardLoading ? (
+                  <div className="p-8 text-center font-bold text-gray-500 animate-pulse">Loading rankings...</div>
+                ) : participants.length === 0 ? (
+                  <div className="p-8 text-center font-bold text-gray-500">No participants played this game.</div>
+                ) : (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-black bg-gray-50">
+                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500">Rank</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500">Player</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Score</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Diploma</th>
+                        <th className="p-4 font-black text-[12px] uppercase tracking-widest text-gray-500 text-right">Prize</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {participants.map((p, index) => {
+                        const isWinner = index < 3 && prizes[index] > 0n;
+                        const passed = p.score >= PASS_THRESHOLD;
+                        return (
+                          <tr key={p.wallet} className="border-b-2 border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+                            <td className="p-4">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-black font-black text-[14px] ${index === 0 ? 'bg-[#FFE234]' : index === 1 ? 'bg-gray-300' : index === 2 ? 'bg-[#CD7F32]' : 'bg-white'}`}>
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-[14px]">
+                              {p.nickname ? (
+                                <span className="font-bold text-black">{p.nickname}</span>
+                              ) : (
+                                <span className="font-mono text-gray-500">{p.wallet.slice(0,6)}...{p.wallet.slice(-4)}</span>
+                              )}
+                            </td>
+                            <td className="p-4 font-black text-[20px] text-right">
+                              {p.score}
+                            </td>
+                            <td className="p-4 text-right">
+                              {passed ? (
+                                p.diplomaClaimed ? (
+                                  <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-widest">✓ Claimed</span>
+                                ) : (
+                                  <span className="inline-block bg-[#33CCFF] text-black border-2 border-black px-2 py-1 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_#000]">Qualified</span>
+                                )
+                              ) : (
+                                <span className="inline-block bg-gray-100 text-gray-400 border-2 border-gray-300 px-2 py-1 text-[10px] font-black uppercase tracking-widest">Failed</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              {isWinner ? (
+                                <div className="flex flex-col items-end gap-1.5">
+                                  <span className="font-black text-black">{formatEther(prizes[index])} ETH</span>
+                                  {p.claimed ? (
+                                    <span className="inline-block bg-[#39FF14] text-black border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-widest">✓ Claimed</span>
+                                  ) : (
+                                    <span className="inline-block bg-[#FF3366] text-white border-2 border-black px-2 py-1 text-[9px] font-black uppercase tracking-widest shadow-[2px_2px_0px_#000]">Unclaimed</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-300 font-bold">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
-            <div className="w-full h-6 bg-white border-2 border-black shadow-[4px_4px_0px_#000] overflow-hidden">
-              <div 
-                className="h-full bg-black transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+
           </div>
         )}
 

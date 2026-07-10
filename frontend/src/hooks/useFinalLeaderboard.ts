@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { useReadContract, usePublicClient } from "wagmi";
 import KahootGameABI from "../abi/KahootGame.json";
 
-export type Player = { wallet: string, score: number, claimed: boolean, diplomaClaimed: boolean };
+export type Player = { 
+  wallet: string; 
+  score: number; 
+  claimed: boolean; 
+  diplomaClaimed: boolean; 
+  nickname?: string; 
+};
 
 export function useFinalLeaderboard(gameAddress: string | null, txHash: string | null = null) {
   const wagmiClient = usePublicClient();

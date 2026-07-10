@@ -125,12 +125,20 @@ export function JoinGameTerminal() {
     isGameFound, entryFeeFormatted,
     hasJoined, isConnected, isPending,
     handleSearch, handleJoin,
+    globalNickname,
   } = useJoinGame();
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [step, setStep] = useState<"form" | "confirm">("form");
   const [error, setError] = useState<string | null>(null);
   const nicknameRef = useRef(nicknameInput);
+  
+  useEffect(() => {
+    if (globalNickname) {
+      setNicknameInput(globalNickname);
+    }
+  }, [globalNickname]);
+
   useEffect(() => { nicknameRef.current = nicknameInput; }, [nicknameInput]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -266,6 +274,15 @@ export function JoinGameTerminal() {
                     </div>
                   ))}
                 </div>
+                
+                {nicknameInput && nicknameInput.trim() !== "" && nicknameInput !== globalNickname && (
+                  <div className="flex items-start gap-2 bg-[#33CCFF]/10 border-2 border-black px-3 py-2.5 shadow-[2px_2px_0px_#33CCFF]">
+                    <Wallet size={14} className="text-black shrink-0 mt-0.5" />
+                    <span className="font-bold text-[11px] text-black uppercase tracking-wide">
+                      This will also save your nickname globally on-chain (1 extra transaction).
+                    </span>
+                  </div>
+                )}
 
                 <ArcadeButton onClick={handleJoinWithNick} loading={isPending}>
                   {isPending ? "Signing..." :

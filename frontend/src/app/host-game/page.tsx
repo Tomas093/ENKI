@@ -76,6 +76,16 @@ export default function CreateSession() {
             });
             if (decoded.eventName === 'GameCreated') {
               gameAddr = (decoded.args as any).gameAddress;
+              const newGameId = Number((decoded.args as any).gameId);
+              
+              const existingDataStr = localStorage.getItem("current_kahoot_session");
+              if (existingDataStr) {
+                try {
+                  const existingData = JSON.parse(existingDataStr);
+                  existingData.gameId = newGameId;
+                  localStorage.setItem("current_kahoot_session", JSON.stringify(existingData));
+                } catch(e){}
+              }
               break;
             }
           } catch (e) {}

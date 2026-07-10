@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { createPublicClient, http, parseAbiItem } from 'viem';
 import { sepolia } from 'viem/chains';
 import KahootGameABI from '../../../../../abi/KahootGame.json';
+import ENKIProfilesABI from '../../../../../abi/ENKIProfiles.json';
 
 const DEPLOYMENT_BLOCK = 11236783n;
 const CHUNK_SIZE = 100000n;
+
+const PROFILES_ADDRESS = process.env.NEXT_PUBLIC_PROFILES_ADDRESS as `0x${string}`;
 
 const publicClient = createPublicClient({
   chain: sepolia,
@@ -46,6 +49,16 @@ export async function GET(
     const diplomaClaims = await Promise.all(
       wallets.map(w => publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasClaimed', args: [w] }))
     );
+    const nicknames = await Promise.all(
+      wallets.map(w => 
+        publicClient.readContract({ 
+          address: PROFILES_ADDRESS, 
+          abi: ENKIProfilesABI.abi, 
+          functionName: 'nicknames', 
+          args: [w] 
+        }).catch(() => "")
+      )
+    );
 
     // 3. Fetch prizes
     const p0 = await publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [0] }).catch(() => 0n);
@@ -54,6 +67,7 @@ export async function GET(
 
     const players = wallets.map((w, i) => ({
       wallet: w,
+      nickname: nicknames[i] || undefined,
       score: Number(scores[i]),
       claimed: Boolean(claims[i]),
       diplomaClaimed: Boolean(diplomaClaims[i])

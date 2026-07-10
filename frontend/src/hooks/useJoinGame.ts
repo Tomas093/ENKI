@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useReadContracts, useWriteContract, useAccount, useConnect } from "wagmi";
+import { useReadContracts, useWriteContract, useAccount, useConnect, useReadContract, usePublicClient } from "wagmi";
 import { formatEther } from "viem";
 import toast from "react-hot-toast";
 import KahootGameABI from "../abi/KahootGame.json";
+import { PROFILES_ADDRESS, enkiProfilesAbi } from "../lib/contracts";
 
 export type GamePreviewData = {
   professor: string;
@@ -21,6 +22,19 @@ export function useJoinGame() {
   const { isConnected } = useAccount();
   const { connectors, connect } = useConnect();
   const { writeContractAsync, isPending } = useWriteContract();
+
+  const wagmiClient = usePublicClient();
+  const [isPendingProfile, setIsPendingProfile] = useState(false);
+
+  const { data: globalNicknameData } = useReadContract({
+    address: PROFILES_ADDRESS,
+    abi: enkiProfilesAbi,
+    functionName: "nicknames",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  const globalNickname = globalNicknameData as string | undefined;
 
   const { data: gameData, isLoading: isReading } = useReadContracts({
     contracts: searchedAddress
@@ -76,7 +90,25 @@ export function useJoinGame() {
       return;
     }
     if (!searchedAddress || entryFee === null) return;
+    
     try {
+      // Si el nickname ingresado es diferente al guardado on-chain,
+      // actualizamos primero el perfil global.
+      if (nickname && nickname.trim() !== "" && nickname !== globalNickname) {
+        setIsPendingProfile(true);
+        toast.loading("Saving nickname globally on-chain...", { id: "profile-tx" });
+        const txHash = await writeContractAsync({
+          address: PROFILES_ADDRESS,
+          abi: enkiProfilesAbi,
+          functionName: "setNickname",
+          args: [nickname],
+        });
+        
+        await wagmiClient?.waitForTransactionReceipt({ hash: txHash });
+        toast.success("Global nickname updated on-chain!", { id: "profile-tx" });
+        setIsPendingProfile(false);
+      }
+
       const hash = await writeContractAsync({
         address: searchedAddress,
         abi: KahootGameABI.abi,
@@ -88,7 +120,8 @@ export function useJoinGame() {
       router.push(`/transaction-mining?hash=${hash}&game=${searchedAddress}${nickParam}`);
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.shortMessage || "Transaction failed or rejected.");
+      toast.error(e?.shortMessage || "Transaction failed or rejected.", { id: "profile-tx" });
+      setIsPendingProfile(false);
     }
   };
 
@@ -103,8 +136,9 @@ export function useJoinGame() {
     entryFeeFormatted,
     hasJoined,
     isConnected,
-    isPending,
+    isPending: isPending || isPendingProfile,
     handleSearch,
     handleJoin,
+    globalNickname,
   };
 }
