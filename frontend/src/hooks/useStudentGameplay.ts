@@ -31,7 +31,7 @@ export function useStudentGameplay() {
   useEffect(() => {
     if (!gameAddress) return;
 
-    // Safety cleanup if we switched game sessions
+    // We only clean up if we switch game sessions
     const lastGame = localStorage.getItem("last_game_address");
     if (lastGame && lastGame !== gameAddress) {
       localStorage.removeItem(`game_commits_${lastGame}`);
@@ -145,8 +145,8 @@ export function useStudentGameplay() {
           }
         }
 
-        // 2. Are we ready for the next question?
-        if (correctAnswerIdx !== null && data.latestQuestion) {
+        // 2. Are we ready for the next question? (or we just joined and need to sync)
+        if (data.latestQuestion) {
           const qDataStr = localStorage.getItem("current_question");
           const currentQuestionId = qDataStr ? JSON.parse(qDataStr).id : -1;
 
@@ -160,9 +160,10 @@ export function useStudentGameplay() {
             setIsCorrect(false);
             return;
           }
+        }
 
-          // 3. Game finished?
-          if (!isRevealingRef && data.isFinished) {
+        // 3. Game finished?
+        if (!isRevealingRef && data.isFinished) {
             isRevealingRef = true;
             const success = await executeBatchReveal();
             if (!success) {

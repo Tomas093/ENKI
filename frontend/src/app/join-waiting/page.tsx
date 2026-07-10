@@ -186,6 +186,7 @@ export default function JoinWaitingRoom() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.latestQuestion) {
+        localStorage.setItem("last_game_address", gameAddress as string);
         localStorage.setItem("current_question", JSON.stringify(data.latestQuestion));
         router.push(`/gameplay?game=${gameAddress}`);
         return;
