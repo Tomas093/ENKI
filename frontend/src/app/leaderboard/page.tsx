@@ -3,7 +3,7 @@ import { Wallet, Award, Gift, Frown, Loader2, Hourglass } from "lucide-react";
 import { motion } from "motion/react";
 import { useLeaderboardClaims } from "../../hooks/useLeaderboardClaims";
 import { LeaderboardPodium } from "./components/LeaderboardPodium";
-import { GlobalLoadingOverlay } from "../../components/GlobalLoadingOverlay";
+import { GlobalLoadingOverlay } from "../components/GlobalLoadingOverlay";
 import { Button } from "../../components/ui/Button";
 import { PageBlobs } from "../../components/ui/PageBlobs";
 
