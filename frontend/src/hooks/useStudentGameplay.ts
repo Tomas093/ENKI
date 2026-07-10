@@ -170,7 +170,6 @@ export function useStudentGameplay() {
               isRevealingRef = false; // Allow retrying
             }
             return;
-          }
         }
       } catch (err) {
         console.error("Polling error:", err);
