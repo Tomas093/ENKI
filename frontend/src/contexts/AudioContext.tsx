@@ -73,11 +73,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     if (!isMusicRoute && currentMusicRef.current) {
       // Explicitly stop music if we navigate outside the game flow
-      if (musicHowls.current[currentMusicRef.current]) {
-        musicHowls.current[currentMusicRef.current]?.fade(0.5, 0, 500);
+      const currentTrack = currentMusicRef.current;
+      if (musicHowls.current[currentTrack]) {
+        musicHowls.current[currentTrack]?.fade(0.5, 0, 500);
         setTimeout(() => {
-          musicHowls.current[currentMusicRef.current]?.stop();
-          currentMusicRef.current = null;
+          musicHowls.current[currentTrack]?.stop();
+          if (currentMusicRef.current === currentTrack) {
+            currentMusicRef.current = null;
+          }
         }, 500);
       }
     }
