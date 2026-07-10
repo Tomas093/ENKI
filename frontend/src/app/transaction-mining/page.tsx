@@ -1,50 +1,9 @@
 "use client";
 import { motion } from "motion/react";
+import { Hourglass } from "lucide-react";
 import { useTransactionMining } from "../../hooks/useTransactionMining";
 
-// 8 blocks in a ring, lighting up clockwise — classic "block chase" pattern
-function BlockChaseSpinner() {
-  // positions for 8 blocks around a circle (top, top-right, right, bottom-right, bottom, bottom-left, left, top-left)
-  const positions = [
-    { x: 0, y: -1 },
-    { x: 1, y: -1 },
-    { x: 1, y: 0 },
-    { x: 1, y: 1 },
-    { x: 0, y: 1 },
-    { x: -1, y: 1 },
-    { x: -1, y: 0 },
-    { x: -1, y: -1 },
-  ];
 
-  const gap = 22; // spacing between block centers
-  const size = 14; // block size
-
-  return (
-    <div className="relative" style={{ width: 80, height: 80 }}>
-      {positions.map((pos, i) => (
-        <motion.div
-          key={i}
-          className="absolute border-2 border-black"
-          style={{
-            width: size,
-            height: size,
-            left: 80 / 2 + pos.x * gap - size / 2,
-            top: 80 / 2 + pos.y * gap - size / 2,
-          }}
-          animate={{
-            backgroundColor: ["#FFE234", "#000000", "#000000", "#000000", "#FFE234"],
-          }}
-          transition={{
-            duration: 1.2,
-            repeat: Infinity,
-            delay: i * (1.2 / 8),
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function TransactionMining() {
   useTransactionMining();
@@ -73,9 +32,15 @@ export default function TransactionMining() {
           BLOCKCHAIN
         </div>
 
-        {/* Block Chase Spinner */}
-        <div className="flex flex-col items-center justify-center" style={{ minHeight: 80 }}>
-          <BlockChaseSpinner />
+        {/* Brutalist Hourglass Spinner */}
+        <div className="relative flex items-center justify-center w-32 h-32 my-2">
+          <motion.div
+            animate={{ rotate: [0, 180, 180, 360, 360] }}
+            transition={{ duration: 2.5, repeat: Infinity, times: [0, 0.3, 0.5, 0.8, 1], ease: "easeInOut" }}
+            className="w-24 h-24 bg-[#FFE234] border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_#000]"
+          >
+            <Hourglass size={48} strokeWidth={2.5} className="text-black" />
+          </motion.div>
         </div>
 
         {/* Text */}
