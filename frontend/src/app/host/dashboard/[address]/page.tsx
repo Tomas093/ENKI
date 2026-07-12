@@ -118,14 +118,16 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
   const handleStartNextQuestion = () => {
     if (!activeQuestion) return;
-    const enunciado = `${activeQuestion.question}||${timeLimit}`;
-    const opciones = [activeQuestion.answers[0].text, activeQuestion.answers[1].text, activeQuestion.answers[2].text, activeQuestion.answers[3].text];
     
     writeContract({
       address: address as `0x${string}`,
       abi: KahootGameABI.abi,
       functionName: 'startNextQuestion',
-      args: [enunciado, opciones, activeQuestion.saltPregunta]
+      args: [
+        activeQuestion.hashVerificacionPregunta,
+        activeQuestion.hashRespuestaCorrecta,
+        activeQuestion.merkleProof
+      ]
     });
   };
 
