@@ -48,7 +48,7 @@ contract KahootFactory {
         uint256 _passingScore,
         uint256 _totalQuestions,
         string calldata _diplomaTokenURI,
-        KahootGame.RondaOculta[] calldata _rondas,
+        bytes32 _questionsMerkleRoot,
         uint256 _entryFee
     ) external payable returns (address) {
         require(msg.value >= creationFee, "Tarifa de creacion insuficiente");
@@ -59,7 +59,7 @@ contract KahootFactory {
             _passingScore,
             _totalQuestions,
             _diplomaTokenURI,
-            _rondas,
+            _questionsMerkleRoot,
             _entryFee
         );
         uint256 currentId = nextGameId;

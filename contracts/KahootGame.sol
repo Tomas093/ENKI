@@ -3,8 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./DiplomaNFT.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract KahootGame is ReentrancyGuard {
     // ─── Datos del juego ───────────────────────────────────────────────────────
@@ -19,14 +18,15 @@ contract KahootGame is ReentrancyGuard {
     mapping(uint256 => uint8) public revealedAnswers;
     bool public isFinished;
 
-    struct RondaOculta {
-        bytes32 hashVerificacionPregunta; // keccak256(enunciado + opciones[4] + saltProfesor)
-        bytes32 hashRespuestaCorrecta;    // keccak256(opcionCorrecta + saltProfesor + direccionProfesor)
+    bytes32 public questionsMerkleRoot;
+
+    struct RondaStatus {
+        bytes32 hashRespuestaCorrecta; // keccak256(opcionCorrecta + saltProfesor + direccionProfesor)
         bool commitPhaseOpen;
         bool revealPhaseOpen;
     }
 
-    RondaOculta[] public listaDeRondas;
+    mapping(uint256 => RondaStatus) public rondas;
     mapping(uint256 => mapping(address => bytes32)) public commits;
     mapping(address => uint256) public scores;
     mapping(address => bool) public hasClaimed; // diploma
@@ -58,7 +58,7 @@ contract KahootGame is ReentrancyGuard {
 
     // ─── Eventos ───────────────────────────────────────────────────────────────
     event QuestionOpened(uint256 indexed questionId);
-    event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones);
+    event QuestionRevealed(uint256 indexed questionId, bytes32 questionHash);
     event RevealPhaseStarted(uint256 indexed questionId);
     event DiplomaClaimed(address indexed student);
     event PlayerJoined(address indexed player, uint256 feePaid);
@@ -86,13 +86,12 @@ contract KahootGame is ReentrancyGuard {
         uint256 _passingScore,
         uint256 _totalQuestions,
         string memory _diplomaTokenURI,
-        RondaOculta[] memory _rondas,
+        bytes32 _questionsMerkleRoot,
         uint256 _entryFee
     ) {
         require(_totalQuestions > 0, "Debe tener preguntas");
         require(_passingScore > 0, "Puntaje invalido");
         require(_passingScore <= _totalQuestions, "Puntaje mayor al total");
-        require(_rondas.length == _totalQuestions, "Rondas no coinciden con totalQuestions");
 
         factory = _factory;
         professor = _professor;
@@ -100,18 +99,15 @@ contract KahootGame is ReentrancyGuard {
         passingScore = _passingScore;
         totalQuestions = _totalQuestions;
         entryFee = _entryFee;
-
-        for (uint256 i = 0; i < _rondas.length; i++) {
-            listaDeRondas.push(_rondas[i]);
-        }
+        questionsMerkleRoot = _questionsMerkleRoot;
 
         diplomaContract = new DiplomaNFT(address(this), _diplomaTokenURI);
         lastActionTime = block.timestamp;
     }
 
     // ─── Unirse al juego ───────────────────────────────────────────────────────
-function joinGame() external payable notCancelled {
-        require(currentQuestionId == 0 && !listaDeRondas[0].commitPhaseOpen, "El juego ya comenzo o ya termino");
+    function joinGame() external payable notCancelled {
+        require(currentQuestionId == 0 && !rondas[0].commitPhaseOpen, "El juego ya comenzo o ya termino");
         require(!hasJoined[msg.sender], "Ya te uniste al juego");
         require(msg.value == entryFee, "Debes enviar exactamente el entryFee");
 
@@ -125,38 +121,37 @@ function joinGame() external payable notCancelled {
 
     // ─── Flujo del juego ───────────────────────────────────────────────────────
     function startNextQuestion(
-        string calldata _enunciado,
-        string[4] calldata _opciones,
-        string calldata _saltPregunta
+        bytes32 _questionHash,
+        bytes32 _correctAnswerHash,
+        bytes32[] calldata _merkleProof
     ) external onlyProfessor notCancelled {
         require(!isFinished, "El juego termino");
 
         uint256 currentQ = currentQuestionId;
         if (currentQ > 0) {
             require(
-                !listaDeRondas[currentQ - 1].commitPhaseOpen && !listaDeRondas[currentQ - 1].revealPhaseOpen,
+                !rondas[currentQ - 1].commitPhaseOpen && !rondas[currentQ - 1].revealPhaseOpen,
                 "Hay una pregunta activa"
             );
         }
         require(currentQ < totalQuestions, "No hay mas preguntas");
 
-        bytes32 hashCalculado = keccak256(abi.encodePacked(
-            _enunciado,
-            _opciones[0], _opciones[1], _opciones[2], _opciones[3],
-            _saltPregunta
-        ));
-        require(hashCalculado == listaDeRondas[currentQ].hashVerificacionPregunta, "Hash de pregunta invalido");
+        // Verify Merkle Proof
+        bytes32 leaf = keccak256(abi.encodePacked(currentQ, _questionHash, _correctAnswerHash));
+        require(MerkleProof.verify(_merkleProof, questionsMerkleRoot, leaf), "Merkle proof invalido");
 
-        listaDeRondas[currentQ].commitPhaseOpen = true;
+        rondas[currentQ].hashRespuestaCorrecta = _correctAnswerHash;
+        rondas[currentQ].commitPhaseOpen = true;
         lastActionTime = block.timestamp; // ← resetea el reloj de inactividad
+        
         emit QuestionOpened(currentQ);
-        emit QuestionRevealed(currentQ, _enunciado, _opciones);
+        emit QuestionRevealed(currentQ, _questionHash);
     }
 
     function commitAnswer(bytes32 _commitHash) external {
         require(hasJoined[msg.sender], "Debes unirte primero con joinGame()");
         uint256 currentQ = currentQuestionId;
-        require(listaDeRondas[currentQ].commitPhaseOpen, "Fase de commit cerrada");
+        require(rondas[currentQ].commitPhaseOpen, "Fase de commit cerrada");
         require(_commitHash != bytes32(0), "Hash nulo");
         require(commits[currentQ][msg.sender] == bytes32(0), "Ya respondiste esta pregunta");
 
@@ -165,14 +160,14 @@ function joinGame() external payable notCancelled {
 
     function closeQuestionAndStartReveal(uint8 _correctOption, string calldata _saltRespuesta) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
-        require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
+        require(rondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
 
         bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _saltRespuesta, msg.sender));
-        require(generatedHash == listaDeRondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
+        require(generatedHash == rondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
 
         revealedAnswers[currentQ] = _correctOption;
-        listaDeRondas[currentQ].commitPhaseOpen = false;
-        listaDeRondas[currentQ].revealPhaseOpen = true;
+        rondas[currentQ].commitPhaseOpen = false;
+        rondas[currentQ].revealPhaseOpen = true;
         lastActionTime = block.timestamp;
 
         emit RevealPhaseStarted(currentQ);
@@ -181,19 +176,19 @@ function joinGame() external payable notCancelled {
     function closeCurrentAndOpenNext(
         uint8 _correctOption, 
         string calldata _saltRespuesta,
-        string calldata _nextEnunciado,
-        string[4] calldata _nextOpciones,
-        string calldata _nextSaltProfesor
+        bytes32 _nextQuestionHash,
+        bytes32 _nextCorrectAnswerHash,
+        bytes32[] calldata _nextMerkleProof
     ) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
-        require(listaDeRondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
+        require(rondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
 
         bytes32 generatedHash = keccak256(abi.encodePacked(_correctOption, _saltRespuesta, msg.sender));
-        require(generatedHash == listaDeRondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
+        require(generatedHash == rondas[currentQ].hashRespuestaCorrecta, "Hash de respuesta incorrecto");
 
         revealedAnswers[currentQ] = _correctOption;
-        listaDeRondas[currentQ].commitPhaseOpen = false;
-        listaDeRondas[currentQ].revealPhaseOpen = false;
+        rondas[currentQ].commitPhaseOpen = false;
+        rondas[currentQ].revealPhaseOpen = false;
         
         emit RevealPhaseStarted(currentQ);
         
@@ -202,22 +197,21 @@ function joinGame() external payable notCancelled {
         
         require(nextQ < totalQuestions, "No hay mas preguntas");
 
-        bytes32 hashCalculado = keccak256(abi.encodePacked(
-            _nextEnunciado,
-            _nextOpciones[0], _nextOpciones[1], _nextOpciones[2], _nextOpciones[3],
-            _nextSaltProfesor
-        ));
-        require(hashCalculado == listaDeRondas[nextQ].hashVerificacionPregunta, "Hash de pregunta invalido");
+        // Verify Merkle Proof for the next question
+        bytes32 leaf = keccak256(abi.encodePacked(nextQ, _nextQuestionHash, _nextCorrectAnswerHash));
+        require(MerkleProof.verify(_nextMerkleProof, questionsMerkleRoot, leaf), "Merkle proof invalido");
 
-        listaDeRondas[nextQ].commitPhaseOpen = true;
+        rondas[nextQ].hashRespuestaCorrecta = _nextCorrectAnswerHash;
+        rondas[nextQ].commitPhaseOpen = true;
         lastActionTime = block.timestamp;
+        
         emit QuestionOpened(nextQ);
-        emit QuestionRevealed(nextQ, _nextEnunciado, _nextOpciones);
+        emit QuestionRevealed(nextQ, _nextQuestionHash);
     }
 
     function revealAnswer(uint256 _questionId, uint8 _option, string memory _salt) external {
         require(hasJoined[msg.sender], "Debes unirte primero con joinGame()");
-        require(listaDeRondas[_questionId].revealPhaseOpen, "Fase de reveal cerrada");
+        require(rondas[_questionId].revealPhaseOpen, "Fase de reveal cerrada");
         bytes32 storedCommit = commits[_questionId][msg.sender];
         require(storedCommit != bytes32(0), "No hiciste commit en esta pregunta");
 
@@ -244,7 +238,7 @@ function joinGame() external payable notCancelled {
         
         for (uint256 i = 0; i < _questionIds.length; i++) {
             uint256 qId = _questionIds[i];
-            require(listaDeRondas[qId].revealPhaseOpen || (qId < currentQuestionId) || isFinished, "Fase de reveal cerrada o no es el momento");
+            require(rondas[qId].revealPhaseOpen || (qId < currentQuestionId) || isFinished, "Fase de reveal cerrada o no es el momento");
             
             bytes32 storedCommit = commits[qId][msg.sender];
             if (storedCommit == bytes32(0)) continue;
@@ -265,9 +259,9 @@ function joinGame() external payable notCancelled {
 
     function advanceToNextQuestion() external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
-        require(listaDeRondas[currentQ].revealPhaseOpen, "Primero hay que abrir los reveals");
+        require(rondas[currentQ].revealPhaseOpen, "Primero hay que abrir los reveals");
 
-        listaDeRondas[currentQ].revealPhaseOpen = false;
+        rondas[currentQ].revealPhaseOpen = false;
         currentQuestionId += 1;
         lastActionTime = block.timestamp;
 

@@ -7,7 +7,8 @@ import toast from "react-hot-toast";
 import { useWriteContract, useAccount, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { encodePacked, keccak256, parseEther, decodeEventLog } from "viem";
 import KahootFactoryABI from "../../abi/KahootFactory.json";
-
+import { MerkleTree } from "merkletreejs";
+import keccak256_buffer from "keccak256";
 type Answer = { text: string; correct: boolean };
 type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltPregunta?: string; saltRespuesta?: string };
 
@@ -105,7 +106,7 @@ export default function CreateSession() {
   const handleLaunch = () => {
     if (!address) return toast.error("Connect wallet first!");
 
-    const rondas = questions.map((q) => {
+    const leaves = questions.map((q, i) => {
       const saltPregunta = window.crypto.randomUUID().replace(/-/g, "");
       const saltRespuesta = window.crypto.randomUUID().replace(/-/g, "");
       
@@ -129,18 +130,26 @@ export default function CreateSession() {
         )
       );
 
-      return {
-        hashVerificacionPregunta,
-        hashRespuestaCorrecta,
-        commitPhaseOpen: false,
-        revealPhaseOpen: false,
-      };
+      (q as any).hashVerificacionPregunta = hashVerificacionPregunta;
+      (q as any).hashRespuestaCorrecta = hashRespuestaCorrecta;
+
+      const leafHex = keccak256(
+        encodePacked(
+          ['uint256', 'bytes32', 'bytes32'],
+          [BigInt(i), hashVerificacionPregunta, hashRespuestaCorrecta]
+        )
+      );
+      return Buffer.from(leafHex.slice(2), "hex");
     });
+
+    const tree = new MerkleTree(leaves, keccak256_buffer, { sortPairs: true });
+    const merkleRoot = `0x${tree.getRoot().toString("hex")}`;
+    const proofs = leaves.map(leaf => tree.getHexProof(leaf));
 
     const gameData = {
       title,
       stakeAmount,
-      questions: questions.map(q => ({ ...q }))
+      questions: questions.map((q, i) => ({ ...q, merkleProof: proofs[i] }))
     };
     localStorage.setItem("current_kahoot_session", JSON.stringify(gameData));
     localStorage.removeItem("draft_session");
@@ -162,7 +171,7 @@ export default function CreateSession() {
         Number(passingScore) || 1,
         questions.length,
         diplomaURI,
-        rondas,
+        merkleRoot,
         parseEther(stakeAmount)
       ],
       value: (creationFee as bigint) || parseEther("0.0001")
