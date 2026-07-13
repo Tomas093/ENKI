@@ -58,7 +58,7 @@ contract KahootGame is ReentrancyGuard {
 
     // ─── Eventos ───────────────────────────────────────────────────────────────
     event QuestionOpened(uint256 indexed questionId);
-    event QuestionRevealed(uint256 indexed questionId, bytes32 questionHash);
+    event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones);
     event RevealPhaseStarted(uint256 indexed questionId);
     event DiplomaClaimed(address indexed student);
     event PlayerJoined(address indexed player, uint256 feePaid);
@@ -123,7 +123,9 @@ contract KahootGame is ReentrancyGuard {
     function startNextQuestion(
         bytes32 _questionHash,
         bytes32 _correctAnswerHash,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        string calldata _enunciado,
+        string[4] calldata _opciones
     ) external onlyProfessor notCancelled {
         require(!isFinished, "El juego termino");
 
@@ -136,16 +138,22 @@ contract KahootGame is ReentrancyGuard {
         }
         require(currentQ < totalQuestions, "No hay mas preguntas");
 
+        // Verify hash string
+        require(
+            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3])) == _questionHash,
+            "El texto modificado o invalido"
+        );
+
         // Verify Merkle Proof
         bytes32 leaf = keccak256(abi.encodePacked(currentQ, _questionHash, _correctAnswerHash));
         require(MerkleProof.verify(_merkleProof, questionsMerkleRoot, leaf), "Merkle proof invalido");
 
         rondas[currentQ].hashRespuestaCorrecta = _correctAnswerHash;
         rondas[currentQ].commitPhaseOpen = true;
-        lastActionTime = block.timestamp; // ← resetea el reloj de inactividad
+        lastActionTime = block.timestamp; // resetea el reloj de inactividad
         
         emit QuestionOpened(currentQ);
-        emit QuestionRevealed(currentQ, _questionHash);
+        emit QuestionRevealed(currentQ, _enunciado, _opciones);
     }
 
     function commitAnswer(bytes32 _commitHash) external {
@@ -178,7 +186,9 @@ contract KahootGame is ReentrancyGuard {
         string calldata _saltRespuesta,
         bytes32 _nextQuestionHash,
         bytes32 _nextCorrectAnswerHash,
-        bytes32[] calldata _nextMerkleProof
+        bytes32[] calldata _nextMerkleProof,
+        string calldata _enunciado,
+        string[4] calldata _opciones
     ) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
         require(rondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
@@ -197,6 +207,12 @@ contract KahootGame is ReentrancyGuard {
         
         require(nextQ < totalQuestions, "No hay mas preguntas");
 
+        // Verify hash string
+        require(
+            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3])) == _nextQuestionHash,
+            "El texto modificado o invalido"
+        );
+
         // Verify Merkle Proof for the next question
         bytes32 leaf = keccak256(abi.encodePacked(nextQ, _nextQuestionHash, _nextCorrectAnswerHash));
         require(MerkleProof.verify(_nextMerkleProof, questionsMerkleRoot, leaf), "Merkle proof invalido");
@@ -206,7 +222,7 @@ contract KahootGame is ReentrancyGuard {
         lastActionTime = block.timestamp;
         
         emit QuestionOpened(nextQ);
-        emit QuestionRevealed(nextQ, _nextQuestionHash);
+        emit QuestionRevealed(nextQ, _enunciado, _opciones);
     }
 
     function revealAnswer(uint256 _questionId, uint8 _option, string memory _salt) external {

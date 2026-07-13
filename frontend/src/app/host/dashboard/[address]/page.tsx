@@ -126,7 +126,14 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
       args: [
         activeQuestion.hashVerificacionPregunta,
         activeQuestion.hashRespuestaCorrecta,
-        activeQuestion.merkleProof
+        activeQuestion.merkleProof,
+        activeQuestion.question,
+        [
+          activeQuestion.answers[0].text,
+          activeQuestion.answers[1].text,
+          activeQuestion.answers[2].text,
+          activeQuestion.answers[3].text
+        ]
       ]
     });
   };
