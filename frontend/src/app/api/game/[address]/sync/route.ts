@@ -15,6 +15,12 @@ export async function GET(
 
   try {
     const latestBlock = await publicClient.getBlockNumber();
+    
+    // Prevent RPC "Log response size exceeded" limits (usually 10,000 blocks max)
+    const MAX_BLOCK_RANGE = 9000n;
+    const fromBlock = (latestBlock - DEPLOYMENT_BLOCK) > MAX_BLOCK_RANGE 
+      ? latestBlock - MAX_BLOCK_RANGE 
+      : DEPLOYMENT_BLOCK;
 
     // Fetch all events at once. 
     // This allows us to reconstruct the exact state of the game without calling multiple readContracts.
@@ -22,19 +28,19 @@ export async function GET(
       publicClient.getLogs({
         address: gameAddress,
         event: parseAbiItem('event QuestionRevealed(uint256 indexed questionId, string enunciado, string[4] opciones)'),
-        fromBlock: DEPLOYMENT_BLOCK,
+        fromBlock: fromBlock,
         toBlock: latestBlock
       }),
       publicClient.getLogs({
         address: gameAddress,
         event: parseAbiItem('event RevealPhaseStarted(uint256 indexed questionId)'),
-        fromBlock: DEPLOYMENT_BLOCK,
+        fromBlock: fromBlock,
         toBlock: latestBlock
       }),
       publicClient.getLogs({
         address: gameAddress,
         event: parseAbiItem('event PrizesCalculated()'),
-        fromBlock: DEPLOYMENT_BLOCK,
+        fromBlock: fromBlock,
         toBlock: latestBlock
       }),
       publicClient.readContract({
