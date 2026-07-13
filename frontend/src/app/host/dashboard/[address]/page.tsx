@@ -72,7 +72,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
   const { data: roundData } = useReadContract({
     address: address as `0x${string}`,
     abi: KahootGameABI.abi,
-    functionName: 'listaDeRondas',
+    functionName: 'rondas',
     args: currentQuestionId !== undefined ? [currentQuestionId] : undefined,
     query: { 
       enabled: currentQuestionId !== undefined && totalQuestions !== undefined && currentQuestionId < totalQuestions,
@@ -80,8 +80,8 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     }
   });
 
-  const commitPhaseOpen = roundData ? (roundData as any)[2] : false;
-  const revealPhaseOpen = roundData ? (roundData as any)[3] : false;
+  const commitPhaseOpen = roundData ? (roundData as any)[1] : false;
+  const revealPhaseOpen = roundData ? (roundData as any)[2] : false;
 
   const [gameData, setGameData] = useState<any>(null);
   useEffect(() => {
