@@ -1,6 +1,6 @@
 "use client";
-import { useLeaderboardClaims } from "../../hooks/useLeaderboardClaims";
-import { LeaderboardUI } from "./components/LeaderboardUI";
+import { useLeaderboardClaims } from '@/features/game/useLeaderboardClaims';
+import { LeaderboardUI } from '@/features/game/LeaderboardUI';
 
 export default function FinalLeaderboard() {
   const {

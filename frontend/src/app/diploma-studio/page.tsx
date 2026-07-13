@@ -39,7 +39,7 @@ export default function DiplomaStudio() {
         if (config.decorationColor) setDecorationColor(config.decorationColor);
         if (config.bgImageUrl) setBgImageUrl(config.bgImageUrl);
         if (config.fullImageUrl) setFullImageUrl(config.fullImageUrl);
-      } catch (e) {}
+      } catch {}
     }
   }, []);
 

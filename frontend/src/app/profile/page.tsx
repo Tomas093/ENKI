@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useConnect } from "wagmi";
 import { motion, AnimatePresence } from "motion/react";
 import { User, CheckCircle2, Loader2, Wallet, Copy, Check, Pencil, ArrowRight } from "lucide-react";
-import { PROFILES_ADDRESS, enkiProfilesAbi } from "../../lib/contracts";
+import { PROFILES_ADDRESS, enkiProfilesAbi } from '@/core/blockchain/contracts';
 import toast from "react-hot-toast";
 
 export default function ProfilePage() {

@@ -1,18 +1,14 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem, formatEther } from 'viem';
-import { sepolia } from 'viem/chains';
+import { parseAbiItem, formatEther } from 'viem';
+import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
-const DEPLOYMENT_BLOCK = 11236783n;
+
 const CHUNK_SIZE = 10000n; // drpc freetier limits to 10,000 blocks
 
-// Public Sepolia RPC — no API key, no block-range limits
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+
 
 // In-memory cache to avoid re-scanning on every request
 interface PlayerStats {

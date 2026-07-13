@@ -3,8 +3,8 @@
 import { Loader2, Globe } from "lucide-react";
 import { motion } from "motion/react";
 import { useAccount } from "wagmi";
-import { useGlobalRanking } from "../../hooks/useGlobalRanking";
-import { PlayerRow } from "./components/PlayerRow";
+import { useGlobalRanking } from '@/features/game/useGlobalRanking';
+import { PlayerRow } from '@/features/game/PlayerRow';
 
 export default function GlobalRankingPage() {
   const { address } = useAccount();

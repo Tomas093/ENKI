@@ -1,16 +1,13 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem } from 'viem';
-import { sepolia } from 'viem/chains';
+import { parseAbiItem } from 'viem';
+import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
-const DEPLOYMENT_BLOCK = 11236783n; // Factory deployment block
 
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+
+
 
 export async function GET(
   request: Request,
