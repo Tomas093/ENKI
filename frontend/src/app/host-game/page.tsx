@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Check, Palette } from "lucide-react";
 import toast from "react-hot-toast";
 import { useWriteContract, useAccount, useWaitForTransactionReceipt, useReadContract } from "wagmi";
-import { encodePacked, keccak256, parseEther, decodeEventLog } from "viem";
+import { encodePacked, keccak256, parseEther, decodeEventLog, toHex, encodeAbiParameters, parseAbiParameters } from "viem";
 import KahootFactoryABI from '@/core/blockchain/abi/KahootFactory.json';
 import { MerkleTree } from "merkletreejs";
 import keccak256_buffer from "keccak256";
@@ -108,8 +108,8 @@ export default function CreateSession() {
     if (!address) return toast.error("Connect wallet first!");
 
     const leaves = questions.map((q, i) => {
-      const saltPregunta = window.crypto.randomUUID().replace(/-/g, "");
-      const saltRespuesta = window.crypto.randomUUID().replace(/-/g, "");
+      const saltPregunta = toHex(window.crypto.getRandomValues(new Uint8Array(32)));
+      const saltRespuesta = toHex(window.crypto.getRandomValues(new Uint8Array(32)));
       
       q.saltPregunta = saltPregunta;
       q.saltRespuesta = saltRespuesta;
@@ -118,15 +118,15 @@ export default function CreateSession() {
 
       const encodedQuestion = `${q.question}||${q.timeLimit || 30}`;
       const hashVerificacionPregunta = keccak256(
-        encodePacked(
-          ['string', 'string', 'string', 'string', 'string', 'string'],
+        encodeAbiParameters(
+          parseAbiParameters('string, string, string, string, string, bytes32'),
           [encodedQuestion, q.answers[0].text, q.answers[1].text, q.answers[2].text, q.answers[3].text, saltPregunta]
         )
       );
 
       const hashRespuestaCorrecta = keccak256(
         encodePacked(
-          ['uint8', 'string', 'address'],
+          ['uint8', 'bytes32', 'address'],
           [correctOptionIndex, saltRespuesta, address]
         )
       );

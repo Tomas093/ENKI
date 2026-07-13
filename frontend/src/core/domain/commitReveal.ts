@@ -2,13 +2,13 @@ import { keccak256, encodePacked } from "viem";
 
 export interface PlayerCommit {
   option: number;
-  salt: string;
+  salt: `0x${string}`;
 }
 
 export interface RevealBatch {
   questionIds: bigint[];
   options: number[];
-  salts: string[];
+  salts: `0x${string}`[];
 }
 
 /**
@@ -17,12 +17,12 @@ export interface RevealBatch {
  */
 export function computeCommitHash(
   option: number,
-  salt: string,
+  salt: `0x${string}`,
   playerAddress: `0x${string}`
 ): `0x${string}` {
   return keccak256(
     encodePacked(
-      ['uint8', 'string', 'address'],
+      ['uint8', 'bytes32', 'address'],
       [option, salt, playerAddress]
     )
   );
@@ -38,7 +38,7 @@ export function buildRevealBatch(
 ): RevealBatch {
   const qIds: bigint[] = [];
   const options: number[] = [];
-  const salts: string[] = [];
+  const salts: `0x${string}`[] = [];
 
   Object.keys(commitsObj).forEach((qIdStr) => {
     const qId = Number(qIdStr);

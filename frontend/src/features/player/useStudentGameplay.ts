@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
 import { useDisplayName } from '@/features/system/useDisplayName';
 import { computeCommitHash } from '@/core/domain/commitReveal';
+import { toHex } from 'viem';
 import { useRevealAnswers } from '@/features/host/useRevealAnswers';
 import { useGameTimer } from '@/features/player/useGameTimer';
 import { useGameStorage } from '@/features/player/useGameStorage';
@@ -65,7 +66,7 @@ export function useStudentGameplay() {
   const handlePick = async (idx: number) => {
     if (selected !== null || !gameAddress || !address || !questionData) return;
     
-    const studentSalt = "studentSalt_" + window.crypto.randomUUID().replace(/-/g, "");
+    const studentSalt = toHex(window.crypto.getRandomValues(new Uint8Array(32)));
     saveCommit(questionData.id, idx, studentSalt);
 
     try {
