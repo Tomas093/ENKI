@@ -2,13 +2,13 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, useAccount } from 'wagmi';
-import { config } from '../config/wagmi';
+import { config } from '@/core/blockchain/wagmi';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChainGuard } from './components/ChainGuard';
-import { AutoplayBanner } from './components/AutoplayBanner';
-import { NicknameProvider } from '../context/NicknameContext';
-import { AudioProvider } from '../contexts/AudioContext';
+import { ChainGuard } from '@/features/system/ChainGuard';
+import { AutoplayBanner } from '@/shared/layout/AutoplayBanner';
+import { NicknameProvider } from '@/core/context/NicknameContext';
+import { AudioProvider } from '@/core/context/AudioContext';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { status } = useAccount();
@@ -16,8 +16,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const isMockRoute = pathname.startsWith('/mock-');
-    if (status === 'disconnected' && pathname !== "/" && !isMockRoute) {
+    if (status === 'disconnected' && pathname !== "/") {
       router.push("/");
     }
   }, [status, pathname, router]);

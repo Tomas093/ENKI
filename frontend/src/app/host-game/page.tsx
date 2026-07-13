@@ -6,9 +6,11 @@ import { Plus, Trash2, ChevronDown, ChevronUp, Check, Palette } from "lucide-rea
 import toast from "react-hot-toast";
 import { useWriteContract, useAccount, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { encodePacked, keccak256, parseEther, decodeEventLog } from "viem";
-import KahootFactoryABI from "../../abi/KahootFactory.json";
+import KahootFactoryABI from '@/core/blockchain/abi/KahootFactory.json';
 import { MerkleTree } from "merkletreejs";
 import keccak256_buffer from "keccak256";
+import { BrutalField } from '@/shared/ui/BrutalField';
+import { ArcadeButton } from '@/shared/ui/ArcadeButton';
 type Answer = { text: string; correct: boolean };
 type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltPregunta?: string; saltRespuesta?: string };
 
@@ -60,7 +62,7 @@ export default function CreateSession() {
         if (parsed.passingScore) setPassingScore(parsed.passingScore);
         if (parsed.questions) setQuestions(parsed.questions);
         if (parsed.nextId) setNextId(parsed.nextId);
-      } catch (e) {}
+      } catch {}
     }
   }, []);
 
@@ -85,15 +87,14 @@ export default function CreateSession() {
                   const existingData = JSON.parse(existingDataStr);
                   existingData.gameId = newGameId;
                   localStorage.setItem("current_kahoot_session", JSON.stringify(existingData));
-                } catch(e){}
+                } catch {}
               }
               break;
             }
-          } catch (e) {}
+          } catch {}
         }
-      } catch (err) {}
+      } catch {}
       
-      const param = gameAddr ? `&contract=${gameAddr}` : "";
       router.push(`/host/dashboard/${gameAddr}`);
     }
   }, [isConfirmed, receipt, router, title]);
@@ -235,12 +236,12 @@ export default function CreateSession() {
         className="bg-white border-2 border-black shadow-[8px_8px_0px_#000] p-8 flex flex-col gap-6"
       >
         <div className="flex flex-col gap-2">
-          <label className="font-black text-black text-[12px] uppercase tracking-wide">Session Title</label>
-          <input
+          <BrutalField
+            id="session-title"
+            label="Session Title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={setTitle}
             placeholder="E.G. BLOCKCHAIN BASICS"
-            className="w-full bg-white border-2 border-black px-4 py-3 font-black text-black shadow-[4px_4px_0px_#000] focus:shadow-none focus:translate-x-1 focus:translate-y-1 transition-all outline-none rounded-none placeholder:text-gray-300 uppercase"
           />
         </div>
         <div className="flex flex-col md:flex-row gap-6">
@@ -418,17 +419,16 @@ export default function CreateSession() {
         transition={{ delay: 0.2 }}
         className="flex justify-end mt-4"
       >
-        <button
-          disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
-          onClick={handleLaunch}
-          className={`flex items-center gap-2 border-2 border-black font-black uppercase tracking-wider px-8 py-5 transition-all text-[13px] ${
-            (!title.trim() || questions.some((q) => !q.question.trim()) || isPending)
-              ? "bg-gray-200 text-gray-400 shadow-none translate-x-1 translate-y-1 cursor-not-allowed"
-              : "bg-black text-white shadow-[8px_8px_0px_#000] hover:bg-neo-accent hover:text-black active:translate-x-2 active:translate-y-2 active:shadow-none cursor-pointer"
-          }`}
-        >
-          {isPending ? "CREATING ON CHAIN..." : "LAUNCH SESSION"}
-        </button>
+        <div className="w-[300px]">
+          <ArcadeButton
+            accent="black"
+            onClick={handleLaunch}
+            disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
+            loading={isPending}
+          >
+            {isPending ? "CREATING..." : "LAUNCH SESSION"}
+          </ArcadeButton>
+        </div>
       </motion.div>
 
     </div>

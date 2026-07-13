@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem, parseAbi } from 'viem';
-import { sepolia } from 'viem/chains';
+import { parseAbiItem, parseAbi } from 'viem';
+import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
 
-const DEPLOYMENT_BLOCK = 11236783n;
 
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+
+
 
 export async function GET(
   request: Request,

@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem } from 'viem';
-import { sepolia } from 'viem/chains';
-import KahootGameABI from '../../../../../abi/KahootGame.json';
-import ENKIProfilesABI from '../../../../../abi/ENKIProfiles.json';
+import { parseAbiItem } from 'viem';
+import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
+import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
+import ENKIProfilesABI from '@/core/blockchain/abi/ENKIProfiles.json';
 
-const DEPLOYMENT_BLOCK = 11236783n;
+
 const CHUNK_SIZE = 100000n;
 
 const PROFILES_ADDRESS = process.env.NEXT_PUBLIC_PROFILES_ADDRESS as `0x${string}`;
 
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+
 
 export async function GET(
   request: Request,

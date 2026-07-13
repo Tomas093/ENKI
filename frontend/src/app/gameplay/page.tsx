@@ -1,7 +1,7 @@
 "use client";
-import { useStudentGameplay } from "../../hooks/useStudentGameplay";
-import { GameplayUI } from "../components/GameplayUI";
-import { useAudio } from "../../contexts/AudioContext";
+import { useStudentGameplay } from '@/features/player/useStudentGameplay';
+import { GameplayUI } from '@/features/player/GameplayUI';
+import { useAudio } from '@/core/context/AudioContext';
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -17,7 +17,6 @@ export default function ActiveGameplay() {
     correctAnswerIdx,
     isRevealing,
     isCorrect,
-    displayName,
     isPending,
     handlePick,
   } = useStudentGameplay();
@@ -55,7 +54,6 @@ export default function ActiveGameplay() {
       correctAnswerIdx={correctAnswerIdx}
       isRevealing={isRevealing}
       isCorrect={isCorrect}
-      displayName={displayName}
       isPending={isPending}
       handlePick={handlePick}
       gameAddress={gameAddress}

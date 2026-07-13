@@ -1,8 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { Plus, Layers } from "lucide-react";
-import { useHostDashboard } from "../../../hooks/useHostDashboard";
-import { SessionRow } from "../components/SessionRow";
+import { useHostDashboard } from '@/features/host/useHostDashboard';
+import { SessionRow } from '@/features/host/SessionRow';
 
 export default function HostDashboard() {
   const router = useRouter();

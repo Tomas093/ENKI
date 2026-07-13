@@ -1,12 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye, Trophy, Target, Award, Coins } from "lucide-react";
+import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye, Trophy, Target, Award } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
-import { motion, AnimatePresence } from "motion/react";
-import KahootGameABI from "../../../../abi/KahootGame.json";
-import { useFinalLeaderboard } from "../../../../hooks/useFinalLeaderboard";
+
+import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
+import { useFinalLeaderboard } from '@/features/game/useFinalLeaderboard';
 
 export default function GameDashboardPage({ params }: { params: Promise<{ address: string }> }) {
   const router = useRouter();

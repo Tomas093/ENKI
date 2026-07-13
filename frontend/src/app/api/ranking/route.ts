@@ -1,18 +1,14 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem, formatEther } from 'viem';
-import { sepolia } from 'viem/chains';
+import { parseAbiItem, formatEther } from 'viem';
+import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
-const DEPLOYMENT_BLOCK = 11236783n;
-const CHUNK_SIZE = 100000n; // drpc supports large block ranges — no restrictions
 
-// Public Sepolia RPC — no API key, no block-range limits
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+const CHUNK_SIZE = 10000n; // drpc freetier limits to 10,000 blocks
+
+
 
 // In-memory cache to avoid re-scanning on every request
 interface PlayerStats {
@@ -28,14 +24,14 @@ let cacheTimestamp = 0;
 
 const CACHE_TTL_MS = 30_000; // 30 seconds
 
-async function getLogsInChunks(params: any, fromBlock: bigint, toBlock: bigint) {
-  let allLogs: any[] = [];
+async function getLogsInChunks(params: any, fromBlock: bigint, toBlock: bigint): Promise<any[]> {
+  const promises = [];
   for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
     const end = start + CHUNK_SIZE - 1n > toBlock ? toBlock : start + CHUNK_SIZE - 1n;
-    const logs = await publicClient.getLogs({ ...params, fromBlock: start, toBlock: end });
-    allLogs = allLogs.concat(logs);
+    promises.push(publicClient.getLogs({ ...params, fromBlock: start, toBlock: end }));
   }
-  return allLogs;
+  const results = await Promise.all(promises);
+  return results.flat();
 }
 
 export async function GET() {
@@ -120,7 +116,7 @@ export async function GET() {
 }
 
 function buildResponse(latestBlock: bigint) {
-  const players = Array.from(cachedPlayerStats.entries()).map(([address, stats], idx) => ({
+  const players = Array.from(cachedPlayerStats.entries()).map(([address, stats]) => ({
     rank: 0,
     address,
     ens: `${address.slice(0, 6)}...${address.slice(-4)}`,

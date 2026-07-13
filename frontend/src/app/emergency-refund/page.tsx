@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
-import { useEmergencyRefund } from "../../hooks/useEmergencyRefund";
+import { useEmergencyRefund } from '@/features/system/useEmergencyRefund';
 
 export default function EmergencyRefund() {
   const { signing, done, canClaim, timeRemainingStr, entryFeeEth, handleClaim, router } = useEmergencyRefund();

@@ -1,6 +1,6 @@
-import { JoinGameTerminal } from "./components/JoinGameTerminal";
-import { GlobalRankingPreview } from "./components/GlobalRankingPreview";
-import { HostGameModule } from "./components/HostGameModule";
+import { JoinGameTerminal } from '@/features/player/JoinGameTerminal';
+import { GlobalRankingPreview } from '@/features/game/GlobalRankingPreview';
+import { HostGameModule } from '@/features/host/HostGameModule';
 
 export default function Home() {
   return (

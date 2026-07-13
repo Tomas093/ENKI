@@ -1,16 +1,12 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
-import { createPublicClient, http } from 'viem';
-import { sepolia } from 'viem/chains';
-import KahootFactoryABI from '../../../../../abi/KahootFactory.json';
+import { publicClient } from '@/core/blockchain/viemClient';
+import KahootFactoryABI from '@/core/blockchain/abi/KahootFactory.json';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
-const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http('https://sepolia.drpc.org'),
-});
+
 
 export async function GET(
   request: Request,

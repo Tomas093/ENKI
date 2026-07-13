@@ -5,10 +5,10 @@ import { useReadContracts, useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { motion, AnimatePresence } from "motion/react";
 import { Users, Zap, Check, Copy } from "lucide-react";
-import KahootGameABI from "../../abi/KahootGame.json";
-import { useNickname } from "../../context/NicknameContext";
-import { useAudio } from "../../contexts/AudioContext";
-import { STORAGE_KEYS } from "../../constants/storage";
+import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
+import { useNickname } from '@/core/context/NicknameContext';
+import { useAudio } from '@/core/context/AudioContext';
+import { STORAGE_KEYS } from '@/core/storage/storage';
 
 // ─── Neo-Brutalist copy button with microinteraction ─────────────────────────
 function CopyButton({ value }: { value: string }) {

@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "motion/react";
 import { Hourglass } from "lucide-react";
-import { useTransactionMining } from "../../hooks/useTransactionMining";
+import { useTransactionMining } from '@/features/system/useTransactionMining';
 
 
 
