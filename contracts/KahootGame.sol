@@ -125,7 +125,8 @@ contract KahootGame is ReentrancyGuard {
         bytes32 _correctAnswerHash,
         bytes32[] calldata _merkleProof,
         string calldata _enunciado,
-        string[4] calldata _opciones
+        string[4] calldata _opciones,
+        string calldata _saltPregunta
     ) external onlyProfessor notCancelled {
         require(!isFinished, "El juego termino");
 
@@ -140,7 +141,7 @@ contract KahootGame is ReentrancyGuard {
 
         // Verify hash string
         require(
-            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3])) == _questionHash,
+            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3], _saltPregunta)) == _questionHash,
             "El texto modificado o invalido"
         );
 
@@ -188,7 +189,8 @@ contract KahootGame is ReentrancyGuard {
         bytes32 _nextCorrectAnswerHash,
         bytes32[] calldata _nextMerkleProof,
         string calldata _enunciado,
-        string[4] calldata _opciones
+        string[4] calldata _opciones,
+        string calldata _saltPregunta
     ) external onlyProfessor notCancelled {
         uint256 currentQ = currentQuestionId;
         require(rondas[currentQ].commitPhaseOpen, "No esta en fase de commit");
@@ -209,7 +211,7 @@ contract KahootGame is ReentrancyGuard {
 
         // Verify hash string
         require(
-            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3])) == _nextQuestionHash,
+            keccak256(abi.encodePacked(_enunciado, _opciones[0], _opciones[1], _opciones[2], _opciones[3], _saltPregunta)) == _nextQuestionHash,
             "El texto modificado o invalido"
         );
 

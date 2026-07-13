@@ -127,13 +127,14 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
         activeQuestion.hashVerificacionPregunta,
         activeQuestion.hashRespuestaCorrecta,
         activeQuestion.merkleProof,
-        activeQuestion.question,
+        `${activeQuestion.question}||${activeQuestion.timeLimit || 30}`,
         [
           activeQuestion.answers[0].text,
           activeQuestion.answers[1].text,
           activeQuestion.answers[2].text,
           activeQuestion.answers[3].text
-        ]
+        ],
+        activeQuestion.saltPregunta
       ]
     });
   };
