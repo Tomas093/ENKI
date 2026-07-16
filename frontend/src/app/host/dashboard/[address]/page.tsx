@@ -245,7 +245,8 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     );
   }
 
-  const progressPercent = totalQuestions ? ((Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))) / Number(totalQuestions)) * 100 : 0;
+  const hasStarted = currentQuestionId !== undefined && !(currentQuestionId === 0n && !commitPhaseOpen && !revealPhaseOpen);
+  const progressPercent = (totalQuestions && hasStarted) ? ((Math.min(Number(currentQuestionId) + (isFinished ? 0 : 1), Number(totalQuestions))) / Number(totalQuestions)) * 100 : 0;
   
   const avgScore = participants.length > 0 
     ? Math.round(participants.reduce((acc, p) => acc + p.score, 0) / participants.length)
