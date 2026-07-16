@@ -6,11 +6,12 @@ Sistema descentralizado de trivia construido sobre Ethereum. Cada partida es un 
 
 ## Características principales
 
-### 🔐 Doble Commit-Reveal (Anti-copia)
-Los jugadores no pueden copiar respuestas mirando la mempool. El flujo por pregunta es:
-1. **Commit**: el alumno envía `keccak256(opción + salt + address)` — nadie puede leer su elección.
-2. El profesor revela la respuesta correcta (también pre-comprometida con hash).
-3. **Reveal**: el alumno revela su opción y salt; el contrato verifica que coincida con su commit original.
+### 🔐 Commit-Reveal con Merkle Tree (Anti-copia)
+Los jugadores no pueden copiar respuestas mirando la mempool ni el profesor puede cambiar las preguntas a mitad de partida. El flujo es:
+1. **Creación**: El profesor compromete todas las preguntas y respuestas correctas al crear la partida, usando la raíz de un **Merkle Tree**.
+2. **Commit del alumno**: En cada pregunta, el alumno envía un hash seguro (utilizando un salt de `bytes32` generado aleatoriamente para optimizar gas y evitar colisiones) — nadie puede leer su elección.
+3. **Revelación del profesor**: El profesor revela la respuesta correcta y su hash pre-comprometido es validado (Merkle Proof).
+4. **Reveal del alumno**: el alumno revela su opción y salt (pudiendo usar `batchRevealAnswers` al final); el contrato verifica mediante `abi.encode` que coincida con su commit original, previniendo colisiones de hashes.
 
 ### 🏆 Premio por Ranking Olímpico con Prize Pooling
 Cada jugador paga un *entry fee* en ETH al unirse. El pozo resultante se distribuye usando el **Standard Competition Ranking (Olympic Ranking)** con acumulación de pozos por empate:
@@ -51,6 +52,9 @@ Los alumnos que alcanzan el `passingScore` pueden acuñar un NFT intransferible 
 ## Arquitectura de contratos
 
 ```
+ENKIProfiles.sol            (singleton global)
+   └─ setNickname()         → registra o actualiza apodos on-chain de los usuarios
+
 KahootFactory.sol
 │  ├─ createGame()          → despliega un KahootGame
 │  ├─ recordDiplomaWin()    → actualiza el leaderboard global
@@ -59,11 +63,12 @@ KahootFactory.sol
 │
 KahootGame.sol              (una instancia por partida)
 │  ├─ joinGame()            → el alumno paga el entry fee y se registra
-│  ├─ startNextQuestion()   → profesor abre la fase de commit
+│  ├─ startNextQuestion()   → abre la fase de commit probando la respuesta vía Merkle Proof
 │  ├─ commitAnswer()        → alumno envía su hash de respuesta
 │  ├─ closeQuestionAndStartReveal() → profesor revela la respuesta correcta
-│  ├─ revealAnswer()        → alumno revela su opción y acumula puntos
-│  ├─ advanceToNextQuestion() → profesor avanza a la siguiente pregunta
+│  ├─ closeCurrentAndOpenNext() → profesor avanza de pregunta combinando fases (optimización de gas)
+│  ├─ revealAnswer() / batchRevealAnswers() → alumno revela su opción y acumula puntos
+│  ├─ advanceToNextQuestion() → profesor avanza a la siguiente fase
 │  ├─ claimRefund()         → alumno recupera su fee si el profesor quedó AFK >12h
 │  ├─ calculatePrizes()     → calcula la distribución con Ranking Olímpico
 │  ├─ claimPrize()          → ganadores y profesor retiran sus fondos
@@ -75,11 +80,23 @@ DiplomaNFT.sol              (una instancia por KahootGame)
 
 ---
 
+## Estructura del Monorepo
+
+El proyecto está configurado como un monorepo utilizando **pnpm workspaces**:
+
+- `contracts/`: Contratos inteligentes desarrollados con Solidity y Hardhat.
+- `ignition/`: Scripts de despliegue de Hardhat Ignition.
+- `test/`: Pruebas unitarias e integrales (Chai/Mocha/Hardhat).
+- `frontend/`: DApp construida con Next.js, TailwindCSS 4 y conectada a la blockchain usando `wagmi` + `viem`.
+
+---
+
 ## Seguridad implementada
 
 | Amenaza | Mitigación |
 |---|---|
-| Copia de respuestas (front-running) | Doble Commit-Reveal con salt del alumno y del profesor |
+| Copia de respuestas (front-running) | Commit-Reveal del alumno (con salt de 32-bytes) + Respuestas del profesor inmutables vía Merkle Tree |
+| Colisión de Hashes | Uso de `abi.encode` para verificación, previniendo ambigüedades de arrays dinámicos |
 | Reentrancy en retiros | `nonReentrant` (OpenZeppelin) + patrón Checks-Effects-Interactions |
 | Gas Limit DoS en distribución masiva | Patrón Pull: cada actor retira individualmente, sin bucles sobre direcciones |
 | Profesor AFK / fondos bloqueados | `claimRefund()` habilitado tras 12 h de inactividad |
@@ -109,15 +126,15 @@ DiplomaNFT.sol              (una instancia por KahootGame)
 ## Requisitos previos
 
 - [Node.js](https://nodejs.org/) v18+
-- `npm`
+- `pnpm` (recomendado v9+)
 
 ## Instalación
 
 ```bash
-npm install
+pnpm install
 ```
 
-## Compilación
+## Compilación (Hardhat)
 
 ```bash
 npx hardhat compile
@@ -127,4 +144,11 @@ npx hardhat compile
 
 ```bash
 npx hardhat test
+```
+
+## Ejecutar Frontend Localmente
+
+```bash
+cd frontend
+pnpm run dev
 ```
