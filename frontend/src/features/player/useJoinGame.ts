@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useReadContracts, useWriteContract, useAccount, useConnect, useReadContract, usePublicClient } from "wagmi";
 import { formatEther } from "viem";
@@ -14,6 +14,16 @@ export type GamePreviewData = {
 
 export function useJoinGame() {
   const [gameIdInput, setGameIdInput] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const gameIdParam = params.get("gameId");
+      if (gameIdParam) {
+        setGameIdInput(gameIdParam);
+      }
+    }
+  }, []);
   const [searchedAddress, setSearchedAddress] = useState<`0x${string}` | undefined>(undefined);
   const [isResolving, setIsResolving] = useState(false);
 

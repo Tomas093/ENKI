@@ -93,9 +93,8 @@ export function SessionRow({ gameAddress, gameId }: { gameAddress: `0x${string}`
         {!isLoading && !isFinished && (
           <button
             onClick={() => {
-              // Copy to clipboard to make joining easier for them if they just paste it in index
-              navigator.clipboard.writeText(gameId !== undefined ? gameId.toString() : gameAddress);
-              router.push("/");
+              const gameParam = gameId !== undefined ? gameId.toString() : gameAddress;
+              router.push(`/?gameId=${gameParam}`);
             }}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 border-2 border-black font-black text-sm uppercase tracking-wider px-4 py-3 shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all bg-[#33CCFF] hover:bg-[#FFE234] text-black"
           >
