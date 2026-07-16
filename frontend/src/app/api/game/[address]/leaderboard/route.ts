@@ -5,7 +5,7 @@ import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
 import ENKIProfilesABI from '@/core/blockchain/abi/ENKIProfiles.json';
 
 
-const CHUNK_SIZE = 100000n;
+const CHUNK_SIZE = 9000n;
 
 const PROFILES_ADDRESS = process.env.NEXT_PUBLIC_PROFILES_ADDRESS as `0x${string}`;
 
@@ -36,38 +36,37 @@ export async function GET(
 
     const wallets = Array.from(new Set(allLogs.map(l => l.args?.player as `0x${string}`)));
 
-    // 2. Fetch stats for each player using the contract
-    const scores = await Promise.all(
-      wallets.map(w => publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'scores', args: [w] }))
-    );
-    const claims = await Promise.all(
-      wallets.map(w => publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasPrizeClaimed', args: [w] }))
-    );
-    const diplomaClaims = await Promise.all(
-      wallets.map(w => publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasClaimed', args: [w] }))
-    );
-    const nicknames = await Promise.all(
-      wallets.map(w => 
-        publicClient.readContract({ 
-          address: PROFILES_ADDRESS, 
-          abi: ENKIProfilesABI.abi, 
-          functionName: 'nicknames', 
-          args: [w] 
-        }).catch(() => "")
-      )
-    );
+    // 2. Fetch stats for each player using multicall to prevent Vercel 10s timeouts
+    const scores = await publicClient.multicall({
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'scores', args: [w] }))
+    });
+    
+    const claims = await publicClient.multicall({
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasPrizeClaimed', args: [w] }))
+    });
+    
+    const diplomaClaims = await publicClient.multicall({
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasClaimed', args: [w] }))
+    });
+    
+    const nicknames = await publicClient.multicall({
+      contracts: wallets.map(w => ({ address: PROFILES_ADDRESS, abi: ENKIProfilesABI.abi, functionName: 'nicknames', args: [w] }))
+    });
 
     // 3. Fetch prizes
-    const p0 = await publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [0] }).catch(() => 0n);
-    const p1 = await publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [1] }).catch(() => 0n);
-    const p2 = await publicClient.readContract({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [2] }).catch(() => 0n);
+    const prizesMulticall = await publicClient.multicall({
+      contracts: [0, 1, 2].map(rank => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [rank] }))
+    });
+    const p0 = prizesMulticall[0].status === 'success' ? prizesMulticall[0].result : 0n;
+    const p1 = prizesMulticall[1].status === 'success' ? prizesMulticall[1].result : 0n;
+    const p2 = prizesMulticall[2].status === 'success' ? prizesMulticall[2].result : 0n;
 
     const players = wallets.map((w, i) => ({
       wallet: w,
-      nickname: nicknames[i] || undefined,
-      score: Number(scores[i]),
-      claimed: Boolean(claims[i]),
-      diplomaClaimed: Boolean(diplomaClaims[i])
+      nickname: (nicknames[i].status === 'success' && nicknames[i].result) ? String(nicknames[i].result) : undefined,
+      score: scores[i].status === 'success' ? Number(scores[i].result) : 0,
+      claimed: claims[i].status === 'success' ? Boolean(claims[i].result) : false,
+      diplomaClaimed: diplomaClaims[i].status === 'success' ? Boolean(diplomaClaims[i].result) : false
     })).sort((a, b) => b.score - a.score);
 
     return NextResponse.json({
@@ -76,7 +75,14 @@ export async function GET(
       syncedToBlock: latestBlock.toString(),
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error(`[/api/game/${gameAddress}/leaderboard] Error:`, error);
-    return NextResponse.json({ error: 'Failed to fetch leaderboard data' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch leaderboard data',
+        ...(process.env.NODE_ENV !== 'production' && { detail: message }),
+      },
+      { status: 500 }
+    );
   }
 }
