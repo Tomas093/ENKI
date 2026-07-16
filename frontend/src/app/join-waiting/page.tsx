@@ -135,11 +135,12 @@ export default function JoinWaitingRoom() {
   const gameIdParam = searchParams.get("id");
   const { nickname, setNickname } = useNickname();
   const { address } = useAccount();
-  const { playMusic } = useAudio();
+  const { playMusic, stopMusic } = useAudio();
 
   useEffect(() => {
     playMusic("elevator");
-  }, [playMusic]);
+    return () => stopMusic();
+  }, [playMusic, stopMusic]);
 
   useEffect(() => {
     if (nickParam && !nickname) setNickname(decodeURIComponent(nickParam));

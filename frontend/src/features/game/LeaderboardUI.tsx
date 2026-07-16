@@ -52,7 +52,11 @@ export function LeaderboardUI({
   handleClaimDiploma,
   address,
 }: LeaderboardUIProps) {
-  const { playMusic } = useAudio();
+  const { playMusic, stopMusic } = useAudio();
+
+  useEffect(() => {
+    return () => stopMusic();
+  }, [stopMusic]);
 
   // Removed automatic epic music playback on load
 

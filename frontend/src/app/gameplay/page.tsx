@@ -20,13 +20,14 @@ export default function ActiveGameplay() {
     isPending,
     handlePick,
   } = useStudentGameplay();
-  const { playMusic, playSFX } = useAudio();
+  const { playMusic, playSFX, stopMusic } = useAudio();
   const prevTimeLeft = useRef(timeLeft);
   const prevIsRevealing = useRef(isRevealing);
 
   useEffect(() => {
     playMusic("tense");
-  }, [playMusic]);
+    return () => stopMusic();
+  }, [playMusic, stopMusic]);
 
   // SFX for tick
   useEffect(() => {
