@@ -158,7 +158,7 @@ export function GameplayUI({
                 <motion.button
                   key={idx}
                   onClick={() => handlePick(idx)}
-                  disabled={!!isDisabled}
+                  disabled={isDisabled}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{
                     opacity: isNeutral ? 0.3 : 1,
@@ -275,14 +275,14 @@ export function GameplayUI({
 
 
         {/* ── EMERGENCY REFUND LINK ── */}
-        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50">
+        <div className="mt-auto pt-6 flex justify-center">
           <button
             onClick={() => router.push(gameAddress ? `/emergency-refund?game=${gameAddress}` : "/emergency-refund")}
-            className="flex items-center gap-2 font-black text-[11px] uppercase tracking-widest text-black/40 hover:text-black hover:bg-[#FFE234] border-2 border-transparent hover:border-black hover:shadow-[3px_3px_0px_#000] px-3 py-1.5 transition-all"
+            className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-widest text-black/35 hover:text-black hover:underline transition-all cursor-pointer"
             title="Host Abandoned? Claim Refund"
           >
-            <LifeBuoy size={14} strokeWidth={3} />
-            <span className="hidden md:inline">Emergency Refund</span>
+            <LifeBuoy size={12} strokeWidth={3} />
+            <span>Emergency Refund</span>
           </button>
         </div>
 
