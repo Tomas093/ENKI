@@ -4,6 +4,7 @@ import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye, Trophy,
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatEther } from "viem";
+import toast from 'react-hot-toast';
 
 import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
 import { useFinalLeaderboard } from '@/features/game/useFinalLeaderboard';
@@ -109,7 +110,7 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     return () => clearInterval(interval);
   }, [commitPhaseOpen, lastActionTime, timeLimit]);
 
-  const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
+  const { writeContract, writeContractAsync, data: txHash, isPending: isWritePending } = useWriteContract();
   const { isLoading: isWaiting } = useWaitForTransactionReceipt({ hash: txHash });
   const isStarting = isWritePending || isWaiting;
 
@@ -167,12 +168,22 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
     });
   };
 
-  const handleClaimProfessorPrize = () => {
-    writeContract({
-      address: address as `0x${string}`,
-      abi: KahootGameABI.abi,
-      functionName: 'claimPrize'
-    });
+  const handleClaimProfessorPrize = async () => {
+    try {
+      await writeContractAsync({
+        address: address as `0x${string}`,
+        abi: KahootGameABI.abi,
+        functionName: 'claimPrize'
+      });
+      toast.success("Prize claimed successfully! 🎉");
+    } catch (e: any) {
+      console.error(e);
+      let errorMessage = e?.shortMessage || e?.message || "Failed to claim prize.";
+      if (errorMessage.toLowerCase().includes("gas limit too high") || errorMessage.toLowerCase().includes("reverted")) {
+         errorMessage = "Transaction rejected. You may have already claimed, or there is no prize available.";
+      }
+      toast.error(errorMessage);
+    }
   };
 
   let phaseLabel = "WAITING";

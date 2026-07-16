@@ -11,6 +11,7 @@ import { MerkleTree } from "merkletreejs";
 import keccak256_buffer from "keccak256";
 import { BrutalField } from '@/shared/ui/BrutalField';
 import { ArcadeButton } from '@/shared/ui/ArcadeButton';
+import { GlobalLoadingOverlay } from '@/shared/ui/GlobalLoadingOverlay';
 type Answer = { text: string; correct: boolean };
 type Question = { id: number; question: string; answers: Answer[]; timeLimit: number; saltPregunta?: string; saltRespuesta?: string };
 
@@ -37,7 +38,7 @@ export default function CreateSession() {
   const router = useRouter();
   const { address } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash });
+  const { isSuccess: isConfirmed, data: receipt, isLoading: isWaiting } = useWaitForTransactionReceipt({ hash });
 
   const [title, setTitle] = useState("");
   const [stakeAmount, setStakeAmount] = useState("0.01");
@@ -423,14 +424,18 @@ export default function CreateSession() {
           <ArcadeButton
             accent="black"
             onClick={handleLaunch}
-            disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending}
-            loading={isPending}
+            disabled={!title.trim() || questions.some((q) => !q.question.trim()) || isPending || isWaiting}
+            loading={isPending || isWaiting}
           >
-            {isPending ? "CREATING..." : "LAUNCH SESSION"}
+            {isPending || isWaiting ? "CREATING..." : "LAUNCH SESSION"}
           </ArcadeButton>
         </div>
       </motion.div>
-
+      <GlobalLoadingOverlay
+        isVisible={isPending || isWaiting}
+        message={isPending ? "SIGNING TRANSACTION..." : "CREATING GAME..."}
+        subMessage={isPending ? "Please confirm the transaction in your wallet" : "Waiting for blockchain confirmation"}
+      />
     </div>
   );
 }

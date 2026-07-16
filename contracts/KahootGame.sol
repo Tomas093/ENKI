@@ -321,46 +321,57 @@ contract KahootGame is ReentrancyGuard {
 
         prizesCalculated = true;
 
-        // Montos brutos por rango (con división entera)
-        uint256 rank1Total = (prizePool * 60) / 100;
-        uint256 rank2Total = (prizePool * 20) / 100;
-        uint256 rank3Total = (prizePool * 10) / 100;
+        uint256 slotsUsed = 0;
+        uint8 ranksFound = 0;
+        
+        // Pesos base para los 3 primeros puestos (60%, 20%, 10%)
+        uint256[3] memory slotWeights = [uint256(60), uint256(20), uint256(10)];
+        uint256 totalWeight = 0;
 
-        uint256 slotsUsed      = 0;  // slots del top-3 ya consumidos por grupos anteriores
-        uint8   ranksFound     = 0;  // grupos con derecho a premio encontrados (máx 3)
-        uint256 totalToPlayers = 0;
-
-        // Recorre puntajes de mayor a menor hasta agotar los 3 slots premiados
-        for (uint256 s = totalQuestions; slotsUsed < 3; ) {
+        // PRIMERA PASADA: Identificar grupos, ocupar slots y calcular el peso (weight) de cada grupo.
+        // OJO: Se frena si s == 0, por lo que los puntajes de 0 NUNCA reciben premio.
+        for (uint256 s = totalQuestions; s > 0 && slotsUsed < 3; s--) {
             uint256 freq = scoreFrequency[s];
 
             if (freq > 0) {
-                // Este grupo ocupa los slots [slotStart .. slotEnd]
-                uint256 slotStart = slotsUsed + 1;
-                uint256 slotEnd   = slotsUsed + freq;
-
-                // Acumular los % de los slots premiados que caen en [slotStart, slotEnd]
-                uint256 poolAcumulado = 0;
-                if (slotStart <= 1 && slotEnd >= 1) poolAcumulado += rank1Total;
-                if (slotStart <= 2 && slotEnd >= 2) poolAcumulado += rank2Total;
-                if (slotStart <= 3 && slotEnd >= 3) poolAcumulado += rank3Total;
-
-                if (poolAcumulado > 0) {
-                    topScoreValues[ranksFound]       = s;
-                    topScoreCounts[ranksFound]       = freq;
-                    prizePerPlayerAtRank[ranksFound] = poolAcumulado / freq;
-                    totalToPlayers += prizePerPlayerAtRank[ranksFound] * freq;
-                    ranksFound++;
+                uint256 groupWeight = 0;
+                
+                // Acumulamos el peso para este grupo según los slots que ocupen
+                for (uint256 i = 0; i < freq && slotsUsed < 3; i++) {
+                    groupWeight += slotWeights[slotsUsed];
+                    slotsUsed++;
                 }
 
-                slotsUsed += freq;
+                if (groupWeight > 0) {
+                    topScoreValues[ranksFound] = s;
+                    topScoreCounts[ranksFound] = freq;
+                    // Guardamos temporalmente el peso del grupo aquí
+                    prizePerPlayerAtRank[ranksFound] = groupWeight;
+                    totalWeight += groupWeight;
+                    ranksFound++;
+                }
             }
-
-            if (s == 0) break;
-            s--;
         }
 
-        // El profesor recibe: 10 % base + slots vacantes + dust de divisiones enteras
+        // SEGUNDA PASADA: Repartir el 90% del pozo de forma proporcional a los pesos.
+        uint256 playerPool = (prizePool * 90) / 100;
+        uint256 totalToPlayers = 0;
+
+        if (totalWeight > 0) {
+            for (uint8 i = 0; i < ranksFound; i++) {
+                uint256 groupWeight = prizePerPlayerAtRank[i];
+                uint256 groupPrize = (playerPool * groupWeight) / totalWeight;
+                uint256 freq = topScoreCounts[i];
+                
+                uint256 prizePerPlayer = groupPrize / freq;
+                // Reemplazamos el peso temporal por el premio final por jugador
+                prizePerPlayerAtRank[i] = prizePerPlayer;
+                
+                totalToPlayers += prizePerPlayer * freq;
+            }
+        }
+
+        // El profesor recibe todo lo que sobra (mínimo 10% si se reparte algo, 100% si nadie suma > 0)
         professorPrize = prizePool - totalToPlayers;
 
         emit PrizesCalculated(

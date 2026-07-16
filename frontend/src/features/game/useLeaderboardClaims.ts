@@ -78,7 +78,11 @@ export function useLeaderboardClaims() {
       toast.success("Prize claimed successfully! 🎉");
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.shortMessage || "Failed to claim prize.");
+      let errorMessage = e?.shortMessage || e?.message || "Failed to claim prize.";
+      if (errorMessage.toLowerCase().includes("gas limit too high") || errorMessage.toLowerCase().includes("reverted")) {
+         errorMessage = "Transaction rejected. You may have already claimed, or your score did not qualify for a prize.";
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -94,7 +98,11 @@ export function useLeaderboardClaims() {
       toast.success("Diploma NFT claimed! Check your wallet.");
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.shortMessage || "Failed to claim diploma.");
+      let errorMessage = e?.shortMessage || e?.message || "Failed to claim diploma.";
+      if (errorMessage.toLowerCase().includes("gas limit too high") || errorMessage.toLowerCase().includes("reverted")) {
+         errorMessage = "Transaction rejected. You may have already claimed your diploma, or you did not pass the threshold.";
+      }
+      toast.error(errorMessage);
     }
   };
 
