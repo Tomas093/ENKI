@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useReadContract, usePublicClient } from "wagmi";
-import { sepolia } from "wagmi/chains";
 import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
 
 export type Player = { 
@@ -21,14 +20,12 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
   const [participants, setParticipants] = useState<Player[]>([]);
   const [prizes, setPrizes] = useState<bigint[]>([0n, 0n, 0n]);
 
-  const { data: prizesCalculated } = useReadContract({
+  const { data: prizesCalculated, refetch: refetchPrizesCalculated } = useReadContract({
     address: gameAddress as `0x${string}`,
     abi: KahootGameABI.abi,
     functionName: 'prizesCalculated',
-    chainId: sepolia.id,
     query: {
-      enabled: !!gameAddress,
-      refetchInterval: 3000
+      enabled: !!gameAddress
     }
   });
 
@@ -36,29 +33,20 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
     address: gameAddress as `0x${string}`,
     abi: KahootGameABI.abi,
     functionName: 'isFinished',
-    chainId: sepolia.id,
-    query: { 
-      enabled: !!gameAddress,
-      refetchInterval: 3000
-    }
+    query: { enabled: !!gameAddress }
   });
 
   const { data: prizePoolData } = useReadContract({
     address: gameAddress as `0x${string}`,
     abi: KahootGameABI.abi,
     functionName: 'prizePool',
-    chainId: sepolia.id,
-    query: { 
-      enabled: !!gameAddress,
-      refetchInterval: 3000
-    }
+    query: { enabled: !!gameAddress }
   });
 
   const { data: passingScoreData } = useReadContract({
     address: gameAddress as `0x${string}`,
     abi: KahootGameABI.abi,
     functionName: 'passingScore',
-    chainId: sepolia.id,
     query: {
       enabled: !!gameAddress
     }
@@ -76,6 +64,7 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
     if (!gameAddress || !wagmiClient) return;
 
     let isMounted = true;
+    let intervalId: ReturnType<typeof setInterval>;
 
     const init = async () => {
       if (txHash && !txConfirmed) {
@@ -93,7 +82,11 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
 
       if (!isMounted) return;
 
-      if (effectivelyPrizesCalculated) {
+      if (!effectivelyPrizesCalculated) {
+        intervalId = setInterval(() => {
+          if (isMounted) refetchPrizesCalculated();
+        }, 3000);
+      } else {
         fetchStats();
       }
     };
@@ -102,6 +95,7 @@ export function useFinalLeaderboard(gameAddress: string | null, txHash: string |
 
     return () => {
       isMounted = false;
+      if (intervalId) clearInterval(intervalId);
     };
   }, [gameAddress, effectivelyPrizesCalculated, wagmiClient, txHash, txConfirmed]);
 

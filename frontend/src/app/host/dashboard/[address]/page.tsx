@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Play, Users, Clock, AlertTriangle, CheckSquare, Eye, Trophy, Target, Award } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import { useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { sepolia } from "wagmi/chains";
 import { formatEther } from "viem";
 import toast from 'react-hot-toast';
 
@@ -16,17 +15,17 @@ export default function GameDashboardPage({ params }: { params: Promise<{ addres
 
   const { data: contractData } = useReadContracts({
     contracts: [
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePool', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'entryFee', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'gameName', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'currentQuestionId', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'isFinished', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'lastActionTime', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrize', chainId: sepolia.id },
-      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrizeClaimed', chainId: sepolia.id }
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizePool' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'entryFee' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'gameName' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'currentQuestionId' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'isFinished' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'prizesCalculated' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'totalQuestions' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professor' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'lastActionTime' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrize' },
+      { address: address as `0x${string}`, abi: KahootGameABI.abi, functionName: 'professorPrizeClaimed' }
     ],
     query: { refetchInterval: 2000 }
   });
