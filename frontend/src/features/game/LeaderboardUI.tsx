@@ -54,24 +54,15 @@ export function LeaderboardUI({
 }: LeaderboardUIProps) {
   const { playMusic, stopMusic } = useAudio();
 
+  // ✅ Todos los useRef ANTES de cualquier return condicional
+  const prevClaimed = useRef(myData?.claimed);
+  const prevDiplomaClaimed = useRef(myData?.diplomaClaimed);
+
   useEffect(() => {
     return () => stopMusic();
   }, [stopMusic]);
 
   // Removed automatic epic music playback on load
-
-  if (isConfirmingTx) {
-    return (
-      <GlobalLoadingOverlay 
-        isVisible={true} 
-        message="Syncing your answers" 
-        subMessage="Writing final results to the blockchain" 
-      />
-    );
-  }
-
-  const prevClaimed = useRef(myData?.claimed);
-  const prevDiplomaClaimed = useRef(myData?.diplomaClaimed);
 
   useEffect(() => {
     if (myData?.claimed && !prevClaimed.current) {
@@ -109,6 +100,16 @@ export function LeaderboardUI({
     }
     prevDiplomaClaimed.current = myData?.diplomaClaimed;
   }, [myData?.diplomaClaimed]);
+
+  if (isConfirmingTx) {
+    return (
+      <GlobalLoadingOverlay 
+        isVisible={true} 
+        message="Syncing your answers" 
+        subMessage="Writing final results to the blockchain" 
+      />
+    );
+  }
 
   // Loading state (Brutalist style)
   if (!prizesCalculated || loading) {
