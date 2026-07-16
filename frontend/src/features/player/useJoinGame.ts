@@ -6,11 +6,6 @@ import toast from "react-hot-toast";
 import KahootGameABI from '@/core/blockchain/abi/KahootGame.json';
 import { PROFILES_ADDRESS, enkiProfilesAbi } from '@/core/blockchain/contracts';
 
-export type GamePreviewData = {
-  professor: string;
-  entryFee: bigint;
-  entryFeeFormatted: string;
-};
 
 export function useJoinGame() {
   const [gameIdInput, setGameIdInput] = useState("");
