@@ -1,40 +1,28 @@
-import { expect } from "chai";
-import { network } from "hardhat";
-import { describe, it, beforeEach } from "node:test";
-import { keccak256, encodePacked, parseEther } from "viem";
+import {expect} from "chai";
+import {network} from "hardhat";
+import {beforeEach, describe, it} from "node:test";
+import {encodePacked, keccak256, pad, parseEther, stringToHex} from "viem";
+import {buildGameMerkleTree, buildPlaceholderQuestions, PROFE_SALT, STUDENT_SALT} from "./testHelpers.js";
 
 describe("KahootGame - Commit & Reveal Seguros", function () {
   let factory, game;
-  let owner, profesor, alumnoHonesto, alumnoTramposo, alumnoExtra;
+  let owner, profesor, alumnoHonesto, alumnoTramposo;
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const saltPregunta = "secretoPregunta";
-  const saltRespuesta = "secretoRespuesta";
-  const enunciado = "¿Cuánto es 2+2?";
-  const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
   const creationFee = parseEther("0.001");
 
-  function generateHash(opcion, salt, address) {
+  let merkleTree;
+  let qs;
+
+  function generateStudentHash(opcion, salt, address) {
     return keccak256(
       encodePacked(
-        ["uint8", "string", "address"],
+        ["uint8", "bytes32", "address"],
         [opcion, salt, address]
       )
     );
-  }
-
-  function buildRonda(opcionCorrecta, profesorAddr) {
-    return {
-      hashVerificacionPregunta: keccak256(encodePacked(
-        ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
-      )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
-      commitPhaseOpen: false,
-      revealPhaseOpen: false,
-    };
   }
 
   async function expectRevert(promise, expectedReason) {
@@ -53,13 +41,13 @@ describe("KahootGame - Commit & Reveal Seguros", function () {
     });
     viem = networkContext.viem;
 
-    const walletClients = await viem.getWalletClients();
-    [owner, profesor, alumnoHonesto, alumnoTramposo, alumnoExtra] = walletClients;
+    [owner, profesor, alumnoHonesto, alumnoTramposo] = await viem.getWalletClients();
 
     factory = await viem.deployContract("KahootFactory", [creationFee]);
-    const r1 = buildRonda(1, profesor.account.address);
+    qs = buildPlaceholderQuestions(1);
+    merkleTree = buildGameMerkleTree(qs, profesor.account.address);
     await factory.write.createGame(
-      [1n, 1n, diplomaURI, [r1], entryFee],
+      ["Test Game", 1n, 1n, diplomaURI, merkleTree.root, entryFee],
       { account: profesor.account, value: creationFee }
     );
     const gameAddress = await factory.read.games([0n]);
@@ -70,20 +58,20 @@ describe("KahootGame - Commit & Reveal Seguros", function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
     await game.write.joinGame({ value: entryFee, account: alumnoTramposo.account });
 
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
-    await game.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
+    await game.write.commitAnswer([generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
     
-    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: profesor.account });
 
     await expectRevert(
-      game.write.revealAnswer([0n, 1, "fake"], { account: alumnoTramposo.account }),
+      game.write.revealAnswer([0n, 1, pad(stringToHex("fake"), { size: 32 })], { account: alumnoTramposo.account }),
       "No hiciste commit"
     );
   });
 
   it("Commit de bytes32(0) debería fallar", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
     const nullHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
     await expectRevert(
@@ -94,12 +82,12 @@ describe("KahootGame - Commit & Reveal Seguros", function () {
 
   it("No se puede hacer commit dos veces en la misma pregunta", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
 
-    const hash = generateHash(1, "s1", alumnoHonesto.account.address);
+    const hash = generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address);
     await game.write.commitAnswer([hash], { account: alumnoHonesto.account });
 
-    const hash2 = generateHash(2, "s2", alumnoHonesto.account.address);
+    const hash2 = generateStudentHash(2, STUDENT_SALT, alumnoHonesto.account.address);
     await expectRevert(
       game.write.commitAnswer([hash2], { account: alumnoHonesto.account }),
       "Ya respondiste"
@@ -108,61 +96,61 @@ describe("KahootGame - Commit & Reveal Seguros", function () {
 
   it("No se puede hacer reveal dos veces", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
-    await game.write.commitAnswer([generateHash(1, "s1", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
+    await game.write.commitAnswer([generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
     
-    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: profesor.account });
     
-    await game.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account });
+    await game.write.revealAnswer([0n, 1, STUDENT_SALT], { account: alumnoHonesto.account });
 
     await expectRevert(
-      game.write.revealAnswer([0n, 1, "s1"], { account: alumnoHonesto.account }),
+      game.write.revealAnswer([0n, 1, STUDENT_SALT], { account: alumnoHonesto.account }),
       "No hiciste commit en esta pregunta"
     );
   });
 
   it("Reveal con hash incorrecto (salt equivocado)", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
-    await game.write.commitAnswer([generateHash(1, "mi_salt_real", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
-    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
+    await game.write.commitAnswer([generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
+    await game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: profesor.account });
 
     await expectRevert(
-      game.write.revealAnswer([0n, 1, "salt_falso"], { account: alumnoHonesto.account }),
+      game.write.revealAnswer([0n, 1, pad(stringToHex("salt_falso"), { size: 32 })], { account: alumnoHonesto.account }),
       "El hash no coincide con tu commit"
     );
   });
 
   it("Reveal con opción distinta a la commiteada", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
-    await game.write.commitAnswer([generateHash(1, "salt", alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
-    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
+    await game.write.commitAnswer([generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address)],{ account: alumnoHonesto.account });
+    await game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: profesor.account });
 
     await expectRevert(
-      game.write.revealAnswer([0n, 2, "salt"], { account: alumnoHonesto.account }),
+      game.write.revealAnswer([0n, 2, STUDENT_SALT], { account: alumnoHonesto.account }),
       "El hash no coincide con tu commit"
     );
   });
 
   it("El Profesor no puede cambiar la respuesta correcta (Doble Commit-Reveal)", async function () {
     await game.write.joinGame({ value: entryFee, account: alumnoHonesto.account });
-    await game.write.startNextQuestion([enunciado, opciones, saltPregunta], { account: profesor.account });
+    await game.write.startNextQuestion([merkleTree.questions[0].questionHash, merkleTree.questions[0].correctAnswerHash, merkleTree.getProof(0), merkleTree.questions[0].enunciado, merkleTree.questions[0].opciones, merkleTree.questions[0].saltPregunta], { account: profesor.account });
     
-    const hash = generateHash(1, "s1", alumnoHonesto.account.address);
+    const hash = generateStudentHash(1, STUDENT_SALT, alumnoHonesto.account.address);
     await game.write.commitAnswer([hash], { account: alumnoHonesto.account });
 
     await expectRevert(
-      game.write.closeQuestionAndStartReveal([2, saltRespuesta], { account: profesor.account }),
+      game.write.closeQuestionAndStartReveal([2, PROFE_SALT], { account: profesor.account }),
       "Hash de respuesta incorrecto" 
     );
 
     await expectRevert(
-      game.write.closeQuestionAndStartReveal([1, "saltFalso"], { account: profesor.account }),
+      game.write.closeQuestionAndStartReveal([1, pad(stringToHex("saltFalso"), { size: 32 })], { account: profesor.account }),
       "Hash de respuesta incorrecto"
     );
 
-    await game.write.closeQuestionAndStartReveal([1, saltRespuesta], { account: profesor.account });
+    await game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: profesor.account });
     expect(await game.read.revealedAnswers([0n])).to.equal(1);
   });
 

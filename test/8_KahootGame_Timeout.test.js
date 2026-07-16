@@ -1,7 +1,8 @@
-import { expect } from "chai";
-import { network } from "hardhat";
-import { describe, it, beforeEach } from "node:test";
-import { keccak256, encodePacked, parseEther } from "viem";
+import {expect} from "chai";
+import {network} from "hardhat";
+import {beforeEach, describe, it} from "node:test";
+import {encodePacked, keccak256, parseEther} from "viem";
+import {buildGameMerkleTree, buildPlaceholderQuestions, PROFE_SALT, STUDENT_SALT} from "./testHelpers.js";
 
 describe("8 – KahootGame: Timeout por inactividad", function () {
   let game, factory;
@@ -13,39 +14,8 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
   const DIPLOMA_URI = "ipfs://test-uri";
   const INACTIVITY_TIMEOUT = 12n * 60n * 60n; // 12 h en segundos
 
-  // Datos para rondas con hashes reales (necesarios para el test de lastActionTime)
-  const PROFE_SALT = "salt123";
-  const ENUNCIADO = "¿Cuánto es 2+2?";
-  const OPCIONES = ["A", "B", "C", "D"];
-  const OPCION_CORRECTA = 1; // uint8
-
-  function buildRonda(correctOption, professorAddr) {
-    return {
-      hashVerificacionPregunta: keccak256(
-        encodePacked(
-          ["string", "string", "string", "string", "string", "string"],
-          [ENUNCIADO, OPCIONES[0], OPCIONES[1], OPCIONES[2], OPCIONES[3], PROFE_SALT]
-        )
-      ),
-      hashRespuestaCorrecta: keccak256(
-        encodePacked(
-          ["uint8", "string", "address"],
-          [correctOption, PROFE_SALT, professorAddr]
-        )
-      ),
-      commitPhaseOpen: false,
-      revealPhaseOpen: false,
-    };
-  }
-
-  // Ronda con hashes placeholder (juego queda estancado sin poder avanzar)
-  function buildPlaceholderRonda() {
-    return {
-      hashVerificacionPregunta: keccak256(encodePacked(["string"], ["placeholder"])),
-      hashRespuestaCorrecta: keccak256(encodePacked(["string"], ["placeholder_r"])),
-      commitPhaseOpen: false,
-      revealPhaseOpen: false,
-    };
+  function generateStudentHash(opcion, salt, address) {
+    return keccak256(encodePacked(["uint8", "bytes32", "address"], [opcion, salt, address]));
   }
 
   // Helper: avanza el tiempo de la cadena en `seconds` segundos usando el testClient de viem
@@ -69,15 +39,16 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
     const ctx = await network.create({ network: "hardhatMainnet", chainType: "l1" });
     viem = ctx.viem;
 
-    const walletClients = await viem.getWalletClients();
-    [professor, player1, player2, player3] = walletClients;
+    [professor, player1, player2, player3] = await viem.getWalletClients();
 
     factory = await viem.deployContract("KahootFactory", [CREATION_FEE]);
 
     // Desplegar un juego con 2 preguntas placeholder (el profe no podrá avanzar → timeout)
-    const rondas = [buildPlaceholderRonda(), buildPlaceholderRonda()];
+    const qs = buildPlaceholderQuestions(2);
+    const mt = buildGameMerkleTree(qs, professor.account.address);
+
     await factory.write.createGame(
-      [1n, 2n, DIPLOMA_URI, rondas, ENTRY_FEE],
+      ["Test Game Timeout", 1n, 2n, DIPLOMA_URI, mt.root, ENTRY_FEE],
       { account: professor.account, value: CREATION_FEE }
     );
 
@@ -154,6 +125,50 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
     });
   });
 
+  // ─── Validaciones: juego ya terminado ────────────────────────────────────
+
+  describe("claimRefund() – juego ya terminado", function () {
+    it("revierte si el juego ya terminó (isFinished = true)", async function () {
+      const ctx3 = await network.create({ network: "hardhatMainnet", chainType: "l1" });
+      const viem3 = ctx3.viem;
+      const wallets3 = await viem3.getWalletClients();
+      const [prof3, al3] = wallets3;
+
+      const factory3 = await viem3.deployContract("KahootFactory", [CREATION_FEE]);
+      const qs = buildPlaceholderQuestions(1);
+      const mt = buildGameMerkleTree(qs, prof3.account.address);
+      await factory3.write.createGame(
+        ["Test Finished", 1n, 1n, DIPLOMA_URI, mt.root, ENTRY_FEE],
+        { account: prof3.account, value: CREATION_FEE }
+      );
+      const gameAddr3 = await factory3.read.games([0n]);
+      const game3 = await viem3.getContractAt("KahootGame", gameAddr3);
+
+      await game3.write.joinGame({ value: ENTRY_FEE, account: al3.account });
+
+      await game3.write.startNextQuestion(
+        [mt.questions[0].questionHash, mt.questions[0].correctAnswerHash, mt.getProof(0), mt.questions[0].enunciado, mt.questions[0].opciones, mt.questions[0].saltPregunta],
+        { account: prof3.account }
+      );
+      
+      const secreto = STUDENT_SALT;
+      await game3.write.commitAnswer([generateStudentHash(1, secreto, al3.account.address)], { account: al3.account });
+      await game3.write.closeQuestionAndStartReveal([1, mt.questions[0].saltRespuesta], { account: prof3.account });
+      await game3.write.revealAnswer([0n, 1, secreto], { account: al3.account });
+      await game3.write.advanceToNextQuestion({ account: prof3.account });
+
+      // Avanza el tiempo
+      const testClient3 = await viem3.getTestClient();
+      await testClient3.increaseTime({ seconds: Number(INACTIVITY_TIMEOUT) + 1 });
+      await testClient3.mine({ blocks: 1 });
+
+      await expectRevert(
+        game3.write.claimRefund({ account: al3.account }),
+        "El juego ya termino; usa claimPrize()"
+      );
+    });
+  });
+
   // ─── Happy path: reembolso exitoso ───────────────────────────────────────
 
   describe("claimRefund() – happy path", function () {
@@ -176,21 +191,6 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
       expect(balAfter).to.equal(balBefore + ENTRY_FEE - gasCost);
     });
 
-    it("transfiere exactamente el entryFee al jugador", async function () {
-      await game.write.joinGame({ value: ENTRY_FEE, account: player1.account });
-      await increaseTime(INACTIVITY_TIMEOUT + 1n);
-
-      const publicClient = await viem.getPublicClient();
-      const balBefore = await publicClient.getBalance({ address: player1.account.address });
-      const txHash = await game.write.claimRefund({ account: player1.account });
-      const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
-      const tx = await publicClient.getTransaction({ hash: txHash });
-      const gasCost = receipt.gasUsed * tx.gasPrice;
-      const balAfter = await publicClient.getBalance({ address: player1.account.address });
-
-      expect(balAfter).to.equal(balBefore + ENTRY_FEE - gasCost);
-    });
-
     it("permite el reembolso si el profesor abandona la partida estando en fase de commit", async function () {
       // Necesitamos un juego nuevo con hashes válidos para poder llamar a startNextQuestion
       const ctx2 = await network.create({ network: "hardhatMainnet", chainType: "l1" });
@@ -199,9 +199,10 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
       const [prof2, al2] = wallets2;
 
       const factory2 = await viem2.deployContract("KahootFactory", [CREATION_FEE]);
-      const ronda = buildRonda(OPCION_CORRECTA, prof2.account.address);
+      const qs = buildPlaceholderQuestions(1);
+      const mt = buildGameMerkleTree(qs, prof2.account.address);
       await factory2.write.createGame(
-        [1n, 1n, DIPLOMA_URI, [ronda], ENTRY_FEE],
+        ["Test Timeout 2", 1n, 1n, DIPLOMA_URI, mt.root, ENTRY_FEE],
         { account: prof2.account, value: CREATION_FEE }
       );
       const gameAddr2 = await factory2.read.games([0n]);
@@ -212,15 +213,14 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
 
       // Profesor abre la pregunta (fase de commit)
       await game2.write.startNextQuestion(
-        [ENUNCIADO, OPCIONES, PROFE_SALT],
+        [mt.questions[0].questionHash, mt.questions[0].correctAnswerHash, mt.getProof(0), mt.questions[0].enunciado, mt.questions[0].opciones, mt.questions[0].saltPregunta],
         { account: prof2.account }
       );
 
       // Verificar que estamos en la fase de commit
       const currentQ = await game2.read.currentQuestionId();
-      const rondaEnCurso = await game2.read.listaDeRondas([currentQ]);
-      // rondaEnCurso devuelve una tupla/array, el campo commitPhaseOpen es el 3er elemento (índice 2) en el struct
-      expect(rondaEnCurso[2]).to.be.true; // commitPhaseOpen == true
+      const ronda = await game2.read.rondas([currentQ]);
+      expect(ronda[1]).to.be.true; // commitPhaseOpen == true
 
       // Avanza el tiempo 12 h desde que el profesor abrió la pregunta
       const testClient2 = await viem2.getTestClient();
@@ -314,12 +314,14 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
     });
 
     it("bloquea startNextQuestion() con notCancelled", async function () {
+      const qs = buildPlaceholderQuestions(1);
+      const mt = buildGameMerkleTree(qs, professor.account.address);
       await game.write.joinGame({ value: ENTRY_FEE, account: player1.account });
       await increaseTime(INACTIVITY_TIMEOUT + 1n);
       await game.write.claimRefund({ account: player1.account });
 
       await expectRevert(
-        game.write.startNextQuestion([ENUNCIADO, OPCIONES, PROFE_SALT], { account: professor.account }),
+        game.write.startNextQuestion([mt.questions[0].questionHash, mt.questions[0].correctAnswerHash, mt.getProof(0), mt.questions[0].enunciado, mt.questions[0].opciones, mt.questions[0].saltPregunta], { account: professor.account }),
         "El juego fue cancelado por inactividad"
       );
     });
@@ -330,7 +332,7 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
       await game.write.claimRefund({ account: player1.account });
 
       await expectRevert(
-        game.write.closeQuestionAndStartReveal([OPCION_CORRECTA, PROFE_SALT], { account: professor.account }),
+        game.write.closeQuestionAndStartReveal([1, PROFE_SALT], { account: professor.account }),
         "El juego fue cancelado por inactividad"
       );
     });
@@ -342,6 +344,52 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
 
       await expectRevert(
         game.write.advanceToNextQuestion({ account: professor.account }),
+        "El juego fue cancelado por inactividad"
+      );
+    });
+
+    it("bloquea closeCurrentAndOpenNext() con notCancelled", async function () {
+      const qs = buildPlaceholderQuestions(2);
+      const mt = buildGameMerkleTree(qs, professor.account.address);
+      
+      const ctx2 = await network.create({ network: "hardhatMainnet", chainType: "l1" });
+      const viem2 = ctx2.viem;
+      const [prof2, al2] = await viem2.getWalletClients();
+
+      const factory2 = await viem2.deployContract("KahootFactory", [CREATION_FEE]);
+      await factory2.write.createGame(
+        ["Test Cancel closeCurrentAndOpenNext", 1n, 2n, DIPLOMA_URI, mt.root, ENTRY_FEE],
+        { account: prof2.account, value: CREATION_FEE }
+      );
+      const gameAddr2 = await factory2.read.games([0n]);
+      const game2 = await viem2.getContractAt("KahootGame", gameAddr2);
+
+      await game2.write.joinGame({ value: ENTRY_FEE, account: al2.account });
+      
+      await game2.write.startNextQuestion(
+        [mt.questions[0].questionHash, mt.questions[0].correctAnswerHash, mt.getProof(0), mt.questions[0].enunciado, mt.questions[0].opciones, mt.questions[0].saltPregunta],
+        { account: prof2.account }
+      );
+      
+      const testClient2 = await viem2.getTestClient();
+      await testClient2.increaseTime({ seconds: Number(INACTIVITY_TIMEOUT) + 1 });
+      await testClient2.mine({ blocks: 1 });
+      await game2.write.claimRefund({ account: al2.account });
+
+      await expectRevert(
+        game2.write.closeCurrentAndOpenNext(
+          [
+            1, 
+            mt.questions[0].saltRespuesta, 
+            mt.questions[1].questionHash, 
+            mt.questions[1].correctAnswerHash, 
+            mt.getProof(1), 
+            mt.questions[1].enunciado, 
+            mt.questions[1].opciones, 
+            mt.questions[1].saltPregunta
+          ], 
+          { account: prof2.account }
+        ),
         "El juego fue cancelado por inactividad"
       );
     });
@@ -376,9 +424,10 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
       const [prof2] = wallets2;
 
       const factory2 = await viem2.deployContract("KahootFactory", [CREATION_FEE]);
-      const ronda = buildRonda(OPCION_CORRECTA, prof2.account.address);
+      const qs = buildPlaceholderQuestions(1);
+      const mt = buildGameMerkleTree(qs, prof2.account.address);
       await factory2.write.createGame(
-        [1n, 1n, DIPLOMA_URI, [ronda], ENTRY_FEE],
+        ["Test Game Timeout 3", 1n, 1n, DIPLOMA_URI, mt.root, ENTRY_FEE],
         { account: prof2.account, value: CREATION_FEE }
       );
       const gameAddr2 = await factory2.read.games([0n]);
@@ -392,7 +441,7 @@ describe("8 – KahootGame: Timeout por inactividad", function () {
       const latBefore = await game2.read.lastActionTime();
 
       await game2.write.startNextQuestion(
-        [ENUNCIADO, OPCIONES, PROFE_SALT],
+        [mt.questions[0].questionHash, mt.questions[0].correctAnswerHash, mt.getProof(0), mt.questions[0].enunciado, mt.questions[0].opciones, mt.questions[0].saltPregunta],
         { account: prof2.account }
       );
 

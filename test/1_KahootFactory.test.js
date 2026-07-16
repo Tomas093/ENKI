@@ -1,41 +1,19 @@
-import { expect } from "chai";
-import { network } from "hardhat";
-import { describe, it, beforeEach } from "node:test";
-import { keccak256, encodePacked, parseEther } from "viem";
+import {expect} from "chai";
+import {network} from "hardhat";
+import {beforeEach, describe, it} from "node:test";
+import {parseEther} from "viem";
+import {buildGameMerkleTree, buildPlaceholderQuestions} from "./testHelpers.js";
 
 describe("KahootFactory - Creación de Juegos y Validaciones", function () {
-  let factory, game, diplomaNFT;
-  let owner, profesor, alumnoHonesto, alumnoTramposo, alumnoExtra;
+  let factory;
+  let owner, profesor;
   let viem;
 
   const diplomaURI = "ipfs://QmMockDiploma...";
-  const saltPregunta = "secretoPregunta";
-  const saltRespuesta = "secretoRespuesta";
-  const enunciado = "¿Cuánto es 2+2?";
-  const opciones = ["A", "B", "C", "D"];
   const entryFee = parseEther("0.01");
   const creationFee = parseEther("0.001");
 
-  function generateHash(opcion, salt, address) {
-    return keccak256(
-      encodePacked(
-        ["uint8", "string", "address"],
-        [opcion, salt, address]
-      )
-    );
-  }
-
-  function buildRonda(opcionCorrecta, profesorAddr) {
-    return {
-      hashVerificacionPregunta: keccak256(encodePacked(
-        ["string", "string", "string", "string", "string", "string"],
-        [enunciado, opciones[0], opciones[1], opciones[2], opciones[3], saltPregunta]
-      )),
-      hashRespuestaCorrecta: generateHash(opcionCorrecta, saltRespuesta, profesorAddr),
-      commitPhaseOpen: false,
-      revealPhaseOpen: false,
-    };
-  }
+  // Helpers removidos en favor de testHelpers.js
 
   async function expectRevert(promise, expectedReason) {
     try {
@@ -53,16 +31,16 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
     });
     viem = networkContext.viem;
 
-    const walletClients = await viem.getWalletClients();
-    [owner, profesor, alumnoHonesto, alumnoTramposo, alumnoExtra] = walletClients;
+    [owner, profesor] = await viem.getWalletClients();
 
     factory = await viem.deployContract("KahootFactory", [creationFee]);
   });
 
   it("Factory revert si _totalQuestions == 0", async function () {
+    const tree = buildGameMerkleTree([], profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [1n, 0n, diplomaURI, [], entryFee],
+        ["Test Game", 1n, 0n, diplomaURI, tree.root, entryFee],
         { account: profesor.account, value: creationFee }
       ),
       "Debe tener preguntas"
@@ -70,10 +48,11 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
   });
 
   it("Factory revert si _passingScore == 0", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
+    const qs = buildPlaceholderQuestions(1);
+    const tree = buildGameMerkleTree(qs, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [0n, 1n, diplomaURI, [r1], entryFee],
+        ["Test Game", 0n, 1n, diplomaURI, tree.root, entryFee],
         { account: profesor.account, value: creationFee }
       ),
       "Puntaje invalido"
@@ -81,46 +60,26 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
   });
 
   it("Factory revert si _passingScore > _totalQuestions", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
-    const r2 = buildRonda(2, profesor.account.address);
+    const qs = buildPlaceholderQuestions(2);
+    const tree = buildGameMerkleTree(qs, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [5n, 2n, diplomaURI, [r1, r2], entryFee],
+        ["Test Game", 5n, 2n, diplomaURI, tree.root, entryFee],
         { account: profesor.account, value: creationFee }
       ),
       "Puntaje mayor al total"
     );
   });
 
-  it("Factory revert si rondas.length != _totalQuestions (menos rondas)", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
-    const r2 = buildRonda(2, profesor.account.address);
-    await expectRevert(
-      factory.write.createGame(
-        [2n, 3n, diplomaURI, [r1, r2], entryFee],
-        { account: profesor.account, value: creationFee }
-      ),
-      "Rondas no coinciden"
-    );
-  });
 
-  it("Factory revert si rondas tiene MÁS elementos que _totalQuestions", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
-    await expectRevert(
-      factory.write.createGame(
-        [1n, 1n, diplomaURI, [r1, r1, r1], entryFee],
-        { account: profesor.account, value: creationFee }
-      ),
-      "Rondas no coinciden"
-    );
-  });
 
   it("KahootFactory - getGamesCount funciona", async function () {
     const countAntes = await factory.read.getGamesCount();
-    const r1 = buildRonda(1, profesor.account.address);
+    const qs = buildPlaceholderQuestions(1);
+    const tree = buildGameMerkleTree(qs, profesor.account.address);
 
     await factory.write.createGame(
-      [1n, 1n, diplomaURI, [r1], entryFee],
+      ["Test Game", 1n, 1n, diplomaURI, tree.root, entryFee],
       { account: profesor.account, value: creationFee }
     );
 
@@ -129,10 +88,11 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
   });
 
   it("Factory revert si no se paga la tarifa de creacion", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
+    const qs = buildPlaceholderQuestions(1);
+    const tree = buildGameMerkleTree(qs, profesor.account.address);
     await expectRevert(
       factory.write.createGame(
-        [1n, 1n, diplomaURI, [r1], entryFee],
+        ["Test Game", 1n, 1n, diplomaURI, tree.root, entryFee],
         { account: profesor.account }
       ),
       "Tarifa de creacion insuficiente"
@@ -153,9 +113,10 @@ describe("KahootFactory - Creación de Juegos y Validaciones", function () {
   });
 
   it("Factory: owner puede retirar las tarifas acumuladas", async function () {
-    const r1 = buildRonda(1, profesor.account.address);
+    const qs = buildPlaceholderQuestions(1);
+    const tree = buildGameMerkleTree(qs, profesor.account.address);
     await factory.write.createGame(
-      [1n, 1n, diplomaURI, [r1], entryFee],
+      ["Test Game", 1n, 1n, diplomaURI, tree.root, entryFee],
       { account: profesor.account, value: creationFee }
     );
     await factory.write.withdrawFees({ account: owner.account });

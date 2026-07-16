@@ -108,14 +108,14 @@ El proyecto está configurado como un monorepo utilizando **pnpm workspaces**:
 
 ## Suite de tests
 
-**76 tests** — 0 fallos. Organizados en 8 archivos:
+**75 tests** — 0 fallos. Organizados en 8 archivos:
 
 | Archivo | Cobertura |
 |---|---|
 | `1_KahootFactory.test.js` | Creación de juegos, tarifas, permisos de owner |
 | `2_KahootGame_Core.test.js` | Flujo completo de partida, variables de estado |
 | `3_KahootGame_Phases_Roles.test.js` | Fases, roles y condiciones de carrera |
-| `4_KahootGame_CommitReveal.test.js` | Anti-copia, doble reveal, hashes incorrectos |
+| `4_KahootGame_CommitReveal.test.js` | Anti-copia, prevención de manipulación con Merkle Trees, doble reveal, hashes incorrectos |
 | `5_KahootGame_Diploma.test.js` | NFT: aprobación, doble claim, acceso restringido |
 | `6_KahootGame_Economy.test.js` | Prize Pool, distribución matemática, claimPrize |
 | `7_KahootGame_Rankings.test.js` | Ranking Olímpico: empates en 1°/2°/3°, empate masivo, 4° fuera del top |
