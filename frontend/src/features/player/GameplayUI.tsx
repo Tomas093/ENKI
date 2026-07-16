@@ -158,7 +158,7 @@ export function GameplayUI({
                 <motion.button
                   key={idx}
                   onClick={() => handlePick(idx)}
-                  disabled={isDisabled}
+                  disabled={!!isDisabled}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{
                     opacity: isNeutral ? 0.3 : 1,

@@ -97,10 +97,10 @@ export default function EmergencyRefund() {
 
           {/* Back link */}
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.back()}
             className="mt-8 bg-black text-white font-black uppercase tracking-widest text-[12px] px-6 py-3 border-2 border-black hover:bg-white hover:text-black transition-colors"
           >
-            ← Back to Home
+            ← Go Back
           </button>
         </div>
       </motion.div>
