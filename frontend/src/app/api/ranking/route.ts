@@ -6,7 +6,7 @@ import { publicClient, DEPLOYMENT_BLOCK } from '@/core/blockchain/viemClient';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
-const CHUNK_SIZE = 10000n; // drpc freetier limits to 10,000 blocks
+const CHUNK_SIZE = 9000n; // drpc freetier limits to 10,000 blocks
 
 
 
@@ -15,6 +15,7 @@ interface PlayerStats {
   diplomas: number;
   gamesPlayed: number;
   totalPrize: bigint;
+  nickname?: string;
 }
 
 let cachedGameAddresses: string[] = [];
@@ -41,7 +42,7 @@ export async function GET() {
 
     // Serve from cache if it's fresh enough
     if (now - cacheTimestamp < CACHE_TTL_MS && cachedLastBlock >= latestBlock) {
-      return buildResponse(latestBlock);
+      return await buildResponse(latestBlock);
     }
 
     const fromBlock = cachedLastBlock + 1n;
@@ -108,18 +109,50 @@ export async function GET() {
       cacheTimestamp = now;
     }
 
-    return buildResponse(latestBlock);
+    return await buildResponse(latestBlock);
   } catch (error) {
     console.error('[/api/ranking] Error:', error);
     return NextResponse.json({ error: 'Failed to fetch ranking data' }, { status: 500 });
   }
 }
 
-function buildResponse(latestBlock: bigint) {
+async function buildResponse(latestBlock: bigint) {
+  const addresses = Array.from(cachedPlayerStats.keys());
+  
+  // Find which ones need a nickname lookup
+  const missingNicknames = addresses.filter(addr => cachedPlayerStats.get(addr)?.nickname === undefined);
+  
+  if (missingNicknames.length > 0) {
+    try {
+      const ENKIProfilesABI = require('@/core/blockchain/abi/ENKIProfiles.json');
+      const PROFILES_ADDRESS = process.env.NEXT_PUBLIC_PROFILES_ADDRESS as `0x${string}`;
+      
+      const nicknamesMulticall = await publicClient.multicall({
+        contracts: missingNicknames.map(w => ({
+          address: PROFILES_ADDRESS,
+          abi: ENKIProfilesABI.abi as any,
+          functionName: 'nicknames',
+          args: [w]
+        }))
+      });
+      
+      missingNicknames.forEach((addr, i) => {
+        const stats = cachedPlayerStats.get(addr)!;
+        if (nicknamesMulticall[i].status === 'success' && nicknamesMulticall[i].result) {
+          stats.nickname = String(nicknamesMulticall[i].result);
+        } else {
+          stats.nickname = ""; // Empty means resolved but no nickname
+        }
+      });
+    } catch (err) {
+      console.error("Error fetching nicknames in ranking API", err);
+    }
+  }
+
   const players = Array.from(cachedPlayerStats.entries()).map(([address, stats]) => ({
     rank: 0,
     address,
-    ens: `${address.slice(0, 6)}...${address.slice(-4)}`,
+    ens: stats.nickname ? stats.nickname : `${address.slice(0, 6)}...${address.slice(-4)}`,
     diplomas: stats.diplomas,
     gamesPlayed: stats.gamesPlayed,
     totalPrize: Number(formatEther(stats.totalPrize)),

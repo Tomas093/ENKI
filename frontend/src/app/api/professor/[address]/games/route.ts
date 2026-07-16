@@ -19,15 +19,19 @@ export async function GET(
   try {
     const latestBlock = await publicClient.getBlockNumber();
     
-    // Fetch all games created. 
-    // We fetch ALL because the index of the event maps 1:1 to the Game ID (the array index in the contract).
-    // In a real production environment with 10k+ games, this would be indexed by The Graph.
-    const allLogs = await publicClient.getLogs({
-      address: FACTORY_ADDRESS,
-      event: parseAbiItem('event GameCreated(uint256 indexed gameId, address indexed gameAddress, address indexed professor)'),
-      fromBlock: DEPLOYMENT_BLOCK,
-      toBlock: latestBlock
-    });
+    const CHUNK_SIZE = 9000n;
+    let allLogs: any[] = [];
+    
+    for (let start = DEPLOYMENT_BLOCK; start <= latestBlock; start += CHUNK_SIZE) {
+      const end = start + CHUNK_SIZE - 1n > latestBlock ? latestBlock : start + CHUNK_SIZE - 1n;
+      const logs = await publicClient.getLogs({
+        address: FACTORY_ADDRESS,
+        event: parseAbiItem('event GameCreated(uint256 indexed gameId, address indexed gameAddress, address indexed professor)'),
+        fromBlock: start,
+        toBlock: end
+      });
+      allLogs = allLogs.concat(logs);
+    }
 
     // Map logs to Game IDs, then filter by professor
     const professorGames = allLogs
