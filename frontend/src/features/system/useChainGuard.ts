@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
-import { useAccount, useSwitchChain, useChainId } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import toast from "react-hot-toast";
 
 const TARGET_CHAIN_ID = sepolia.id;
 
 export function useChainGuard() {
-  const { isConnected } = useAccount();
-  const chainId = useChainId();
+  const { isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
 
   useEffect(() => {
-    if (isConnected && chainId !== TARGET_CHAIN_ID) {
+    if (isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID) {
       setIsWrongNetwork(true);
       toast.error(`Please switch to Sepolia network`, {
         id: "wrong-network",
