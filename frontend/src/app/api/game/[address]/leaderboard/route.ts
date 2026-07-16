@@ -38,24 +38,24 @@ export async function GET(
 
     // 2. Fetch stats for each player using multicall to prevent Vercel 10s timeouts
     const scores = await publicClient.multicall({
-      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'scores', args: [w] }))
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi as any, functionName: 'scores', args: [w] }))
     });
     
     const claims = await publicClient.multicall({
-      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasPrizeClaimed', args: [w] }))
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi as any, functionName: 'hasPrizeClaimed', args: [w] }))
     });
     
     const diplomaClaims = await publicClient.multicall({
-      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'hasClaimed', args: [w] }))
+      contracts: wallets.map(w => ({ address: gameAddress, abi: KahootGameABI.abi as any, functionName: 'hasClaimed', args: [w] }))
     });
     
     const nicknames = await publicClient.multicall({
-      contracts: wallets.map(w => ({ address: PROFILES_ADDRESS, abi: ENKIProfilesABI.abi, functionName: 'nicknames', args: [w] }))
+      contracts: wallets.map(w => ({ address: PROFILES_ADDRESS, abi: ENKIProfilesABI.abi as any, functionName: 'nicknames', args: [w] }))
     });
 
     // 3. Fetch prizes
     const prizesMulticall = await publicClient.multicall({
-      contracts: [0, 1, 2].map(rank => ({ address: gameAddress, abi: KahootGameABI.abi, functionName: 'prizePerPlayerAtRank', args: [rank] }))
+      contracts: [0, 1, 2].map(rank => ({ address: gameAddress, abi: KahootGameABI.abi as any, functionName: 'prizePerPlayerAtRank', args: [rank] }))
     });
     const p0 = prizesMulticall[0].status === 'success' ? prizesMulticall[0].result : 0n;
     const p1 = prizesMulticall[1].status === 'success' ? prizesMulticall[1].result : 0n;
