@@ -1,8 +1,9 @@
 "use client";
+import { Suspense } from 'react';
 import { useLeaderboardClaims } from '@/features/game/useLeaderboardClaims';
 import { LeaderboardUI } from '@/features/game/LeaderboardUI';
 
-export default function FinalLeaderboard() {
+function LeaderboardContent() {
   const {
     loading,
     prizesCalculated,
@@ -45,5 +46,13 @@ export default function FinalLeaderboard() {
       handleClaimDiploma={handleClaimDiploma}
       address={address}
     />
+  );
+}
+
+export default function FinalLeaderboard() {
+  return (
+    <Suspense fallback={null}>
+      <LeaderboardContent />
+    </Suspense>
   );
 }
