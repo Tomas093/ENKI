@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import toast from "react-hot-toast";
@@ -8,29 +8,27 @@ const TARGET_CHAIN_ID = sepolia.id;
 export function useChainGuard() {
   const { isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const [isWrongNetwork, setIsWrongNetwork] = useState(false);
+  // useRef so the auto-switch fires only once per wrong-network detection
+  const hasSwitched = useRef(false);
+
+  const isWrongNetwork = isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID;
 
   useEffect(() => {
-    if (isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID) {
-      setIsWrongNetwork(true);
-      toast.error(`Please switch to Sepolia network`, {
-        id: "wrong-network",
-      });
-      // Automatically prompt to switch network
-      switchChain({ chainId: TARGET_CHAIN_ID });
+    if (isWrongNetwork) {
+      toast.error("Please switch to Sepolia network", { id: "wrong-network" });
+      if (!hasSwitched.current) {
+        hasSwitched.current = true;
+        switchChain({ chainId: TARGET_CHAIN_ID });
+      }
     } else {
-      setIsWrongNetwork(false);
+      hasSwitched.current = false;
       toast.dismiss("wrong-network");
     }
-  }, [isConnected, chainId, switchChain]);
-
-  const switchToCorrectNetwork = () => {
-    switchChain({ chainId: TARGET_CHAIN_ID });
-  };
+  }, [isWrongNetwork, switchChain]);
 
   return {
     isWrongNetwork,
-    switchToCorrectNetwork,
+    switchToCorrectNetwork: () => switchChain({ chainId: TARGET_CHAIN_ID }),
     targetChainName: "Sepolia",
   };
 }
